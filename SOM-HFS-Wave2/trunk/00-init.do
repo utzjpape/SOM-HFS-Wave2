@@ -28,9 +28,9 @@ else if (inlist("${suser}","wb484006","WB484006")) {
 else if (inlist("${suser}","WB499706", "wb499706")) {
 	*Philip
 	*Local directory of your checked out copy of the code
-	local swdLocal = "C:\Users\WB499706\OneDrive - WBG\WBG Data PW\Code\SOM\trunk\Wave2"
+	local swdLocal = "C:\Users\WB499706\OneDrive - WBG\WBG Data PW\Code\SOM\Wave 2"
 	*Box directory where the Data folder can be located
-	local swdBox = "C:\Users\WB499706\WBG\Utz Johann Pape - Shared\Wave1\Analysis\DataBox"
+	local swdBox = "C:\Users\WB499706\WBG\Utz Johann Pape - Sh-SOM-HFS\Wave2\Analysis\DataBox"
 	}
 	
 else {
@@ -45,6 +45,7 @@ global gsdTemp = "`swdLocal'/Temp"
 global gsdOutput = "`swdLocal'/Output"
 global gsdDownloads = "`swdBox'/00-Downloads"
 global gsdDataRaw = "`swdBox'/0-RawInput"
+global gsdShared = "`swdBox'"
 
 *If needed, install the directories and packages used in the process 
 capture confirm file "`swdLocal'/Data/nul"
