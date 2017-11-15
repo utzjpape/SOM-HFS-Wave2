@@ -57,7 +57,11 @@ scalar define n_output=_rc
 scalar define check=n_data+n_temp+n_output
 di check
 
-if check!=0 {
+
+if check==0 {
+		display "No action needed"
+}
+else {
 	mkdir "${gsdData}"
 	mkdir "${gsdData}/0-RawTemp"
 	mkdir "${gsdData}/0-RawOutput"
@@ -69,18 +73,20 @@ if check!=0 {
 	mkdir "${gsdTemp}"
 	mkdir "${gsdOutput}"
 
-	*install packages used in the process
-	ssc install missings
-	ssc install labutil2
-	ssc install labutil
-	ssc install labmv
-	ssc install egenmore
-	ssc install outreg2
-	ssc install vincenty
-	ssc install fastgini
-	ssc install tabout
-	ssc install logout
-	ssc install svylorenz
-	ssc install shp2dta
-    ssc install spmap   
 }
+
+*install packages used in the process
+local commands = "labmask insheetjson missings diff labmv outreg2 vincenty fastgini tabout logout svylorenz shp2dta spmap"
+foreach c of local commands {
+	qui capture which `c' 
+	qui if _rc!=0 {
+		noisily di "This command requires '`c''. The package will now be downloaded and installed."
+		ssc install `c'
+	}
+}
+
+qui capture which gicurve
+qui if _rc!=0 {
+		noisily di "This command requires 'gicurve'. The package will now be downloaded and installed."
+		net install gicurve, replace from (http://www.adeptanalytics.org/download/ado) 
+	}
