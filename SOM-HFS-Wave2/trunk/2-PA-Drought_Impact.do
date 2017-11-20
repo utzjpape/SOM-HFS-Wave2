@@ -287,37 +287,57 @@ gen pweight=weight_cons*hhsize
 svyset ea [pweight=pweight], strata(strata)
 
 * We want to run the estimation with dep var in logs, so let's look at that
-hist tc_imp 
-graph export "${gsdOutput}/tc_imp_hist.png", replace
+*hist tc_imp 
+*graph export "${gsdOutput}/tc_imp_hist.png", replace
 gen ltc_imp = log(tc_imp)
 la var ltc_imp "Log imputed consumption"
-hist ltc_imp
-graph export "${gsdOutput}/ltc_imp_hist.png", replace
+*hist ltc_imp
+*graph export "${gsdOutput}/ltc_imp_hist.png", replace
+
+* Checking a few correlates
+svy: reg tc_imp hhh_gender
+svy: reg drought1 hhh_gender
+svy: reg tc_imp i.hhh_edu
+svy: reg drought1 i.hhh_edu
+svy: reg tc_imp pliteracy 
+svy: reg drought1 pliteracy
+svy: reg drought1 remit12m
 
 * Now let's look at a few specifications
 * (1) without any controls, dep var in logs
 diff ltc_imp [pw=pweight], period(t) treated(drought1) 
-outreg2 using "${gsdOutput}/DroughtImpact_raw4.xls", replace ctitle(`r(depvar)') addstat(Mean control t(0), r(mean_c0), Mean treated t(0), r(mean_t0), Diff t(0), r(diff0), Mean control t(1), r(mean_c1), Mean treated t(1), r(mean_t1), Diff t(1), r(diff1)) title("No controls") label excel keep(_diff) nocons
+outreg2 using "${gsdOutput}/DroughtImpact_raw4.xls", replace ctitle(`r(depvar)' - No controls) addstat(Mean control t(0), r(mean_c0), Mean treated t(0), r(mean_t0), Diff t(0), r(diff0), Mean control t(1), r(mean_c1), Mean treated t(1), r(mean_t1), Diff t(1), r(diff1)) label excel keep(_diff) nocons
 * (2) with population type controls, dep var in logs
-ta type, gen(type)
-ta reg_pess, gen(region)
+tab type, gen(type)
+tab reg_pess, gen(region)
 diff ltc_imp [pw=pweight], period(t) treated(drought1) cov(type*)
-outreg2 using "${gsdOutput}/DroughtImpact_raw4.xls", append ctitle(`r(depvar)') addstat(Mean control t(0), r(mean_c0), Mean treated t(0), r(mean_t0), Diff t(0), r(diff0), Mean control t(1), r(mean_c1), Mean treated t(1), r(mean_t1), Diff t(1), r(diff1)) title("Population type controls") label excel keep(_diff) nocons
+outreg2 using "${gsdOutput}/DroughtImpact_raw4.xls", append ctitle(`r(depvar)' - Population type controls) addstat(Mean control t(0), r(mean_c0), Mean treated t(0), r(mean_t0), Diff t(0), r(diff0), Mean control t(1), r(mean_c1), Mean treated t(1), r(mean_t1), Diff t(1), r(diff1)) label excel keep(_diff) nocons
 * (3) with pre-war region control as robustness
 diff ltc_imp [pw=pweight], period(t) treated(drought1) cov(type* region*)
-outreg2 using "${gsdOutput}/DroughtImpact_raw4.xls", append ctitle(`r(depvar)') addstat(Mean control t(0), r(mean_c0), Mean treated t(0), r(mean_t0), Diff t(0), r(diff0), Mean control t(1), r(mean_c1), Mean treated t(1), r(mean_t1), Diff t(1), r(diff1)) title("Population type and regions controls") label excel keep(_diff) nocons
- gen droughtxpost = drought1*t
+outreg2 using "${gsdOutput}/DroughtImpact_raw4.xls", append ctitle(`r(depvar)' - Population type and regions controls) addstat(Mean control t(0), r(mean_c0), Mean treated t(0), r(mean_t0), Diff t(0), r(diff0), Mean control t(1), r(mean_c1), Mean treated t(1), r(mean_t1), Diff t(1), r(diff1)) label excel keep(_diff) nocons
+gen droughtxpost = drought1*t
 svy: reg ltc_imp t drought1 droughtxpost i.type i.reg_pess
-import excel using "${gsdOutput}/DroughtImpact_raw4", clear allstring
-export excel using "${gsdOutput}/DroughtImpact_Figures_v1.xlsx", sheetreplace sheet("Raw_Data_4")
+* (4) with pop type, hhh gender, hhh edu, remit12m
+tab hhh_edu, gen(educ)
+diff ltc_imp [pw=pweight], period(t) treated(drought1) cov(type* region* remit12m hhh_gender educ*)
+outreg2 using "${gsdOutput}/DroughtImpact_raw4.xls", append ctitle(`r(depvar)' - Population type, regions, HHH edu and gender, remittances controls) addstat(Mean control t(0), r(mean_c0), Mean treated t(0), r(mean_t0), Diff t(0), r(diff0), Mean control t(1), r(mean_c1), Mean treated t(1), r(mean_t1), Diff t(1), r(diff1)) label excel keep(_diff) nocons
+* (5) With poor PPP_prob
+diff poorPPP_prob [pw=pweight], period(t) treated(drought1) 
+outreg2 using "${gsdOutput}/DroughtImpact_raw4.xls", append ctitle(`r(depvar)' - No controls) addstat(Mean control t(0), r(mean_c0), Mean treated t(0), r(mean_t0), Diff t(0), r(diff0), Mean control t(1), r(mean_c1), Mean treated t(1), r(mean_t1), Diff t(1), r(diff1)) label excel keep(_diff) nocons
+* (6) PoorPPP_prob with controls 
+diff poorPPP_prob [pw=pweight], period(t) treated(drought1) cov(type* region* remit12m hhh_gender educ*)
+outreg2 using "${gsdOutput}/DroughtImpact_raw4.xls", append ctitle(`r(depvar)' - Population type, regions, HHH edu and gender, remittances controls) addstat(Mean control t(0), r(mean_c0), Mean treated t(0), r(mean_t0), Diff t(0), r(diff0), Mean control t(1), r(mean_c1), Mean treated t(1), r(mean_t1), Diff t(1), r(diff1)) label excel keep(_diff) nocons
 * (4) with continuous treatment
 gen precipxpost = precip_combined*t
 svy: reg ltc_imp t precip_combined precipxpost i.type i.reg_pess
-outreg2 using "${gsdOutput}/DroughtImpact_raw4b.xls", replace ctitle(`r(depvar)')  title("Population type and regions controls, with continuous treatment") label excel nocons
-import excel using "${gsdOutput}/DroughtImpact_raw4b.xls", allstring clear
-export excel using "${gsdOutput}/DroughtImpact_Figures_v1.xlsx", sheetmodify sheet("Raw_Data_4") cell(A21)
- 
-********************************************************************************
+outreg2 using "${gsdOutput}/DroughtImpact_raw4b.xls", replace ctitle(`r(depvar)' - Population type and regions controls, with continuous treatment)   label excel nocons
+
+insheet using "${gsdOutput}/DroughtImpact_raw4.txt", clear
+export excel using "${gsdOutput}/DroughtImpact_Figures_v1.xlsx", sheetreplace sheet("Raw_Data_4")
+insheet using "${gsdOutput}/DroughtImpact_raw4b.txt", clear
+export excel using "${gsdOutput}/DroughtImpact_Figures_v1.xlsx", sheetmodify sheet("Raw_Data_4") cell(A20)
+
+
  
 *Hunger, assets, and coping
 *Education 
