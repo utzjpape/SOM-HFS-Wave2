@@ -93,3 +93,10 @@ save "${gsdData}/1-CleanTemp/rainfall_w2.dta", replace
 export delim using "${gsdData}/0-RawOutput/rainfall_gps_identifiers_w2.csv", replace nolab
 
 
+* Rainfall and NDVI timeseries
+import excel using "${gsdShared}\Auxiliary\Climate Data\Rainfall_NDVI_timeseries.xlsx", clear firstrow case(lower) sheet("Combined")
+collapse (mean) rainfall_level=rainfallmm rainfall_average rainfall_anomaly_1m=onemonthanomaly rainfall_anomaly_3m=threemonthsanomaly ndvi ndvi_average ndvi_anomaly=ndvianomaly, by(year month)
+gen date = ym(year, month)
+order date
+format date %tm
+save "${gsdData}/1-CleanTemp/rainfall_timeseries.dta", replace

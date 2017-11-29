@@ -124,6 +124,11 @@ graph export "${gsdOutput}/2016_conflict_fatalities_reg.png", replace
 ********************************************************************************
 *************** Rainfall Stats *************************************************
 ********************************************************************************
+* timeseries
+use "${gsdData}/1-CleanTemp/rainfall_timeseries.dta", clear
+export excel using "${gsdOutput}/DroughtImpact_Figures_v1.xlsx", sheetreplace sheet("Raw_Rainfall_TS") first(variables)
+
+* values
 import delim using "${gsdShared}\Auxiliary\Climate Data\2016deyr_table.txt", clear
 ren value PercentDeviation2016Deyr
 gen n = _n
@@ -218,22 +223,6 @@ tabout admin1Name using "${gsdOutput}/DroughtImpact_raw0.xls", sum c(sum drought
 
 
 * Main correlate stats
-********************************************************************************
-********** For the time being, we create a fake wave 2 data set ****************
-use "${gsdData}/1-CleanInput/SHFS2016/hh.dta", clear
-append using "${gsdData}/1-CleanInput/SHFS2016/hh.dta", gen(t)
-la def lt 0 "Wave1" 1 "Wave2", replace
-la val t lt 
-merge m:1 team strata ea block hh using "${gsdData}/1-CleanTemp/rainfall.dta", nogen assert(match) keepusing(drought1)
-replace poorPPP_prob = poorPPP_prob*runiform(1.1, 1.2) if t==1
-replace poorPPP_prob = poorPPP_prob*runiform(1.1, 1.2) if drought1==1 & t==1
-replace pgi = pgi*runiform(1.1, 1.2) if t==1
-replace pgi = pgi*runiform(1.1, 1.2) if drought1==1 & t==1
-replace tc_imp = tc_imp*runiform(0.7, 0.9) if t==1
-replace tc_imp = tc_imp*runiform(0.7, 0.8) if drought1==1 & t==1
-drop drought1
-save "${gsdData}/1-CleanInput/hh_all.dta", replace
-********************************************************************************
 use "${gsdData}/1-CleanInput/hh_all.dta", clear
 merge m:1 team strata ea block hh using "${gsdData}/1-CleanTemp/rainfall.dta", nogen assert(match)
 gen pweight=weight_cons*hhsize
