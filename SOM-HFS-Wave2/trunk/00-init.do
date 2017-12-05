@@ -31,6 +31,8 @@ else if (inlist("${suser}","WB499706", "wb499706")) {
 	local swdLocal = "C:\Users\WB499706\OneDrive - WBG\WBG Data PW\Code\SOM\Wave 2"
 	*Box directory where the Data folder can be located
 	local swdBox = "C:\Users\WB499706\WBG\Utz Johann Pape - Sh-SOM-HFS\Wave2\Analysis\DataBox"
+	* cURL directory
+	local curl = "C:\Users\WB499706\Documents"
 	}
 	
 else {
@@ -46,6 +48,7 @@ global gsdOutput = "`swdLocal'/Output"
 global gsdDownloads = "`swdBox'/00-Downloads"
 global gsdDataRaw = "`swdBox'/0-RawInput"
 global gsdShared = "`swdBox'"
+global gsdBin = "`curl'"
 
 *If needed, install the directories and packages used in the process 
 capture confirm file "`swdLocal'/Data/nul"

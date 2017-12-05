@@ -8,10 +8,10 @@ set sortseed 11041955
 ****************** Maps ****************
 ****************************************
 * Prepare maps data files
-shp2dta using "${gsdShared}\Auxiliary\Adminstrative Maps\Som_Admbnda_Adm1_UNDP.shp", data("${gsdTemp}/Som_Admbnda_Adm1_UNDP.dta") coor("${gsdTemp}/Som_Admbnda_Adm1_UNDP_coordinates.dta") replace
-shp2dta using "${gsdShared}\Auxiliary\Adminstrative Maps\Som_Admbnda_Adm2_UNDP.shp", data("${gsdTemp}/Som_Admbnda_Adm2_UNDP.dta") coor("${gsdTemp}/Som_Admbnda_Adm2_UNDP_coordinates.dta") replace
-shp2dta using "${gsdShared}\Auxiliary\Adminstrative Maps\Wave1_Admin2.shp", data("${gsdTemp}/Wave1_Admin2.dta") coor("${gsdTemp}/Wave1_Admin2_coordinates.dta") replace
-shp2dta using "${gsdShared}\Auxiliary\Adminstrative Maps\Wave2_Admin2.shp", data("${gsdTemp}/Wave2_Admin2.dta") coor("${gsdTemp}/Wave2_Admin2_coordinates.dta") replace
+shp2dta using "${gsdShared}\0-Auxiliary\Adminstrative Maps\Som_Admbnda_Adm1_UNDP.shp", data("${gsdTemp}/Som_Admbnda_Adm1_UNDP.dta") coor("${gsdTemp}/Som_Admbnda_Adm1_UNDP_coordinates.dta") replace
+shp2dta using "${gsdShared}\0-Auxiliary\Adminstrative Maps\Som_Admbnda_Adm2_UNDP.shp", data("${gsdTemp}/Som_Admbnda_Adm2_UNDP.dta") coor("${gsdTemp}/Som_Admbnda_Adm2_UNDP_coordinates.dta") replace
+shp2dta using "${gsdShared}\0-Auxiliary\Adminstrative Maps\Wave1_Admin2.shp", data("${gsdTemp}/Wave1_Admin2.dta") coor("${gsdTemp}/Wave1_Admin2_coordinates.dta") replace
+shp2dta using "${gsdShared}\0-Auxiliary\Adminstrative Maps\Wave2_Admin2.shp", data("${gsdTemp}/Wave2_Admin2.dta") coor("${gsdTemp}/Wave2_Admin2_coordinates.dta") replace
 use "${gsdTemp}/Wave1_Admin2.dta", clear
 destring block, replace
 replace admin2Name = "Banadir" if team==2
@@ -129,15 +129,15 @@ use "${gsdData}/1-CleanTemp/rainfall_timeseries.dta", clear
 export excel using "${gsdOutput}/DroughtImpact_Figures_v1.xlsx", sheetreplace sheet("Raw_Rainfall_TS") first(variables)
 
 * values
-import delim using "${gsdShared}\Auxiliary\Climate Data\2016deyr_table.txt", clear
+import delim using "${gsdShared}\0-Auxiliary\Climate Data\2016deyr_table.txt", clear
 ren value PercentDeviation2016Deyr
 gen n = _n
 save "${gsdTemp}/2016deyr_rain_table.dta", replace
-import delim using "${gsdShared}\Auxiliary\Climate Data\2016gu_table.txt", clear
+import delim using "${gsdShared}\0-Auxiliary\Climate Data\2016gu_table.txt", clear
 ren value PercentDeviation2016Gu
 gen n = _n
 save "${gsdTemp}/2016gu_rain_table.dta", replace
-import delim using "${gsdShared}\Auxiliary\Climate Data\2017gu_table.txt", clear
+import delim using "${gsdShared}\0-Auxiliary\Climate Data\2017gu_table.txt", clear
 ren value PercentDeviation2017Gu
 gen n = _n
 merge 1:1 n using "${gsdTemp}/2016deyr_rain_table.dta", assert(match) nogen keepusing(PercentDeviation2016Deyr)
@@ -160,7 +160,7 @@ la val season ls
 *replace season_str = "2017 Gu" if season==3
 tabout season using "${gsdOutput}/DroughtImpact_raw00.xls", sum oneway cells(mean PercentDeviation min PercentDeviation max PercentDeviation p50 PercentDeviation) f(3) replace
 
-import delim using "${gsdShared}\Auxiliary\Climate Data\combined_rainfall_som0.txt", clear
+import delim using "${gsdShared}\0-Auxiliary\Climate Data\combined_rainfall_som0.txt", clear
 replace value = value / 3
 su value, d 
 twoway (kdensity value,  xlabel(-100(10)100) xli(`r(p50)', lpa(dash)) xli(-29, lpa(line) lcolor(grey))) 

@@ -8,14 +8,14 @@ set sortseed 11041985
 
 *Import ACLED data
 * 2017 file
-import excel "${gsdShared}\Auxiliary\Conflict\ACLED-All-Africa-File_20170101-to-20171014.xlsx", firstrow case(lower) clear
+import excel "${gsdShared}\0-Auxiliary\Conflict\ACLED-All-Africa-File_20170101-to-20171014.xlsx", firstrow case(lower) clear
 keep if year==2017 
 keep if country=="Somalia"
 drop admin3
 destring longitude, replace 
 save "${gsdTemp}\ACLED-2017.dta", replace
 * Previous years
-import excel "${gsdShared}\Auxiliary\Conflict\ACLED-SOM_1997to2016.xlsx", firstrow case(lower) clear
+import excel "${gsdShared}\0-Auxiliary\Conflict\ACLED-SOM_1997to2016.xlsx", firstrow case(lower) clear
 keep if inlist(year, 2015, 2016)
 drop admin3
 append using "${gsdTemp}\ACLED-2017.dta"
@@ -27,7 +27,7 @@ export delim "${gsdOutput}/ACLED.csv", replace
 * Wave 1
 local lrain = "2016deyr 2017gu 2016gu 2016deyr2017gu combined"
 foreach c in `lrain' {
-	shp2dta using "${gsdShared}\Auxiliary\Climate Data\Wave1_precipitation_`c'.shp", data("${gsdTemp}/Wave1_precipitation_`c'.dta") coor("${gsdTemp}/Wave1_precipitation_`c'_coordinates.dta") replace
+	shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\Wave1_precipitation_`c'.shp", data("${gsdTemp}/Wave1_precipitation_`c'.dta") coor("${gsdTemp}/Wave1_precipitation_`c'_coordinates.dta") replace
 	use "${gsdTemp}/Wave1_precipitation_`c'.dta", clear
 	cap ren grid_code GRID_CODE
 	drop if GRID_CODE==0
@@ -62,7 +62,7 @@ export delim using "${gsdData}/0-RawOutput/rainfall_gps_identifiers.csv", replac
 * Wave 2
 local lrain = "2016deyr 2016deyr2017gu 2016gu 2017gu combined"
 foreach c in `lrain' {
-	shp2dta using "${gsdShared}\Auxiliary\Climate Data\Wave2_precipitation_`c'.shp", data("${gsdTemp}/Wave2_precipitation_`c'.dta") coor("${gsdTemp}/Wave2_precipitation_`c'_coordinates.dta") replace
+	shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\Wave2_precipitation_`c'.shp", data("${gsdTemp}/Wave2_precipitation_`c'.dta") coor("${gsdTemp}/Wave2_precipitation_`c'_coordinates.dta") replace
 	use "${gsdTemp}/Wave2_precipitation_`c'.dta", clear
 	cap ren grid_code GRID_CODE
 	drop if GRID_CODE==0
@@ -94,7 +94,7 @@ export delim using "${gsdData}/0-RawOutput/rainfall_gps_identifiers_w2.csv", rep
 
 
 * Rainfall and NDVI timeseries
-import excel using "${gsdShared}\Auxiliary\Climate Data\Rainfall_NDVI_timeseries.xlsx", clear firstrow case(lower) sheet("Combined")
+import excel using "${gsdShared}\0-Auxiliary\Climate Data\Rainfall_NDVI_timeseries.xlsx", clear firstrow case(lower) sheet("Combined")
 collapse (mean) rainfall_level=rainfallmm rainfall_average rainfall_anomaly_1m=onemonthanomaly rainfall_anomaly_3m=threemonthsanomaly ndvi ndvi_average ndvi_anomaly=ndvianomaly, by(year month)
 gen date = ym(year, month)
 order date
