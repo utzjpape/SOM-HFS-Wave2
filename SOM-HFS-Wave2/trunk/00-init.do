@@ -23,9 +23,8 @@ else if (inlist("${suser}","wb484006","WB484006")) {
 	*Box directory where the Data folder can be located
 	local swdBox = "C:\Users\WB484006\WBG\Utz Johann Pape - Shared\Wave2\Analysis\DataBox"
 	* cURL directory
-	local curl = "C:\Users\WB484006\Documents"
-                   
-	}
+	local curl = "C:\Users\WB484006\Documents"             
+}
 	
 else if (inlist("${suser}","WB499706", "wb499706")) {
 	*Philip
@@ -35,7 +34,39 @@ else if (inlist("${suser}","WB499706", "wb499706")) {
 	local swdBox = "C:\Users\WB499706\WBG\Utz Johann Pape - Sh-SOM-HFS\Wave2\Analysis\DataBox"
 	* cURL directory
 	local curl = "C:\Users\WB499706\Documents"
-	}
+}
+
+else if ("${suser}"=="Anne-Elisabeth") {
+	*Anne-Elisabeth
+	*Local directory of your checked out copy of the code
+	local swdLocal = "C:/Users/Anne-Elisabeth/Dropbox/WB SHFS II/9. Data, Data Monitoring/1. Inputs, Codes and Outputs Pipeline/Code"
+	*Box directory where the Data folder can be located
+	local swdBox = "C:/Users/Anne-Elisabeth/Dropbox/WB SHFS II/9. Data, Data Monitoring/1. Inputs, Codes and Outputs Pipeline/Data"
+}
+
+else if ("${suser}"=="user")) {
+	*Jérôme
+	*Local directory of your checked out copy of the code
+	local swdLocal = "C:/Users/user/Dropbox/WB SHFS II/9. Data, Data Monitoring/1. Inputs, Codes and Outputs Pipeline/Code"
+	*Box directory where the Data folder can be located
+	local swdBox = "C:/Users/user/Dropbox/WB SHFS II/9. Data, Data Monitoring/1. Inputs, Codes and Outputs Pipeline/Data"
+}
+
+else if ("${suser}"=="romaingalgani") {
+	*Romain
+	*Local directory of your checked out copy of the code
+	local swdLocal = "/Users/romaingalgani/Dropbox/WB SHFS II/9. Data, Data Monitoring/1. Inputs, Codes and Outputs Pipeline/Code"
+	*Box directory where the Data folder can be located
+	local swdBox = "/Users/romaingalgani/Dropbox/WB SHFS II/9. Data, Data Monitoring/1. Inputs, Codes and Outputs Pipeline/Data"
+}	
+
+else if ("${suser}"=="Antoine") {
+	*Agnes
+	*Local directory of your checked out copy of the code
+	local swdLocal = "C:/Users/Antoine/Dropbox/WB SHFS II/9. Data, Data Monitoring/1. Inputs, Codes and Outputs Pipeline/Code"
+	*Box directory where the Data folder can be located
+	local swdBox = "C:/Users/Antoine/Dropbox/WB SHFS II/9. Data, Data Monitoring/1. Inputs, Codes and Outputs Pipeline/Data"
+}
 	
 else {
 	di as error "Configure work environment in 00-init.do before running the code."
