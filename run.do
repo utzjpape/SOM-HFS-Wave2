@@ -8,8 +8,13 @@ if "${gsdData}"=="" {
 }
 
 
-* API Download of data
+*API Download of data
 run "${gsdDo}/api_download.do"
 api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(1) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}") curl("${gsdBin}") 
 
+*Monitoring Dashboard 
+run "${gsdDo}/0-1-Manual_Cleaning.do"
+run "${gsdDo}/0-2-Obtain_Valid_Keys.do"
+run "${gsdDo}/0-3-Obtain_Valid_EAs_and_EBs.do"
+run "${gsdDo}/0-4-Create_Monitoring_Dashboard.do"
 
