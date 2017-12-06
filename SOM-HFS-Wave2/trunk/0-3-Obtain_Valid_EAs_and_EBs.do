@@ -203,8 +203,8 @@ label var ea_status "Validity status of the EA"
 label var ea_valid "Whether the EA is valid"
 
 *Exporting EA replacement table in Excel and Stata format
-save "${gsdOutput}/EA_Replacement_Table_Complete.dta", replace
-export excel using "${gsdOutput}/EA_Replacement_Table_Complete.xls", cell(A3) sheetmodify
+save "${gsdData}/0-RawOutput/EA_Replacement_Table_Complete.dta", replace
+export excel using "${gsdData}/0-RawOutput/EA_Replacement_Table_Complete.xls", cell(A3) sheetmodify
 
 ** ADDING INFORMATION FROM EA REPLACEMENT TABLE TO THE MAIN DATASET **
 
@@ -212,7 +212,7 @@ export excel using "${gsdOutput}/EA_Replacement_Table_Complete.xls", cell(A3) sh
 use "${gsdTemp}/hh_valid_keys_and_EAs_temp.dta", clear
 
 *Merging with replacement table
-merge m:1 id_ea using "${gsdOutput}/EA_Replacement_Table_Complete.dta", nogenerate keep(match master)
+merge m:1 id_ea using "${gsdData}/0-RawOutput/EA_Replacement_Table_Complete.dta", nogenerate keep(match master)
 merge m:1 id_ea using "${gsdTemp}/ea_collapse", nogenerate keep(match master)
 
 *Final cleaning and labelling
@@ -424,5 +424,5 @@ label var nb_interviews_eb "Number of interviews conducted in the block"
 label var nb_valid_success_itws_eb "Number of valid and successful interviews conducted in the block"
 
 *Exporting EB replacement table
-save "${gsdOutput}/EB_Replacement_Table_Complete.dta", replace
-export excel using "${gsdOutput}/EB_Replacement_Table_Complete.xlsx", firstrow(variables) sheetmodify
+save "${gsdData}/0-RawOutput/EB_Replacement_Table_Complete.dta", replace
+export excel using "${gsdData}/0-RawOutput/EB_Replacement_Table_Complete.xlsx", firstrow(variables) sheetmodify
