@@ -29,12 +29,14 @@ foreach file in `files' {
 *** Importing questionnaire
 use "${gsdTemp}/hh_without_empty_obs", clear
 
-*** Enumerator name cleaning
+*** Enumerator name cleaning 
+*2017/12/05
 replace enum_id = 3105 if Id=="ab0e6a8b5df34626b3f17a8ee5182ef0"
 replace enum_id = 3206 if Id=="568d421b53b1407ca17d51362e22c68c"
 *tab enum_id
 
 *** Pre-war region cleaning
+*2017/12/05
 replace ea_reg=5 if Id=="568d421b53b1407ca17d51362e22c68c"
 replace ea_reg=5 if Id=="92950f08645d485a8261144204ab4e5c"
 *tab ea_reg
@@ -44,6 +46,7 @@ replace ea_reg=5 if Id=="92950f08645d485a8261144204ab4e5c"
 
 *** Missing date cleaning at the beginning and at the end of the interview
 *Correcting when missing date using dates and times in metadata
+*2017/12/05
 replace today = "2017-12-05T12:12:15-05:00" if Id=="568d421b53b1407ca17d51362e22c68c"
 replace today_end = "2017-12-05T13:29:48-05:00" if Id=="568d421b53b1407ca17d51362e22c68c"
 replace today = "2017-12-05T13:13:17-05:00" if Id=="ada0265902e040e3bafe5148a4939ce5"
@@ -67,6 +70,7 @@ replace today_end = "2017-12-05T07:22:32-05:00" if Id=="07d72a3e85fa4bae962a6b97
 
 *** Incorrect duration cleaning (cases of incorrect date and time records)
 *Correcting when incorrect duration using dates and times in metadata
+*2017/12/04
 replace today="2017-12-04T04:59:24-05:00" if Id=="7a11a820379040bd88ce2a0d95290e36"
 replace today_end="2017-12-04T07:29:43-05:00" if Id=="7a11a820379040bd88ce2a0d95290e36"
 replace today="2017-12-04T06:41:17-05:00" if Id=="cd8ffe5ee7c443e1890017e0b484c7a2"
