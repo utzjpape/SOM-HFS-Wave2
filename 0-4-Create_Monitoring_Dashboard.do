@@ -437,7 +437,7 @@ order state ea_reg strata_id strata_name id_ea team_id enum_id enum_name date_st
 sort team_id enum_id date_stata
 
 *Export
-export excel using "${gsdOutput}/SHFS2_Monitoring_Dashboard_Master.xlsm", sheet("Main Output") cell(B5) sheetmodify
+export excel using "${gsdShared}/2-Output/SHFS2_Monitoring_Dashboard_Master.xlsm", sheet("Main Output") cell(B5) sheetmodify
 restore
 
 
@@ -495,7 +495,7 @@ order state team_id date_stata nb_itw itw_valid successful successful_valid succ
 sort team_id date_stata
 
 *Export
-export excel using "${gsdOutput}/SHFS2_Monitoring_Dashboard_Master.xlsm", sheet("Output - Teams") cell(B7) sheetmodify
+export excel using "${gsdShared}/2-Output/SHFS2_Monitoring_Dashboard_Master.xlsm", sheet("Output - Teams") cell(B7) sheetmodify
 restore
 
 /*----------------------------------------------------------------------------*/
@@ -614,7 +614,7 @@ order state team_id enum_id enum_name date_stata ///
 sort team_id enum_id date_stata
 
 *Export	
-export excel using "${gsdOutput}/SHFS2_Monitoring_Dashboard_Master.xlsm", sheet("Output - Enumerators") cell(B7) sheetmodify
+export excel using "${gsdShared}/2-Output/SHFS2_Monitoring_Dashboard_Master.xlsm", sheet("Output - Enumerators") cell(B7) sheetmodify
 
 restore
 
@@ -676,7 +676,7 @@ order date_stata nb_eas_sampled nb_eas_not_sampled ///
 sort date_stata
 
 *Export
-export excel using "${gsdOutput}/SHFS2_Monitoring_Dashboard_Master.xlsm", sheet("Output - Date") cell(B6) sheetmodify
+export excel using "${gsdShared}/2-Output/SHFS2_Monitoring_Dashboard_Master.xlsm", sheet("Output - Date") cell(B6) sheetmodify
 restore
 
 
@@ -743,7 +743,7 @@ order strata_id strata_name nb_eas_sampled nb_eas_not_sampled ///
 sort strata_id
 
 *Export
-export excel using "${gsdOutput}/SHFS2_Monitoring_Dashboard_Master.xlsm", sheet("Output - Strata") cell(B6) sheetmodify
+export excel using "${gsdShared}/2-Output/SHFS2_Monitoring_Dashboard_Master.xlsm", sheet("Output - Strata") cell(B6) sheetmodify
 restore
 
 /*----------------------------------------------------------------------------*/
@@ -804,7 +804,7 @@ order ea_reg strata_id strata_name id_ea nb_itw itw_valid successful successful_
 sort strata_id id_ea
 
 *Export
-export excel using "${gsdOutput}/SHFS2_Monitoring_Dashboard_Master.xlsm", sheet("Output - EA") cell(B6) sheetmodify
+export excel using "${gsdShared}/2-Output/SHFS2_Monitoring_Dashboard_Master.xlsm", sheet("Output - EA") cell(B6) sheetmodify
 restore
 
 /*----------------------------------------------------------------------------*/
@@ -856,5 +856,5 @@ order date_stata state strata_id strata_name team_id enum_id enum_name id_ea int
 gsort -date_stata team_id enum_id int_no itw_invalid_reason
 
 *Export
-export excel using "${gsdOutput}/SHFS2_Monitoring_Dashboard_Master.xlsm", sheet("Output - Invalid interviews") cell(B9) sheetmodify
+export excel using "${gsdShared}/2-Output/SHFS2_Monitoring_Dashboard_Master.xlsm", sheet("Output - Invalid interviews") cell(B9) sheetmodify
 restore

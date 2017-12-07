@@ -1,8 +1,19 @@
-*introduce manual corrections and generate dta files with valid submissions
+*Keep valid and successul submissions
 
 set more off
 set seed 23081920 
 set sortseed 11041925
+
+use "${gsdData}/0-RawTemp/hh_valid_keys_and_EAs.dta", clear
+keep Id itw_valid itw_invalid_reason successful_valid
+keep if successful_valid==1
+keep Id 
+
+
+
+
+
+
 
 *prepare file from list of EAs included in the final sample 
 use "${gsdDataRaw}/EAs_sample.dta", clear
