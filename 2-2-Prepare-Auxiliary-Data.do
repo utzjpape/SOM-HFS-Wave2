@@ -92,6 +92,35 @@ save "${gsdData}/1-CleanTemp/rainfall_w2.dta", replace
 * Create map of drought-affected HHs
 export delim using "${gsdData}/0-RawOutput/rainfall_gps_identifiers_w2.csv", replace nolab
 
+* NDVI data around Wave 1 HHs
+shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\NDVI\Wave1_NDVI_HHs_Team1.shp", data("${gsdTemp}/Wave1_NDVI_Team1.dta") coor("${gsdTemp}/Wave1_NDVI_Team1_coordinates.dta") replace
+shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\NDVI\Wave1_NDVI_HHs_Team2.shp", data("${gsdTemp}/Wave1_NDVI_Team2.dta") coor("${gsdTemp}/Wave1_NDVI_Team2_coordinates.dta") replace
+shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\NDVI\Wave1_NDVI_HHs_Team3.shp", data("${gsdTemp}/Wave1_NDVI_Team3.dta") coor("${gsdTemp}/Wave1_NDVI_Team3_coordinates.dta") replace
+use "${gsdTemp}/Wave1_NDVI_Team1.dta", clear
+append using "${gsdTemp}/Wave1_NDVI_Team2.dta"
+append using "${gsdTemp}/Wave1_NDVI_Team3.dta"
+* correct mistake values
+drop if grid_code==0
+drop if grid_code>100
+drop if grid_code<-100
+collapse (mean) NDVI_deviation=grid_code, by(team strata ea block hh)
+hist NDVI_deviation
+su NDVI_deviation, d
+la var NDVI_deviation "NDVI % difference from pre-drought years (2012-2015)"
+*gen drought_affected = 0 if NDVI_deviation>=0
+*replace drought_affected = 1 if inrange(NDVI_deviation, -10, 0)
+save "${gsdData}/1-CleanTemp/Wave1_NDVI_corrected.dta", replace
+
+* NDVI full data
+shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\NDVI\ndvi2017_points_SOM0_1000m.shp", data("${gsdTemp}/ndvi2017_points_SOM0_1000m.dta") coor("${gsdTemp}/ndvi2017_points_SOM0_1000m_coordinates.dta") replace
+use "${gsdTemp}/ndvi2017_points_SOM0_1000m.dta", clear
+drop if grid_code==0
+drop if grid_code>100
+drop if grid_code<-100
+ren grid_code NDVI_deviation
+la var NDVI_deviation "NDVI % difference from pre-drought years (2012-2015)"
+save "${gsdData}/1-CleanTemp/ndvi2017_points_SOM0_1000m.dta", replace
+
 
 * Rainfall and NDVI timeseries
 import excel using "${gsdShared}\0-Auxiliary\Climate Data\Rainfall_NDVI_timeseries.xlsx", clear firstrow case(lower) sheet("Combined")

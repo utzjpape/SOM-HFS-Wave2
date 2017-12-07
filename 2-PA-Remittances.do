@@ -8,8 +8,13 @@ merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hh.dta", as
 svyset ea [pweight=weight_adj], strata(strata)
 
 * Migration
-tabout hh_alwayslived remit12m using "${gsdOutput}/Remittances_raw1.xls" , svy percent c(col se) npos(col) sebnone h1(Remittances and migration) replace
+* prepare migration variable
 recode migr_from (1=1 "Same district") (2 3=2 "Same state") (4 5 6 7=3 "Different state") (1001 1002=4 "Abroad"), gen(migr)
+gen migr_int = inlist(migr, 2, 3)
+la def lmigr 0 "No migrant" 1 "Migrant", replace
+la val migr_int lmigr_int 
+
+tabout hh_alwayslived remit12m using "${gsdOutput}/Remittances_raw1.xls" , svy percent c(col se) npos(col) sebnone h1(Remittances and migration) replace
 tabout migr remit12m using "${gsdOutput}/Remittances_raw1.xls" , svy percent c(col se) npos(col) sebnone h1(Migration origin details) append
 tabout migr_from_country remit12m using "${gsdOutput}/Remittances_raw1.xls" , svy percent c(col se) npos(col) sebnone h1(Migration origin other country) append
 tabout push_reasons remit12m using "${gsdOutput}/Remittances_raw1.xls" , svy percent c(col se) npos(col) sebnone h1(Migration push reasons) append
@@ -63,7 +68,7 @@ svyset ea [pweight=weight_adj], strata(strata)
 
 tabout remit12m using "${gsdOutput}/Remittances_raw3.xls", svy sum c(mean hhsize se) sebnone h2(HH size & remit) replace
 tabout remit12m using "${gsdOutput}/Remittances_raw3.xls", svy sum c(mean dependency_ratio se) sebnone h2(dependency ratio & remit) append
-tabout emp_7d_hh remit12m using "${gsdOutput}/Remittances_raw3.xls" , svy percent c(col se) npos(col) sebnone h1(HH employment & remit) append
+tabout emp_7d remit12m using "${gsdOutput}/Remittances_raw3.xls" , svy percent c(col se) npos(col) sebnone h1(HH employment & remit) append
 tabout main_income_source remit12m using "${gsdOutput}/Remittances_raw3.xls" , svy percent c(col se) npos(col) sebnone h1(income source & remit) append
 
 tabout house_ownership remit12m using "${gsdOutput}/Remittances_raw3.xls" , svy percent c(col se) npos(col) sebnone h1(ownership & remit) append
@@ -209,8 +214,77 @@ gen hh_enterprise = (l_lstock==1 | l_gum==1 | l_remit==1 | l_telec==1 | l_omanuf
 tabout hh_enterprise using "${gsdOutput}/Remittances_raw6.xls" , svy percent c(col se) npos(col) sebnone h1(HH enterprises) replace
 tabout poorPPP hh_enterprise  using "${gsdOutput}/Remittances_raw6.xls" , svy percent c(col se) npos(col) sebnone h1(HH enterprises & Poverty) append
 
+********************************************************************************
+* Round 2: additional statistics
+use "${gsdData}/1-CleanInput/SHFS2016/hhm.dta", clear
+recode migr_from (1=1 "Same district") (2 3=2 "Same state") (4 5 6 7=3 "Different state") (1001 1002=4 "Abroad"), gen(migr)
+gen int_migrant = inlist(migr, 2, 3)
+gen intl_migrant = migr==4
+collapse (max) int_migrant intl_migrant [pw=weight_adj], by(team strata ea block hh)
+la def lint_migrant 1 "Int Migrant" 0 "Non-migrant", replace
+la val int_migrant lint_migrant
+la def lintl_migrant 1 "Intl Migrant" 0 "Non-migrant", replace
+la val intl_migrant lintl_migrant
+la var int_migrant "HH has int migrant member"
+la var intl_migrant "HH has intl migrant member"
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hh.dta", assert(match) nogen
+gen pw=weight_cons*hhsize
+svyset ea [pw=pw], strata(strata)
+
+* Income quintiles with remittances receipt, migration, literacy
+tabout remit12m quintiles_tc  using "${gsdOutput}/Remittances_raw7.xls" , svy percent c(col se) npos(col) sebnone h1(Remittances and income quintiles) replace
+recode remit_pcpd (0=.)
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if !missing(remit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2(Mean value (USD) of remittances pc (Conditional) pd) append
+tabout int_migrant quintiles_tc  using "${gsdOutput}/Remittances_raw7.xls" , svy percent c(col se) npos(col) sebnone h1(Internal migrants and income quintiles) append
+tabout intl_migrant quintiles_tc  using "${gsdOutput}/Remittances_raw7.xls" , svy percent c(col se) npos(col) sebnone h1(International migrants and income quintiles) append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==0, svy sum c(mean pliteracy se) f(3) sebnone npos(col) h2(incomre quintiles and literacy, non-recipients) append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==1, svy sum c(mean pliteracy se) f(3) sebnone npos(col) h2(incomre quintiles and literacy, recipients) append
+
+* Housetypes
+tabout remit12m house_type_cat  using "${gsdOutput}/Remittances_raw8.xls" , svy percent c(col se) npos(col) sebnone h1(Remittances and housing) replace
+tabout house_type_cat using "${gsdOutput}/Remittances_raw8.xls" if !missing(remit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2(Mean value (USD) of remittances pc (Conditional) pd by housing) append
+tabout int_migrant house_type_cat using "${gsdOutput}/Remittances_raw8.xls" , svy percent c(col se) npos(col) sebnone h1(Internal migrants and housing) append
+tabout intl_migrant house_type_cat using "${gsdOutput}/Remittances_raw8.xls" , svy percent c(col se) npos(col) sebnone h1(International migrants and housing) append
+
+tabout remit12m house_ownership  using "${gsdOutput}/Remittances_raw8.xls" , svy percent c(col se) npos(col) sebnone h1(Remittances and ownership) append
+tabout house_ownership using "${gsdOutput}/Remittances_raw8.xls" if !missing(remit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2(Mean value (USD) of remittances pc (Conditional) pd by ownership) append
+tabout int_migrant house_ownership using "${gsdOutput}/Remittances_raw8.xls" , svy percent c(col se) npos(col) sebnone h1(Internal migrants and house ownership) append
+tabout intl_migrant house_ownership using "${gsdOutput}/Remittances_raw8.xls" , svy percent c(col se) npos(col) sebnone h1(International migrants and house ownership) append
+
+* Remittances and Migration
+tabout remit12m int_migrant  using "${gsdOutput}/Remittances_raw9.xls" , svy percent c(col se) npos(col) sebnone h1(Remittances and int migrant) replace
+tabout remit12m intl_migrant  using "${gsdOutput}/Remittances_raw9.xls" , svy percent c(col se) npos(col) sebnone h1(Remittances and intl migrant) append
+tabout int_migrant using "${gsdOutput}/Remittances_raw9.xls" if !missing(remit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2(Mean value (USD) of remittances pc (Conditional) pd, int migrant) append
+tabout intl_migrant using "${gsdOutput}/Remittances_raw9.xls" if !missing(remit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2(Mean value (USD) of remittances pc (Conditional) pd, intl migrant) append
+
+* Remittances and child labour 
+use "${gsdData}/1-CleanInput/SHFS2016/hhm.dta", clear
+merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hh.dta", assert(match) keepusing(weight_cons type remit12m reg_pess) nogen
+svyset ea [pweight=weight_adj], strata(strata)
+
+gen work12m_1015 = ( emp_12m_appr==1 | emp_12m_farm==1 | emp_12m_paid==1 | emp_12m_busi==1 | emp_12m_help==1 | emp_12m_prim==1) if inrange(age, 10, 15)
+gen work12m_1620 = ( emp_12m_appr==1 | emp_12m_farm==1 | emp_12m_paid==1 | emp_12m_busi==1 | emp_12m_help==1 | emp_12m_prim==1) if inrange(age, 16, 20)
+gen work7d_hh1015 = emp_7d_hh==1 if inrange(age, 10, 15)
+gen work7d_hh1620 = emp_7d_hh==1 if inrange(age, 16, 20)
+gen enrolled=edu_status==1
+
+
+svy: probit work12m_1015 remit12m type i.reg_pess gender enrolled
+svy: probit enrolled remit12m
+
+svy: probit work12m_1620 remit12m
+svy: probit work7d_hh1015 remit12m type i.reg_pess gender hhsize
+svy: mean work7d_hh1015, over(remit12m)
+svy: mean work12m_1015, over(remit12m)
+
+
+tabout work12m_1015 remit12m using "${gsdOutput}/Remittances_raw10.xls" , svy percent c(col se) npos(col) sebnone h1(Child labor (10-15) & remit) replace
+tabout work12m_1620 remit12m using "${gsdOutput}/Remittances_raw10.xls" , svy percent c(col se) npos(col) sebnone h1(Child labor (16-20) & remit) append
+tabout work7d_hh1015 remit12m using "${gsdOutput}/Remittances_raw10.xls" , svy percent c(col se) npos(col) sebnone h1(Child work in HH (10-15) & remit) append
+tabout work7d_hh1620 remit12m using "${gsdOutput}/Remittances_raw10.xls" , svy percent c(col se) npos(col) sebnone h1(Child work in HH (16-20) & remit) append
+
 * put it all together
-foreach i of numlist 1/6 {
+foreach i of numlist 1/10 {
 	insheet using "${gsdOutput}/Remittances_raw`i'.xls", clear nonames tab
 	export excel using "${gsdOutput}/Remittances_Figures_v1.xlsx", sheetreplace sheet("Raw_Data_`i'")
 }
@@ -219,10 +293,5 @@ foreach i of numlist 1/6 {
 
 egen both = group(foreign rep78), label 
 
-tab remit12m
 label dir
 numlabel `r(names)', add
-tab racetab race
-label dir
-numlabel `r(names)', add
-tab race
