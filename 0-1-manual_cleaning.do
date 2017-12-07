@@ -67,14 +67,10 @@ replace today = "2017-12-06T06:51:15-05:00" if Id=="48f83438c2734f2d89a7a300bd63
 replace today_end = "2017-12-06T08:52:38-05:00" if Id=="48f83438c2734f2d89a7a300bd6327d4"
 replace today = "2017-12-06T11:30:41-05:00" if Id=="ed320347e5c24d47b06cd550fcdba98f"
 replace today_end = "2017-12-06T12:39:52-05:00" if Id=="ed320347e5c24d47b06cd550fcdba98f"
-
 replace today = "2017-12-06T04:57:20-05:00" if Id=="5ea29fb31e11444c9d8b12376cc23dd6"
 replace today_end = "2017-12-06T06:49:28-05:00" if Id=="5ea29fb31e11444c9d8b12376cc23dd6"
 replace today = "2017-12-06T04:57:54-05:00" if Id=="19f4630686bb44eba7f76142b9d65bd6"
 replace today_end = "2017-12-06T07:13:01-05:00" if Id=="19f4630686bb44eba7f76142b9d65bd6"
-
-
-
 
 *Identify observations with missing dates
 *br if today == "##N/A##"
