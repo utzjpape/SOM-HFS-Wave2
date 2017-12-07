@@ -44,7 +44,7 @@ else if ("${suser}"=="Anne-Elisabeth") {
 	local swdBox = "C:/Users/Anne-Elisabeth/Dropbox/WB SHFS II/9. Data, Data Monitoring/1. Inputs, Codes and Outputs Pipeline/Data"
 }
 
-else if ("${suser}"=="user")) {
+else if ("${suser}"=="user") {
 	*Jérôme
 	*Local directory of your checked out copy of the code
 	local swdLocal = "C:/Users/user/Dropbox/WB SHFS II/9. Data, Data Monitoring/1. Inputs, Codes and Outputs Pipeline/Code"
