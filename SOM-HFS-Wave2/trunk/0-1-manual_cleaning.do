@@ -29,14 +29,12 @@ foreach file in `files' {
 *** Importing questionnaire
 use "${gsdTemp}/hh_without_empty_obs", clear
 
-*** Enumerator name cleaning 
-*2017/12/05
+*** Enumerator name cleaning
 replace enum_id = 3105 if Id=="ab0e6a8b5df34626b3f17a8ee5182ef0"
 replace enum_id = 3206 if Id=="568d421b53b1407ca17d51362e22c68c"
 *tab enum_id
 
 *** Pre-war region cleaning
-*2017/12/05
 replace ea_reg=5 if Id=="568d421b53b1407ca17d51362e22c68c"
 replace ea_reg=5 if Id=="92950f08645d485a8261144204ab4e5c"
 *tab ea_reg
@@ -46,23 +44,37 @@ replace ea_reg=5 if Id=="92950f08645d485a8261144204ab4e5c"
 
 *** Missing date cleaning at the beginning and at the end of the interview
 *Correcting when missing date using dates and times in metadata
-*2017/12/05
+*04/12/2017
+replace today = "2017-12-04T05:14:36-05:00" if Id=="02166905804d4506b48e76266a0e2515"
+replace today_end = "2017-12-04T07:38:44-05:00" if Id=="02166905804d4506b48e76266a0e2515"
+replace today = "2017-12-04T13:56:36-05:00" if Id=="1dc5f61235e34b24b3eda74d784371cf"
+replace today_end = "2017-12-04T15:08:01-05:00" if Id=="1dc5f61235e34b24b3eda74d784371cf"
+replace today = "2017-12-04T14:16:26-05:00" if Id=="a4ed7427b619480cbb176320bb052ede"
+replace today_end = "2017-12-04T15:59:46-05:00" if Id=="a4ed7427b619480cbb176320bb052ede"
+*05/12/2017
 replace today = "2017-12-05T12:12:15-05:00" if Id=="568d421b53b1407ca17d51362e22c68c"
 replace today_end = "2017-12-05T13:29:48-05:00" if Id=="568d421b53b1407ca17d51362e22c68c"
 replace today = "2017-12-05T13:13:17-05:00" if Id=="ada0265902e040e3bafe5148a4939ce5"
 replace today_end = "2017-12-05T15:30:10-05:00" if Id=="ada0265902e040e3bafe5148a4939ce5"
 replace today = "2017-12-05T06:13:16-05:00" if Id=="ab0e6a8b5df34626b3f17a8ee5182ef0"
 replace today_end = "2017-12-05T07:12:59-05:00" if Id=="ab0e6a8b5df34626b3f17a8ee5182ef0"
-replace today = "2017-12-05T13:56:36-05:00" if Id=="1dc5f61235e34b24b3eda74d784371cf"
-replace today_end = "2017-12-05T15:08:01-05:00" if Id=="1dc5f61235e34b24b3eda74d784371cf"
-replace today = "2017-12-05T14:16:26-05:00" if Id=="a4ed7427b619480cbb176320bb052ede"
-replace today_end = "2017-12-05T15:59:46-05:00" if Id=="a4ed7427b619480cbb176320bb052ede"
-replace today = "2017-12-05T05:14:36-05:00" if Id=="02166905804d4506b48e76266a0e2515"
-replace today_end = "2017-12-05T07:38:44-05:00" if Id=="02166905804d4506b48e76266a0e2515"
 replace today = "2017-12-05T05:03:40-05:00" if Id=="97d4b04cf43e4979acda113452d89292"
 replace today_end = "2017-12-05T06:48:28-05:00" if Id=="97d4b04cf43e4979acda113452d89292"
 replace today = "2017-12-05T05:40:52-05:00" if Id=="07d72a3e85fa4bae962a6b974d48cc5f"
 replace today_end = "2017-12-05T07:22:32-05:00" if Id=="07d72a3e85fa4bae962a6b974d48cc5f"
+*06/12/2017
+replace today = "2017-12-06T06:51:15-05:00" if Id=="48f83438c2734f2d89a7a300bd6327d4"
+replace today_end = "2017-12-06T08:52:38-05:00" if Id=="48f83438c2734f2d89a7a300bd6327d4"
+replace today = "2017-12-06T11:30:41-05:00" if Id=="ed320347e5c24d47b06cd550fcdba98f"
+replace today_end = "2017-12-06T12:39:52-05:00" if Id=="ed320347e5c24d47b06cd550fcdba98f"
+
+replace today = "2017-12-06T04:57:20-05:00" if Id=="5ea29fb31e11444c9d8b12376cc23dd6"
+replace today_end = "2017-12-06T06:49:28-05:00" if Id=="5ea29fb31e11444c9d8b12376cc23dd6"
+replace today = "2017-12-06T04:57:54-05:00" if Id=="19f4630686bb44eba7f76142b9d65bd6"
+replace today_end = "2017-12-06T07:13:01-05:00" if Id=="19f4630686bb44eba7f76142b9d65bd6"
+
+
+
 
 *Identify observations with missing dates
 *br if today == "##N/A##"
@@ -70,7 +82,7 @@ replace today_end = "2017-12-05T07:22:32-05:00" if Id=="07d72a3e85fa4bae962a6b97
 
 *** Incorrect duration cleaning (cases of incorrect date and time records)
 *Correcting when incorrect duration using dates and times in metadata
-*2017/12/04
+*04/12/2017
 replace today="2017-12-04T04:59:24-05:00" if Id=="7a11a820379040bd88ce2a0d95290e36"
 replace today_end="2017-12-04T07:29:43-05:00" if Id=="7a11a820379040bd88ce2a0d95290e36"
 replace today="2017-12-04T06:41:17-05:00" if Id=="cd8ffe5ee7c443e1890017e0b484c7a2"
