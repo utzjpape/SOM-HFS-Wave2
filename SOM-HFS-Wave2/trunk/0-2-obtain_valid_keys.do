@@ -156,8 +156,8 @@ gen not_within_EA=(longitude < lon_min - ((accuracy + 50)/110000) | ///
 		latitude  > lat_max + ((accuracy + 50)/110000)) 
 label var not_within_EA "The GPS coordinates of the interview do not fall within the EA boundaries"
 
-replace itw_valid=0 if not_within_EA==1
-replace itw_invalid_reason =3 if not_within_EA==1
+replace itw_valid=0 if not_within_EA==1 & latitude != -1000000000 & longitude != -1000000000
+replace itw_invalid_reason =3 if not_within_EA==1 & latitude != -1000000000 & longitude != -1000000000
 
 save "${gsdTemp}/hh_valid_keys_temp2.dta", replace
 
