@@ -71,6 +71,13 @@ replace today = "2017-12-06T04:57:20-05:00" if Id=="5ea29fb31e11444c9d8b12376cc2
 replace today_end = "2017-12-06T06:49:28-05:00" if Id=="5ea29fb31e11444c9d8b12376cc23dd6"
 replace today = "2017-12-06T04:57:54-05:00" if Id=="19f4630686bb44eba7f76142b9d65bd6"
 replace today_end = "2017-12-06T07:13:01-05:00" if Id=="19f4630686bb44eba7f76142b9d65bd6"
+*07/12/2017
+replace today = "2017-12-07T06:16:54-05:00" if Id=="6f74437bea1d4a25a14b38fb752411dd"
+replace today_end = "2017-12-07T08:05:10-05:00" if Id=="6f74437bea1d4a25a14b38fb752411dd"
+replace today = "2017-12-07T07:33:40-05:00" if Id=="edffaf89a7d644cf98c06c96f439e938"
+replace today_end = "2017-12-07T09:04:26-05:00" if Id=="edffaf89a7d644cf98c06c96f439e938"
+replace today = "2017-12-07T08:50:39-05:00" if Id=="a802ff2f01e343ecaa1f6aaf0bfe6432"
+replace today_end = "2017-12-07T11:02:17-05:00" if Id=="a802ff2f01e343ecaa1f6aaf0bfe6432"
 
 *Identify observations with missing dates
 *br if today == "##N/A##"
@@ -83,6 +90,9 @@ replace today="2017-12-04T04:59:24-05:00" if Id=="7a11a820379040bd88ce2a0d95290e
 replace today_end="2017-12-04T07:29:43-05:00" if Id=="7a11a820379040bd88ce2a0d95290e36"
 replace today="2017-12-04T06:41:17-05:00" if Id=="cd8ffe5ee7c443e1890017e0b484c7a2"
 replace today_end="2017-12-04T08:18:23-05:00" if Id=="cd8ffe5ee7c443e1890017e0b484c7a2"
+*07/12/2017
+replace today="2017-12-07T06:00:33-05:00" if Id=="0007fa06851e40d7b95e88aba3b4bbae"
+replace today_end="2017-12-07T12:57:13-05:00" if Id=="0007fa06851e40d7b95e88aba3b4bbae"
 
 *Creating duration variable
 *Start time 
