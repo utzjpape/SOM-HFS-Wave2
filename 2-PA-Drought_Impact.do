@@ -166,16 +166,7 @@ su value, d
 twoway (kdensity value,  xlabel(-100(10)100) xli(`r(p50)', lpa(dash)) xli(-29, lpa(line) lcolor(grey))) 
 graph export "${gsdOutput}/combined_kdens.png", replace
 gen x = 1
-tabout x using "${gsdOutput}/DroughtImpact_raw00.xls", sum oneway cells(mean value min value max value p50 value) f(3) append
-xtile deciles_rainfall = value, n(10)
-xtile quintiles_rainfall = value, n(5)
-tabstat value, by(deciles_rainfall) stats(mean min max)
-tabstat value, by(quintiles_rainfall) stats(mean min max)
-gen value_negative = value
-replace value_negative=0 if value_negative>=0
-xtile quintiles_rainfall_negative = value_negative, n(5)
-tabstat value_negative, by(quintiles_rainfall_negative) stats(mean min max)
-egen rainfall_SD = sd(value)
+tabout x using "${gsdOutput}/DroughtImpact_raw00.xls", sum oneway cells(mean value min value max value p50 value sd value) f(3) append
 
 * Look at households in both waves
 use "${gsdData}/1-CleanTemp/rainfall.dta", clear
@@ -192,47 +183,42 @@ expand 12
 append using "${gsdData}/1-CleanTemp/rainfall.dta", gen(wave1)
 tabout wave1 using "${gsdOutput}/DroughtImpact_raw00.xls", sum oneway cells(mean precip_combined min precip_combined max precip_combined p50 precip_combined) f(3) append
 
-* NDVI values
+* NDVI Deviation
 * whole country
-use "${gsdData}/1-CleanTemp/ndvi2017_points_SOM0_1000m.dta", clear
+use "${gsdData}/1-CleanTemp/NDVI_SOM0.dta", clear
 su NDVI_deviation, d
 twoway (kdensity NDVI_deviation,  xlabel(-50(10)50) xli(`r(p50)', lpa(dash))) 
-xtile deciles_NDVI = NDVI_deviation, n(10)
-xtile quintiles_NDVI = NDVI_deviation, n(5)
-tabstat NDVI_deviation, by(deciles_NDVI) stats(mean min max)
-tabstat NDVI_deviation, by(quintiles_NDVI) stats(mean min max)
-gen NDVI_deviation_negative = NDVI_deviation
-replace NDVI_deviation_negative=0 if NDVI_deviation_negative>=0
-xtile quintiles_NDVI_negative = NDVI_deviation_negative, n(5)
-tabstat NDVI_deviation_negative, by(quintiles_NDVI_negative) stats(mean min max)
 graph export "${gsdOutput}/NDVI_deviation_SOM0.png", replace
-gen drought_cat = 0 if NDVI_deviation>=0
-replace drought_cat = 1 if NDVI_deviation<0 & NDVI_deviation>=-5
-replace drought_cat = 2 if NDVI_deviation<-5 & NDVI_deviation>=-10
-replace drought_cat = 3 if NDVI_deviation<-10
-ta drought_cat
-egen rainfall_SD = sd(NDVI_deviation)
-ta rainfall_SD
-
 * just households
-use "${gsdData}/1-CleanTemp/Wave1_NDVI_corrected.dta", clear
+use "${gsdData}/1-CleanTemp/Wave1_NDVI.dta", clear
 su NDVI_deviation, d
 twoway (histogram NDVI_deviation,  xlabel(-50(10)50)) (kdensity NDVI_deviation,  xlabel(-50(10)50) xli(`r(p50)', lpa(dash))) 
 graph export "${gsdOutput}/NDVI_deviation_Wave1.png", replace
-xtile deciles_NDVI = NDVI_deviation, n(10)
-xtile quintiles_NDVI = NDVI_deviation, n(5)
-tabstat NDVI_deviation, by(deciles_NDVI) stats(mean min max)
-tabstat NDVI_deviation, by(quintiles_NDVI) stats(mean min max)
-gen NDVI_deviation_negative = NDVI_deviation
-replace NDVI_deviation_negative=0 if NDVI_deviation_negative>=0
-xtile quintiles_NDVI_negative = NDVI_deviation_negative, n(5)
-tabstat NDVI_deviation_negative, by(quintiles_NDVI_negative) stats(mean min max)
 
+* SPI 
+* just households
+use "${gsdData}/1-CleanTemp/Wave1_SPI.dta", clear
+su SPI, d
+twoway (histogram SPI) (kdensity SPI, xli(`r(p50)', lpa(dash))) 
+graph export "${gsdOutput}/SPI.png", replace
+* All SOM
+use "${gsdData}/1-CleanTemp/SPI_SOM0.dta", clear
+su SPI, d
+twoway (histogram SPI, xli(`r(p50)', lpa(dash))) (kdensity SPI) 
+graph export "${gsdOutput}/SPI_SOM0.png", replace
 
-gen drought_cat = 0 if NDVI_deviation>=0
-replace drought_cat = 1 if NDVI_deviation<0 & NDVI_deviation>=-5
-replace drought_cat = 2 if NDVI_deviation<-5 & NDVI_deviation>=-10
-replace drought_cat = 3 if NDVI_deviation<-10
+*SPI and NDVI Statistics
+use "${gsdData}/1-CleanTemp/Wave1_SPI.dta", clear
+merge 1:1 team strata ea block hh using "${gsdData}/1-CleanTemp/Wave1_NDVI.dta", assert(match) nogen
+tabstat NDVI_deviation, by(SPI_cat) stats(min mean max N)
+twoway (scatter NDVI_deviation SPI) (lfit NDVI_deviation SPI)
+graph export "${gsdOutput}/SPI_NDVI.png", replace
+reg NDVI_deviation SPI
+gen drought_SPI = SPI_cat<0
+la def ldrought_SPI 0 "Not affected" 1 "Drought affected", replace
+la val drought_SPI ldrought_SPI
+la var drought_SPI "Drought affected (moderately/severely/extremely affected per SPI)"
+
 
 
 **************************************************

@@ -227,6 +227,7 @@ la def lintl_migrant 1 "Intl Migrant" 0 "Non-migrant", replace
 la val intl_migrant lintl_migrant
 la var int_migrant "HH has int migrant member"
 la var intl_migrant "HH has intl migrant member"
+gen non_migrant = int_migrant==0 & intl_migrant==0
 merge 1:1 strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hh.dta", assert(match) nogen
 gen pw=weight_cons*hhsize
 svyset ea [pw=pw], strata(strata)

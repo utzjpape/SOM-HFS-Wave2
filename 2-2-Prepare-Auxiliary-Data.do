@@ -92,6 +92,51 @@ save "${gsdData}/1-CleanTemp/rainfall_w2.dta", replace
 * Create map of drought-affected HHs
 export delim using "${gsdData}/0-RawOutput/rainfall_gps_identifiers_w2.csv", replace nolab
 
+* SPI data 
+* Wave 1 HHs
+shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\SPI\spi_combined_HHs.shp", data("${gsdTemp}/spi_combined_HHs.dta") coor("${gsdTemp}/spi_combined_HHs_coordinates.dta") replace
+use "${gsdTemp}/spi_combined_HHs.dta", clear
+replace GRID_CODE = GRID_CODE/3
+drop if GRID_CODE==0
+collapse (mean) SPI=GRID_CODE, by(team strata ea block hh)
+su SPI, d
+gen SPI_cat = -3 if inrange(SPI, `r(min)', -2)
+replace SPI_cat = -2 if SPI>-2 & SPI<=-1.5
+replace SPI_cat = -1 if SPI>-1.5 & SPI<=-1
+replace SPI_cat = 0 if SPI>-1 & SPI<1
+replace SPI_cat = 1 if SPI>=1 & SPI<1.5
+replace SPI_cat = 2 if SPI>=1.5 & SPI<2
+replace SPI_cat = 3 if SPI>=2
+la def lSPI_cat -3 "Extremely dry (SPI<=-2)" -2 "Severely dry (SPI -1.5 to -1.99)" -1 "Moderately dry (SPI -1.0 to -1.49)" 0 "Near normal (SPI -.99 to +.99)" 1 "Moderately wet (SPI 1.0 to 1.49)" 2 "Very wet (SPI 1.5 to 1.99)" 3 "Extremely wet (SPI>=2)", replace
+la val SPI_cat lSPI_cat
+la var SPI_cat "SPI Category"
+la var SPI "Standard Precipitation Index (SPI)"
+tabstat SPI, by(SPI_cat) stats(mean min max N) 
+tab team SPI_cat
+save "${gsdData}/1-CleanTemp/Wave1_SPI.dta", replace
+* All SOM
+shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\SPI\spi_combined_SOM0.shp", data("${gsdTemp}/spi_combined_SOM0.dta") coor("${gsdTemp}/spi_combined_SOM0_coordinates.dta") replace
+use "${gsdTemp}/spi_combined_SOM0.dta", clear
+replace GRID_CODE = GRID_CODE/3
+drop if GRID_CODE==0
+ren GRID_CODE SPI
+su SPI, d
+gen SPI_cat = -3 if inrange(SPI, `r(min)', -2)
+replace SPI_cat = -2 if SPI>-2 & SPI<=-1.5
+replace SPI_cat = -1 if SPI>-1.5 & SPI<=-1
+replace SPI_cat = 0 if SPI>-1 & SPI<1
+replace SPI_cat = 1 if SPI>=1 & SPI<1.5
+replace SPI_cat = 2 if SPI>=1.5 & SPI<2
+replace SPI_cat = 3 if SPI>=2
+la def lSPI_cat -3 "Extremely dry (SPI<=-2)" -2 "Severely dry (SPI -1.5 to -1.99)" -1 "Moderately dry (SPI -1.0 to -1.49)" 0 "Near normal (SPI -.99 to +.99)" 1 "Moderately wet (SPI 1.0 to 1.49)" 2 "Very wet (SPI 1.5 to 1.99)" 3 "Extremely wet (SPI>=2)", replace
+la val SPI_cat lSPI_cat
+tabstat SPI, by(SPI_cat) stats(mean min max N) 
+la var SPI_cat "SPI Category"
+la var SPI "Standard Precipitation Index (SPI)"
+drop _ID
+save "${gsdData}/1-CleanTemp/SPI_SOM0.dta", replace
+
+
 * NDVI data around Wave 1 HHs
 shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\NDVI\Wave1_NDVI_HHs_Team1.shp", data("${gsdTemp}/Wave1_NDVI_Team1.dta") coor("${gsdTemp}/Wave1_NDVI_Team1_coordinates.dta") replace
 shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\NDVI\Wave1_NDVI_HHs_Team2.shp", data("${gsdTemp}/Wave1_NDVI_Team2.dta") coor("${gsdTemp}/Wave1_NDVI_Team2_coordinates.dta") replace
@@ -107,9 +152,16 @@ collapse (mean) NDVI_deviation=grid_code, by(team strata ea block hh)
 hist NDVI_deviation
 su NDVI_deviation, d
 la var NDVI_deviation "NDVI % difference from pre-drought years (2012-2015)"
+*gen NDVI_drought_cat = 0 if NDVI_deviation>=0
+*replace NDVI_drought_cat = 1 if NDVI_deviation<0 & NDVI_deviation>=-10
+*replace NDVI_drought_cat = 2 if NDVI_deviation<-10 & NDVI_deviation>=-20
+*replace NDVI_drought_cat = 3 if NDVI_deviation<-20 & NDVI_deviation>=-30
+*replace NDVI_drought_cat = 4 if NDVI_deviation<-30 
+*la def lNDVI_drought_cat 0 "Not affected" 1 "Slightly affected" 2 "Moderately affected" 3 "Severely Affected" 4 "Extremely Affected", replace
 *gen drought_affected = 0 if NDVI_deviation>=0
 *replace drought_affected = 1 if inrange(NDVI_deviation, -10, 0)
-save "${gsdData}/1-CleanTemp/Wave1_NDVI_corrected.dta", replace
+save "${gsdData}/1-CleanTemp/Wave1_NDVI.dta", replace
+
 
 * NDVI full data
 shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\NDVI\ndvi2017_points_SOM0_1000m.shp", data("${gsdTemp}/ndvi2017_points_SOM0_1000m.dta") coor("${gsdTemp}/ndvi2017_points_SOM0_1000m_coordinates.dta") replace
@@ -119,7 +171,7 @@ drop if grid_code>100
 drop if grid_code<-100
 ren grid_code NDVI_deviation
 la var NDVI_deviation "NDVI % difference from pre-drought years (2012-2015)"
-save "${gsdData}/1-CleanTemp/ndvi2017_points_SOM0_1000m.dta", replace
+save "${gsdData}/1-CleanTemp/NDVI_SOM0.dta", replace
 
 
 * Rainfall and NDVI timeseries
