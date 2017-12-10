@@ -79,12 +79,12 @@ replace itw_invalid_reason = 1 if duration_itw_min < 30
 */
 
 **Renaming EA variable for consistency with block and structure variables names
-g long id_ea = ea
+g double id_ea = ea
 label var id_ea "EA where the interview was conducted"
 
 **Creating a variable for GPS coordinates at the EA level (used when checking that the interview was conducted within the EA)
-g latitude = .
-g longitude = .
+g double latitude = .
+g double longitude = .
 g accuracy = .
 label var latitude "Latitude at the EA level"
 label var longitude "Longitude at the EA level"
@@ -94,26 +94,26 @@ replace latitude = loc_barcode__Latitude
 replace longitude = loc_barcode__Longitude
 replace accuracy = loc_barcode__Accuracy
 *If barcode is not working and GPS is working at the EA level
-replace latitude = loc_list__Latitude if missing(latitude) | latitude == -1000000000
-replace longitude = loc_list__Longitude if missing(longitude) | longitude == -1000000000
-replace accuracy = loc_list__Accuracy if missing(accuracy) | accuracy == -1000000000
+replace latitude = loc_list__Latitude if missing(latitude) | latitude == -1000000000 | latitude == -999999999
+replace longitude = loc_list__Longitude if missing(longitude) | longitude == -1000000000 | longitude == -999999999
+replace accuracy = loc_list__Accuracy if missing(accuracy) | accuracy == -1000000000 | accuracy == -999999999
 *If GPS is working at the structure level but was not at the EA level and it is not a return visit
-replace latitude = str_loc__Latitude if missing(latitude) | latitude == -1000000000
-replace longitude = str_loc__Longitude if missing(longitude) | longitude == -1000000000
-replace accuracy = str_loc__Accuracy if missing(accuracy) | accuracy == -1000000000
+replace latitude = str_loc__Latitude if missing(latitude) | latitude == -1000000000 | latitude == -999999999
+replace longitude = str_loc__Longitude if missing(longitude) | longitude == -1000000000 | longitude == -999999999
+replace accuracy = str_loc__Accuracy if missing(accuracy) | accuracy == -1000000000 | accuracy == -999999999
 *If GPS is working at the structure level but was not at the EA level and it is a return visit
-replace latitude = loc_hhid_seg1ret1__Latitude if missing(latitude) | latitude == -1000000000
-replace longitude = loc_hhid_seg1ret1__Longitude if missing(longitude) | longitude == -1000000000
-replace accuracy = loc_hhid_seg1ret1__Accuracy if missing(accuracy) | accuracy == -1000000000
+replace latitude = loc_hhid_seg1ret1__Latitude if missing(latitude) | latitude == -1000000000 | latitude == -999999999
+replace longitude = loc_hhid_seg1ret1__Longitude if missing(longitude) | longitude == -1000000000 | longitude == -999999999
+replace accuracy = loc_hhid_seg1ret1__Accuracy if missing(accuracy) | accuracy == -1000000000 | accuracy == -999999999
 *If GPS is working at the end of the interview but was not at the beginning (neither at the EA level nor at the structure level)
-replace latitude = loc_retry__Latitude if missing(latitude) | latitude == -1000000000
-replace longitude = loc_retry__Longitude if missing(longitude) | longitude == -1000000000
-replace accuracy = loc_retry__Accuracy if missing(accuracy) | accuracy == -1000000000
+replace latitude = loc_retry__Latitude if missing(latitude) | latitude == -1000000000 | latitude == -999999999
+replace longitude = loc_retry__Longitude if missing(longitude) | longitude == -1000000000 | longitude == -999999999
+replace accuracy = loc_retry__Accuracy if missing(accuracy) | accuracy == -1000000000 | accuracy == -999999999
 
 **Creating a variable for GPS coordinates at the structure level (used when checking consistency for return visits)
 *If not a return visit
-g latitude_str = str_loc__Latitude if return1 == 0
-g longitude_str = str_loc__Longitude if return1 == 0
+g double latitude_str = str_loc__Latitude if return1 == 0
+g double longitude_str = str_loc__Longitude if return1 == 0
 g accuracy_str = str_loc__Accuracy if return1 == 0
 *If a return visit
 replace latitude_str = loc_hhid_seg1ret1__Latitude if return1 == 1
@@ -123,12 +123,12 @@ label var latitude_str "Latitude at the structure level"
 label var longitude_str "Longitude at the structure level"
 label var accuracy_str "Accuracy of GPS coordinates at the structure level"
 *If GPS is working at the end of the interview but was not at the beginning 
-replace latitude_str = loc_retry__Latitude if missing(latitude_str) | latitude == -1000000000
-replace longitude_str = loc_retry__Longitude if missing(longitude_str) | longitude == -1000000000
-replace accuracy_str = loc_retry__Accuracy if missing(accuracy_str) | accuracy == -1000000000
+replace latitude_str = loc_retry__Latitude if missing(latitude_str) | latitude == -1000000000 | latitude == -999999999
+replace longitude_str = loc_retry__Longitude if missing(longitude_str) | longitude == -1000000000 | longitude == -999999999
+replace accuracy_str = loc_retry__Accuracy if missing(accuracy_str) | accuracy == -1000000000 | accuracy == -999999999
 
 **Checking that the interview has GPS coordinates
-gen gps_coord_y_n = (latitude != . & longitude != . & latitude != -1000000000 & longitude != -1000000000) 
+g gps_coord_y_n = (latitude != . & longitude != . & latitude != -1000000000 & longitude != -1000000000 & latitude != -999999999 & longitude != -999999999) 
 label var gps_coord_y_n "Whether the interview has GPS coordinates"
 replace itw_valid=0 if gps_coord_y_n == 0
 replace itw_invalid_reason=2 if gps_coord_y_n == 0
@@ -156,8 +156,8 @@ gen not_within_EA=(longitude < lon_min - ((accuracy + 50)/110000) | ///
 		latitude  > lat_max + ((accuracy + 50)/110000)) 
 label var not_within_EA "The GPS coordinates of the interview do not fall within the EA boundaries"
 
-replace itw_valid=0 if not_within_EA==1 & latitude != -1000000000 & longitude != -1000000000
-replace itw_invalid_reason =3 if not_within_EA==1 & latitude != -1000000000 & longitude != -1000000000
+replace itw_valid=0 if not_within_EA==1 & latitude != -1000000000 & longitude != -1000000000 & latitude != -999999999 & longitude != -999999999
+replace itw_invalid_reason =3 if not_within_EA==1 & latitude != -1000000000 & longitude != -1000000000 & latitude != -999999999 & longitude != -999999999
 
 save "${gsdTemp}/hh_valid_keys_temp2.dta", replace
 
@@ -294,33 +294,31 @@ replace itw_invalid_reason=7 if return1==1 & previous_visit_valid==0
 *We also have to check that the GPS coordinates between the two visits to the same household match 
 *Both records must have GPS coordinates
 gen GPS_pair=1 if return1==1
-replace GPS_pair=0 if (latitude_str==. | longitude_str==. | (return1==1 & ea_reg==ea_reg[_n - 1] & id_ea==id_ea[_n - 1] & id_block==id_block[_n - 1] & id_structure==id_structure[_n-1] & id_household==id_household[_n-1] & int_no==int_no[_n-1] & (latitude_str[_n-1]==. | longitude_str[_n-1]==.)))
+replace GPS_pair=0 if (latitude_str==. | longitude_str==. | latitude_str==-1000000000 | longitude_str==-1000000000 | latitude_str==--999999999 | longitude_str==-999999999 | (return1==1 & ea_reg==ea_reg[_n - 1] & id_ea==id_ea[_n - 1] & id_block==id_block[_n - 1] & id_structure==id_structure[_n-1] & id_household==id_household[_n-1] & int_no==int_no[_n-1] & (latitude_str[_n-1]==. | longitude_str[_n-1]==.)))
+replace GPS_pair=0 if (return1==1 & (ea_reg!=ea_reg[_n - 1] | id_ea!=id_ea[_n - 1] | id_block!=id_block[_n - 1] | id_structure!= id_structure[_n-1] | id_household!=id_household[_n-1] | int_no!=int_no[_n-1]))
 label var GPS_pair "Whether the visit to the household and the previous one both have GPS coordinates"
 
 *Using Vincenty package to calculate distances on the Earth's surface
-gen latitude_pr=latitude_str[_n-1] if (return1==1 & ea_reg==ea_reg[_n - 1] & id_ea==id_ea[_n - 1] & id_block==id_block[_n - 1] & id_structure==id_structure[_n-1] & id_household==id_household[_n-1] & int_no==int_no[_n-1])
-gen longitude_pr=longitude_str[_n-1] if (return1==1 & ea_reg==ea_reg[_n - 1] & id_ea==id_ea[_n - 1] & id_block==id_block[_n - 1] & id_structure==id_structure[_n-1] & id_household==id_household[_n-1] & int_no==int_no[_n-1])
-gen accuracy_pr=accuracy_str[_n-1] if (return1==1 & ea_reg==ea_reg[_n - 1] & id_ea==id_ea[_n - 1] & id_block==id_block[_n - 1] & id_structure==id_structure[_n-1] & id_household==id_household[_n-1] & int_no==int_no[_n-1])
+g double latitude_pr=latitude_str[_n-1] if (return1==1 & ea_reg==ea_reg[_n - 1] & id_ea==id_ea[_n - 1] & id_block==id_block[_n - 1] & id_structure==id_structure[_n-1] & id_household==id_household[_n-1] & int_no==int_no[_n-1])
+g double longitude_pr=longitude_str[_n-1] if (return1==1 & ea_reg==ea_reg[_n - 1] & id_ea==id_ea[_n - 1] & id_block==id_block[_n - 1] & id_structure==id_structure[_n-1] & id_household==id_household[_n-1] & int_no==int_no[_n-1])
+g accuracy_pr=accuracy_str[_n-1] if (return1==1 & ea_reg==ea_reg[_n - 1] & id_ea==id_ea[_n - 1] & id_block==id_block[_n - 1] & id_structure==id_structure[_n-1] & id_household==id_household[_n-1] & int_no==int_no[_n-1])
 label var latitude_pr "Latitude of previous visit to the household"
 label var longitude_pr "Longitude of previous visit to the household"
 label var accuracy_pr "Accuracy of GPS coordinates of previous visit to the household"
+save "${gsdTemp}/hh_valid_keys_temp3.dta", replace
 
-capture: vincenty latitude_str longitude_str latitude_pr longitude_pr if GPS_pair==1 & return1==1, h(d_hav) l(d_loc) inkm
-*inkm requests distances expressed in kilometers
-*d_hav stores the results of Haversine-based calculations 
-*d_loc stores the results of Law-of-Cosines-based calculations
-label var d_hav "Distance with previous visit to the same household - Haversine calculations kms"
-label var d_loc "Distance with previous visit to the same household - Law of Cosines calculations kms"
-
-*The previous variables in meters
-gen d_hav_m=d_hav*1000
-gen d_loc_m=d_loc*1000
-label var d_hav_m "Distance with previous visit to the same household - Haversine calculations ms"
-label var d_loc_m "Distance with previous visit to the same household - Law of Cosines calculations ms"
+keep if GPS_pair==1 & return1==1 & latitude_pr!=. & longitude_pr!=.
+geodist latitude_str longitude_str latitude_pr longitude_pr, gen(distance)
+label var distance "Distance with previous visit to the same household - kilometers"
+g distance_meters=distance*1000
+label var distance_meters "Distance with previous visit to the same household - meters"
+keep interview__id distance_meters
+merge 1:1 interview__id using "${gsdTemp}/hh_valid_keys_temp3.dta", nogenerate
+order distance_meters, last
 
 *Generating variable for distance check
 gen dist_previous_visit_check=1
-replace dist_previous_visit_check=(d_hav_m<=(max(accuracy_pr, accuracy_str)+25)) if (return1==1 & ea_reg==ea_reg[_n - 1] & id_ea==id_ea[_n - 1] & id_block==id_block[_n - 1] & id_structure==id_structure[_n-1] & id_household==id_household[_n-1] & int_no==int_no[_n-1] & GPS_pair==1)
+replace dist_previous_visit_check=(distance_meters<=(max(accuracy_pr, accuracy_str)+25)) if (return1==1 & ea_reg==ea_reg[_n - 1] & id_ea==id_ea[_n - 1] & id_block==id_block[_n - 1] & id_structure==id_structure[_n-1] & id_household==id_household[_n-1] & int_no==int_no[_n-1] & GPS_pair==1)
 label var dist_previous_visit_check "Whether the GPS coordinates match with the previous visit to the household" 
 
 replace itw_valid=0 if return1==1 & dist_previous_visit_check==0
