@@ -71,7 +71,7 @@ foreach var of varlist  rf_relevanceyn1__3	rf_relevanceyn1__4	rf_relevanceyn1__6
 *Create dummy variable = 1 if the item was not consumed by the household, for all food and non-food items
 *Create dummy variable = 1 if the item was consumed by the household, for all food and non-food items
 foreach var of varlist rf_relevanceyn* rnf_relevanceyn* {
-		gen dummy_`var' = (`var' == 0 | `var' == -999999999) if successful == 1
+		gen not_cons_`var' = (`var' == 0 | `var' == -999999999) if successful == 1
 		gen cons_`var' = (`var' == 1) if successful == 1
 	}
 *Number of food items consumed
@@ -79,13 +79,13 @@ egen nb_cons_food = rowtotal(cons_rf_relevanceyn*) if successful == 1
 *Number of non-food items consumed
 egen nb_cons_non_food = rowtotal(cons_rnf_relevanceyn*) if successful == 1
 *Proportion of no/don't know for food items
-egen ndkn_food = rowmean(dummy_rf_relevanceyn*) if successful == 1
+egen ndkn_food = rowmean(not_cons_rf_relevanceyn*) if successful == 1
 label var ndkn_food "Proportion of food items with no or don't know for consumption answer"
 *Proportion of no/don't know for non-food items
-egen ndkn_non_food = rowmean(dummy_rnf_relevanceyn*) if successful == 1
+egen ndkn_non_food = rowmean(not_cons_rnf_relevanceyn*) if successful == 1
 label var ndkn_non_food "Proportion of non-food items with no or don't know for consumption answer"
 *Final cleaning
-drop dummy*
+drop not_cons_* cons_*
 save "${gsdTemp}/hh_monitoring_dashboard_temp1", replace
 
 *** 3. Proportion of missing/don't know/refused to answer for quantities and prices relating to food items consumed
@@ -140,7 +140,7 @@ sort interview__id rnf_nonfood__id
 drop if rnf_nonfood__id == 1071
 *Keeping interview Id, item Id, and variable "price paid for the amount of item that was purchased"
 keep interview__id rnf_nonfood__id rnf_pric_total
-*Reshaping to get one row per interview with all items and their price in column
+*Reshaping to get one row per interview with all items and their price in columns
 reshape wide rnf_pric_total, i(interview__id) j(rnf_nonfood__id)
 *Merging with main dataset
 merge 1:1 interview__id using "${gsdTemp}/hh_monitoring_dashboard_temp2", nogenerate
@@ -160,7 +160,7 @@ foreach var of varlist rnf_pric_total* {
 *Dummy variables for each non-food item: if the item was consumed by the household, whether its price was missing/unknown/refused to answer
 foreach var of varlist rnf_pric_total_* {
    	local itemID = substr("`var'", -2, .)
-	g ndkn_non_food_quant_`itemID' = (rnf_pric_total_`itemID' == . | rnf_pric_total_`itemID' == -1000000000) if rnf_relevanceyn_`itemID' == 1
+	g ndkn_non_food_quant_`itemID' = (rnf_pric_total_`itemID' == . | rnf_pric_total_`itemID' == -1000000000 | rnf_pric_total_`itemID' == -999999999) if rnf_relevanceyn_`itemID' == 1
 }
 *Proportion of non-food items consumed by the household for which price was missing/unknown/refused to answer
 egen ndkn_non_food_quant = rowmean(ndkn_non_food_quant_*)
@@ -171,19 +171,21 @@ drop ndkn_non_food_quant_* rnf_relevanceyn_* rnf_pric_total*
 /*      	INDICATORS RELATING TO COMPLETENESS OF ANSWERS		              */
 /*----------------------------------------------------------------------------*/
 
-*The proportion of missing answers is monitored with a focus on some specific key questions that are very important.
-
-***0.1 Proportion of missing answers in the main dataset
+*** 1. Proportion of missing answers in the main dataset
 *Dummy variables: whether each variable of the interview is missing or not
 ds athome-interview__key, has(type string)
-local string `r(varlist)'
+local string0 `r(varlist)'
+local omit1 hh_list*
+local string : list string0 - omit1
 ds athome-interview__key, has(type numeric)
-local numeric `r(varlist)'
+local numeric0 `r(varlist)'
+local omit2 hhh_id1_int
+local numeric : list numeric0 - omit2
 foreach var of local string {
 	gen mi_`var' = (`var' == "##N/A##") if `var' != ""
 }
 foreach var of local numeric {
-	gen mi_`var' = (`var'== -999999999) if `var' != .
+	gen mi_`var' = (`var'== -999999999 | `var'== -1000000000) if `var' != .
 }
 *Proportion of missing answers
 egen missing_prop_main = rowmean(mi_*) if successful == 1
@@ -191,7 +193,7 @@ drop mi_*
 label var missing_prop_main "Proportion of missing answers in the main dataset" 
 save "${gsdTemp}/hh_monitoring_dashboard_temp3", replace
 
-***0.2 Proportion of missing answers for each roster
+*** 2. Proportion of missing answers for each roster
 local files hh_roster_separated hhroster_age motor ra_assets ra_assets_prev rf_food ///
 	rf_food_cereals rf_food_fruit rf_food_meat rf_food_vegetables rl_livestock rl_livestock_pre ///
 	rnf_nonfood shocks
@@ -199,20 +201,20 @@ foreach file in `files' {
 	use "${gsdData}/0-RawTemp/`file'_manual_cleaning.dta", clear
 	*Dummy variables: whether each variable is missing or not
 	ds *, has(type string)
-	local string_all `r(varlist)'
-	local string_omit interview__id
-	local string : list string_all - string_omit
+	local str_all_`file' `r(varlist)'
+	local str_omit_`file' interview__id
+	local str_`file' : list str_all_`file' - str_omit_`file'
 	
 	ds *, has(type numeric)
-	local numeric_all `r(varlist)'
-	local numeric_omit `file'__id
-	local numeric : list numeric_all - numeric_omit
+	local num_all_`file' `r(varlist)'
+	local num_omit_`file' `file'__id
+	local num_`file' : list num_all_`file' - num_omit_`file'
 	
-	foreach var of local string {
+	foreach var of local str_`file' {
 		gen mi_`var' = (`var' == "##N/A##") if `var' != ""
 	}
-	foreach var of local numeric {
-		gen mi_`var' = (`var'== -999999999) if `var' != .
+	foreach var of local num_`file' {
+		gen mi_`var' = (`var'== -999999999 | `var'== -1000000000) if `var' != .
 	}
 	*Proportion of missing answers
 	egen missing_prop_`file' = rowmean(mi_*)
@@ -225,62 +227,64 @@ foreach file in `files' {
 	save "${gsdTemp}/hh_monitoring_dashboard_temp3", replace
 }
 
-*** 1. Key question: Remittances
+*** 3. Key question: Remittances
 **Dummy variable: whether answer to the question on receipt of remittances (from abroad) is missing/don't know/refused to answer
-g ndkn_remittances_ext = (remit12m_yn == -98 | remit12m_yn == -99 | remit12m_yn == -999999999) if successful == 1
+g ndkn_remittances_ext = (remit12m_yn == -98 | remit12m_yn == -99 | remit12m_yn == -999999999 | remit12m_yn == -1000000000) if successful == 1
 label var ndkn_remittances_ext "Whether answer to the question on receipt of remittances (from abroad) is missing/don't know/refused to answer"
 **Dummy variable: whether answer to the question on receipt of remittances (from within the country) is missing/don't know/refused to answer
-g ndkn_remittances_int = (intremit12m_yn == -98 | intremit12m_yn == -99 | intremit12m_yn == -999999999) if successful == 1
+g ndkn_remittances_int = (intremit12m_yn == -98 | intremit12m_yn == -99 | intremit12m_yn == -999999999 | intremit12m_yn == -1000000000) if successful == 1
 label var ndkn_remittances_int "Whether answer to the question on receipt of remittances (from within the country) is missing/don't know/refused to answer"
+** Flag if info on remittances is missing (eithe domestic or international remittances)
+g flag_remit = (ndkn_remittances_ext ==1 | ndkn_remittances_int ==1)
 
-*** 2. Key question: IDP status
+*** 4. Key question: IDP status
 **Dummy variable: whether answer to the question on forced displacement is missing
-g ndkn_IDP_status = (migr_disp == -999999999) if successful == 1
+g ndkn_IDP_status = (migr_disp == -999999999 | migr_disp == -1000000000) if successful == 1
 label var ndkn_IDP_status "Whether answer to the question on forced displacement is missing"
 save "${gsdTemp}/hh_monitoring_dashboard_temp4", replace
 
-*** 3. Key questions: Employment
+*** 5. Key questions: Employment
 **Proportion of missing/don't know/refused to answer to the question on being inside the labour force
 *Dummy variable: whether answer is missing, unknown or refused to answer for ALL kinds of activities for this household member
 use "${gsdData}/0-RawTemp/hhroster_age_manual_cleaning.dta", clear
-g ndkn_labour = ((emp_7d_paid == -98 | emp_7d_paid == -99 | emp_7d_paid == . | emp_7d_paid == -999999999) & ///
-				 (emp_7d_busi == -98 | emp_7d_busi == -99 | emp_7d_busi == . | emp_7d_busi == -999999999) & ///
-				 (emp_7d_help == -98 | emp_7d_help == -99 | emp_7d_help == . | emp_7d_help == -999999999) & ///
-				 (emp_7d_farm == -98 | emp_7d_farm == -99 | emp_7d_farm == . | emp_7d_farm == -999999999) & ///
-				 (emp_7d_appr == -98 | emp_7d_appr == -99 | emp_7d_appr == . | emp_7d_appr == -999999999)) if hhm_age > 14
+g ndkn_labour = ((emp_7d_paid == -98 | emp_7d_paid == -99 | emp_7d_paid == . | emp_7d_paid == -999999999 | emp_7d_paid == -1000000000) & ///
+				 (emp_7d_busi == -98 | emp_7d_busi == -99 | emp_7d_busi == . | emp_7d_busi == -999999999 | emp_7d_busi == -1000000000) & ///
+				 (emp_7d_help == -98 | emp_7d_help == -99 | emp_7d_help == . | emp_7d_help == -999999999 | emp_7d_help == -1000000000) & ///
+				 (emp_7d_farm == -98 | emp_7d_farm == -99 | emp_7d_farm == . | emp_7d_farm == -999999999 | emp_7d_farm == -1000000000) & ///
+				 (emp_7d_appr == -98 | emp_7d_appr == -99 | emp_7d_appr == . | emp_7d_appr == -999999999 | emp_7d_appr == -1000000000)) if hhm_age > 14
 *Proportion of don't know/refused to answer by interview (average on all household members) 
 collapse (mean) ndkn_labour, by(interview__id)
-g flag_ndkn_labour = (ndkn_labour == 1)
+g flag_ndkn_labour = (ndkn_labour >0)
 keep interview__id ndkn_labour flag_ndkn_labour
 *Merge with main dataset
 merge 1:1 interview__id using "${gsdTemp}/hh_monitoring_dashboard_temp4", nogenerate 
 order ndkn_labour flag_ndkn_labour, last
 label var ndkn_labour "Proportion of missing/don't know/refused to answer to the question on being inside the labour force"
-label var flag_ndkn_labour "Whether the answer to the question on being inside the labour force missing/don't know/refused to answer for all household members"
+label var flag_ndkn_labour "Whether the answer to the question on being inside the labour force is missing/don't know/refused to answer for at least one household members"
 save "${gsdTemp}/hh_monitoring_dashboard_temp5", replace
 
-*** 4. Key questions: Education
+*** 6. Key questions: Education
 *Dummy variable: whether answer is missing, unknown or refused to answer for ALL key education variables for this household member
 use "${gsdData}/0-RawTemp/hhroster_age_manual_cleaning.dta", clear
-g flag_ndkn_edu = ((hhm_read == -98 | hhm_read == -99 | hhm_read == . | hhm_read == -999999999) & ///
-				 (hhm_write == -98 | hhm_write == -99 | hhm_write == . | hhm_write == -999999999) & ///
-				 (hhm_edu_ever == -98 | hhm_edu_ever == -99 | hhm_edu_ever == . | hhm_edu_ever == -999999999) & ///
-				 (hhm_edu_years == -98 | hhm_edu_years == -99 | hhm_edu_years == . | hhm_edu_years == -999999999) & ///
-				 (hhm_edu_level == -98 | hhm_edu_level == -99 | hhm_edu_level == . | hhm_edu_level == -999999999)) if hhm_age > 5
-*Dummy variable at the interview level: whether ALL key variables on education are missing for ALL household members
-collapse (min) flag_ndkn_edu, by(interview__id)
+g flag_ndkn_edu = ((hhm_read == -98 | hhm_read == -99 | hhm_read == . | hhm_read == -999999999 | hhm_read == -1000000000) & ///
+				 (hhm_write == -98 | hhm_write == -99 | hhm_write == . | hhm_write == -999999999 | hhm_write == -1000000000) & ///
+				 (hhm_edu_ever == -98 | hhm_edu_ever == -99 | hhm_edu_ever == . | hhm_edu_ever == -999999999 | hhm_edu_ever == -1000000000) & ///
+				 (hhm_edu_years == -98 | hhm_edu_years == -99 | hhm_edu_years == . | hhm_edu_years == -999999999 | hhm_edu_years == -1000000000) & ///
+				 (hhm_edu_level == -98 | hhm_edu_level == -99 | hhm_edu_level == . | hhm_edu_level == -999999999 | hhm_edu_level == -1000000000)) if hhm_age > 5
+*Dummy variable at the interview level: whether ALL key variables on education are missing for at least one household member
+collapse (max) flag_ndkn_edu, by(interview__id)
 keep interview__id flag_ndkn_edu   
 *Merge with main dataset
 merge 1:1 interview__id using "${gsdTemp}/hh_monitoring_dashboard_temp5", nogenerate 
 order flag_ndkn_edu, last
-label var flag_ndkn_edu "Whether all key variables on education are missing for all household members"
+label var flag_ndkn_edu "Whether all key variables on education are missing for at least one household member"
 
-*** 5. Key questions: Housing conditions
+*** 7. Key questions: Housing conditions
 *Dummy variable: whether answer is missing, unknown or refused to answer for ALL key housing variables
-g flag_ndkn_house = ((housingtype == -98 | housingtype == -99 | housingtype == . | housingtype == -999999999) & ///
-				 (cook == -98 | cook == -99 | cook == . | cook == -999999999) & ///
-				 (toilet == -98 | toilet == -99 | toilet == . | toilet == -999999999) & ///
-				 (roof_material == -98 | roof_material == -99 | roof_material == . | roof_material == -999999999)) 
+g flag_ndkn_house = ((housingtype == -98 | housingtype == -99 | housingtype == . | housingtype == -999999999 | housingtype == -1000000000) & ///
+				 (cook == -98 | cook == -99 | cook == . | cook == -999999999 | cook == -1000000000) & ///
+				 (toilet == -98 | toilet == -99 | toilet == . | toilet == -999999999 | toilet == -1000000000) & ///
+				 (roof_material == -98 | roof_material == -99 | roof_material == . | roof_material == -999999999 | roof_material == -1000000000)) 
 label var flag_ndkn_house "Whether all key variables on housing conditions are missing"
 
 /*----------------------------------------------------------------------------*/
@@ -290,7 +294,7 @@ label var flag_ndkn_house "Whether all key variables on housing conditions are m
 **Number of skip patterns on successful interviews
 *Important skip patterns relate to livestock, durable goods, shocks, displacements, fishing, leavers' roster, remittances (24 possible skip patterns)
 foreach var of varlist shocks0__1-shocks0__18 migr_disp migr_disp_past fishing_yn hhm_separated intremit12m_yn remit12m_yn{
-	capture: gen skip_`var' = 1 if (`var' == 0 | `var' == -999999999 | `var' == -98 | `var' == -99) & successful == 1
+	capture: gen skip_`var' = 1 if (`var' == 0 | `var' == -999999999 | `var' == -1000000000 |`var' == -98 | `var' == -99) & successful == 1
 }
 save "${gsdTemp}/hh_monitoring_dashboard_temp6", replace
 
@@ -298,8 +302,8 @@ save "${gsdTemp}/hh_monitoring_dashboard_temp6", replace
 *Import household roster
 use "${gsdData}/0-RawTemp/hhroster_age_manual_cleaning.dta", clear
 *Skip pattern = + 1 for each no/don't know/refused to answer to questions on employment status per member of the household
-g skip_employment = (inlist(emp_7d_paid,0,-98,-99,.,-999999999) & inlist(emp_7d_busi,0,-98,-99,.,-999999999) & inlist(emp_7d_help,0,-98,-99,.,-999999999) & ///
-					inlist(emp_7d_farm,0,-98,-99,.,-999999999) & inlist(emp_7d_appr,0,-98,-99,.,-999999999)) if hhm_age > 14
+g skip_employment = (inlist(emp_7d_paid,0,-98,-99,.,-999999999, -1000000000) & inlist(emp_7d_busi,0,-98,-99,.,-999999999,-1000000000) & inlist(emp_7d_help,0,-98,-99,.,-999999999, -1000000000) & ///
+					inlist(emp_7d_farm,0,-98,-99,.,-999999999, -1000000000) & inlist(emp_7d_appr,0,-98,-99,.,-999999999, -1000000000)) if hhm_age > 14
 *Total number of skip patterns per interview on employment(collapse on household members)
 collapse (sum) skip_employment, by(interview__id)
 *Merge with main dataset
@@ -331,20 +335,14 @@ use "${gsdData}/0-RawTemp/hhroster_age_manual_cleaning.dta", clear
 
 **Dummy variables at the household member level
 *Household member is not an adult if he/she is not above 16
-g not_adult = (hhm_age < 16) if missing(hhm_age)==0 & hhm_age != -999999999
+g not_adult = (hhm_age < 16) if missing(hhm_age)==0 & hhm_age != -999999999 & hhm_age != -1000000000
 *Household member has an unrealistic number of years of education if it exceeds 30 years or if it exceeds the age of the household member
-g edu_not_realistic = (hhm_edu_years >= 30 | hhm_edu_years > hhm_age) if missing(hhm_age) == 0 & hhm_age != -999999999 & missing(hhm_edu_years) == 0
-
-**Check whether soft constraints are respected at the household level
-*At least one member of the household is above 16
-bysort interview__id: egen soft_const_adult = min(not_adult)
-*All members of the household have a realistic number of years of education
-bysort interview__id: egen soft_const_edu = max(edu_not_realistic)
+g edu_not_realistic = (hhm_edu_years >= 30 | hhm_edu_years > hhm_age) if missing(hhm_age) == 0 & hhm_age != -999999999 & hhm_age != -1000000000 & missing(hhm_edu_years) == 0
 
 **Add soft constraints dummies into main dataset
-keep interview__id soft_const_adult soft_const_edu
+keep interview__id not_adult edu_not_realistic
 *Collapse to have one row per household and whether the soft constraints 1 and 2 are respected or not
-collapse (first) soft_const_adult soft_const_edu, by(interview__id)
+collapse (min) soft_const_adult=not_adult (max) soft_const_edu=edu_not_realistic, by(interview__id)
 *Merge with main dataset
 merge 1:1 interview__id using "${gsdTemp}/hh_monitoring_dashboard_temp7", nogenerate 
 
@@ -370,16 +368,16 @@ replace no_consent = 1 if athome == 1 & adult == 1 & maycontinue == 0
 g nhhm_succ = nhhm if successful == 1
 
 **Whether the household was displaced
-g idp = (migr_disp == 1) if successful == 1
+g disp = (migr_disp == 1) if successful == 1
 
 **Flag if the EA is an IDP camp but the household was said not to be displaced
 g flag_idp = (migr_disp == 0) if idp_ea_yn == 1
 
 save "${gsdTemp}/hh_monitoring_dashboard_temp8", replace
 
-**Number of people in employmnt/inside the labour force
+**Number of people in employment/inside the labour force
 use "${gsdData}/0-RawTemp/hhroster_age_manual_cleaning.dta", clear
-replace emp_7d_active = . if emp_7d_active == -999999999
+replace emp_7d_active = . if emp_7d_active == -999999999 | emp_7d_active == -1000000000
 collapse (sum) emp_7d_active, by(interview__id)
 merge 1:1 interview__id using "${gsdTemp}/hh_monitoring_dashboard_temp8"
 
@@ -402,7 +400,7 @@ collapse (sum) nb_itw=index itw_valid successful successful_valid val_succ1-val_
 	(median) duration_med = duration_itw_min (mean) duration_mean = duration_itw_min ///
 	(min) duration_min = duration_itw_min (max) duration_max = duration_itw_min ///
 	(mean) nhhm_succ ///
-	(sum) fisheries idp ///
+	(sum) fisheries disp ///
 	(mean) emp_7d_active target_itw_ea , ///
 	by(state ea_reg strata_id strata_name id_ea team_id enum_id enum_name date_stata)
 
@@ -477,7 +475,7 @@ label var duration_max "Max duration of successful interviews - minutes"
 label var nhhm_succ "Average number of household members for successful interviews"
 label var emp_7d_active "Average number of people in employment/inside the labour force"
 label var fisheries "Number of valid and successful inteviews for which the fisheries module was activated"
-label var idp "Total number of displaced households"
+label var disp "Total number of displaced households"
 label var issue "Issue?"
 label var target_itw_ea "Target number of valid and successful interviews per EA"
 
@@ -486,7 +484,7 @@ order state ea_reg strata_id strata_name id_ea team_id enum_id enum_name date_st
 	nb_cons_food nb_cons_non_food ndkn_food ndkn_food_quant ndkn_non_food ndkn_non_food_quant ndkn_IDP_status ndkn_remittances_ext ndkn_labour ///
 	nb_skip_patterns prop_skip_patterns soft_const_adult soft_const_edu ///
 	duration_med duration_mean duration_min duration_max ///
-	nhhm_succ emp_7d_active fisheries idp issue target_itw_ea
+	nhhm_succ emp_7d_active fisheries disp issue target_itw_ea
 	
 sort team_id enum_id date_stata
 
@@ -573,9 +571,9 @@ collapse (sum) nb_itw=index itw_valid successful successful_valid gps_ok ///
 	(median) duration_med = duration_itw_min (mean) duration_mean = duration_itw_min ///
 	(min) duration_min = duration_itw_min (max) duration_max = duration_itw_min ///
 	(mean) nhhm_succ ///
-	(sum) fisheries idp ///
+	(sum) fisheries disp ///
 	(mean) emp_7d_active ///
-	(max) flag_food_empty flag_ndkn_edu flag_ndkn_house flag_ndkn_labour flag_idp, ///
+	(max) flag_food_empty flag_ndkn_edu flag_ndkn_house flag_ndkn_labour flag_remit flag_idp, ///
 	by(state team_id enum_id enum_name date_stata)
 
 *Number of valid and successful interviews - Cumulative by date
@@ -606,9 +604,23 @@ g nhhm_succ_ave = $nhhm_succ_ave
 /*List of flags
 1	- Shorter duration of interviews than other enumerators
 2	- Lower number of household members on average than other enumerators/and what is expected in the state
-3	- Higher proportion of missing answers than other enumerators 
+3.1	- Higher proportion of missing answers than other enumerators in the main dataset
+3.2	- Higher proportion of missing answers than other enumerators in the separated roster
+3.3	- Higher proportion of missing answers than other enumerators in the household roster
+3.4	- Higher proportion of missing answers than other enumerators in the motor roster
+3.5	- Higher proportion of missing answers than other enumerators in the assets roster
+3.6	- Higher proportion of missing answers than other enumerators in the assets roster before displacement
+3.7	- Higher proportion of missing answers than other enumerators in the main food roster
+3.8	- Higher proportion of missing answers than other enumerators in the cereals roster
+3.9	- Higher proportion of missing answers than other enumerators in the fruits roster
+3.10 - Higher proportion of missing answers than other enumerators in the meat roster
+3.11 - Higher proportion of missing answers than other enumerators in the vegetables roster
+3.12 - Higher proportion of missing answers than other enumerators in the livestock roster
+3.13 - Higher proportion of missing answers than other enumerators in the livestock roster before displacement
+3.14 - Higher proportion of missing answers than other enumerators in the non-food roster
+3.15 - Higher proportion of missing answers than other enumerators in the shocks roster
 4	- Higher proportion of items said not to be consumed than other enumerators
-5	- Too high proportion of missing quantities and prices for items consumed
+5	- Too high proportion of missing quantities and prices for food and non-food items consumed
 6	- Higher number of key questions skipped
 7	- Answers on questions on remittances missing
 8	- Answers on questions on IDP status missing
@@ -622,15 +634,29 @@ g nhhm_succ_ave = $nhhm_succ_ave
 
 g flag = ""
 replace flag = flag + "/" + "Shorter duration of interviews than other enumerators" if duration_med < 80 & missing(duration_med) == 0
-replace flag = flag + "/" + "Lower number of household members on average than other enumerators and what is expected in the state" if nhhm_succ <= 3
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators" if missing_prop_main > 0.05
-replace flag = flag + "/" + "Higher proportion of items said not to be consumed than other enumerators" if (ndkn_food + ndkn_non_food)/2 > 0.47
+replace flag = flag + "/" + "Lower number of household members on average than other enumerators and what is expected in the state" if nhhm_succ <= 3.5
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in main dataset" if missing_prop_main > 0.05
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in separated roster" if missing_prop_hh_roster_separated > 0.05 & missing(missing_prop_hh_roster_separated) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in household roster" if missing_prop_hhroster_age > 0.05 & missing(missing_prop_hhroster_age) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in motor roster" if missing_prop_motor > 0.05 & missing(missing_prop_motor) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in assets roster" if missing_prop_ra_assets > 0.05 & missing(missing_prop_ra_assets) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in assets roster before displacement" if missing_prop_ra_assets_prev > 0.05 & missing(missing_prop_ra_assets_prev) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in main food roster" if missing_prop_rf_food > 0.05 & missing(missing_prop_rf_food) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in cereals roster" if missing_prop_rf_food_cereals > 0.05 & missing(missing_prop_rf_food_cereals) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in fruits roster" if missing_prop_rf_food_fruit > 0.05 & missing(missing_prop_rf_food_fruit) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in meat roster" if missing_prop_rf_food_meat > 0.05 & missing(missing_prop_rf_food_meat) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in vegetables roster" if missing_prop_rf_food_vegetables > 0.05 & missing(missing_prop_rf_food_vegetables) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in livestock roster" if missing_prop_rl_livestock > 0.05 & missing(missing_prop_rl_livestock) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in livestock roster before displacement" if missing_prop_rl_livestock_pre > 0.05 & missing(missing_prop_rl_livestock_pre) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in non-food roster" if missing_prop_rnf_nonfood > 0.05 & missing(missing_prop_rnf_nonfood) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in shocks roster" if missing_prop_shocks > 0.05 & missing(missing_prop_shocks) == 0
+replace flag = flag + "/" + "Higher proportion of items said not to be consumed than other enumerators" if (ndkn_food + ndkn_non_food)/2 > 0.47 
 replace flag = flag + "/" + "Too high proportion of missing quantities and prices for items consumed" if ///
 	(ndkn_food_quant != . & ndkn_non_food_quant != . & (ndkn_food_quant + ndkn_non_food_quant)/2 > 0.3) | ///
 	(ndkn_food_quant != . & ndkn_non_food_quant == . & ndkn_food_quant > 0.3) | ///
 	(ndkn_food_quant == . & ndkn_non_food_quant != . & ndkn_non_food_quant > 0.3)
 replace flag = flag + "/" + "Higher number of key questions skipped" if prop_skip_patterns > $threshold_skip_patterns
-replace flag = flag + "/" + "Answers on questions on remittances missing" if ndkn_remittances_ext > 0 | ndkn_remittances_int > 0
+replace flag = flag + "/" + "Answers on questions on remittances missing" if flag_remit == 1
 replace flag = flag + "/" + "Answers on questions on IDP status missing" if ndkn_IDP_status > 0
 replace flag = flag + "/" + "Answers on key questions on employment missing" if flag_ndkn_labour == 1
 replace flag = flag + "/" + "Answers on key questions on education missing" if flag_ndkn_edu == 1
@@ -693,7 +719,7 @@ label var duration_max "Max duration of interviews - minutes"
 label var nhhm_succ "Average number of household members for successful interviews"
 label var emp_7d_active "Average number of people in employment/inside the labour force"
 label var fisheries "Number of valid and successful inteviews for which the fisheries module was activated"
-label var idp "Total number of displaced households"
+label var disp "Total number of displaced households"
 label var flag "Flag data quality control"
 label var duration_med_all "Median duration of successful interviews - across all Enumerators"
 label var ndkn_food_non_food_ave "Average proportion of 'no'/'don't know' in the food and non-food consumption module - across all Enumerators"	
@@ -705,7 +731,7 @@ keep state team_id enum_id enum_name date_stata ///
 	missing_prop* nb_cons_food nb_cons_non_food ndkn_food ndkn_food_quant ndkn_non_food ndkn_non_food_quant ///
 	ndkn_IDP_status ndkn_remittances_ext ndkn_labour ///
 	nb_skip_patterns prop_skip_patterns soft_const_adult soft_const_edu ///
-	duration_med duration_mean duration_min duration_max nhhm_succ emp_7d_active fisheries idp flag ///
+	duration_med duration_mean duration_min duration_max nhhm_succ emp_7d_active fisheries disp flag ///
 	duration_med_all ndkn_food_non_food_ave nhhm_succ_ave
 
 order state team_id enum_id enum_name date_stata ///
@@ -714,7 +740,7 @@ order state team_id enum_id enum_name date_stata ///
 	missing_prop* nb_cons_food nb_cons_non_food ndkn_food ndkn_food_quant ndkn_non_food ndkn_non_food_quant ///
 	ndkn_IDP_status ndkn_remittances_ext ndkn_labour ///
 	nb_skip_patterns prop_skip_patterns soft_const_adult soft_const_edu ///
-	duration_med duration_mean duration_min duration_max nhhm_succ emp_7d_active fisheries idp flag ///
+	duration_med duration_mean duration_min duration_max nhhm_succ emp_7d_active fisheries disp flag ///
 	duration_med_all ndkn_food_non_food_ave nhhm_succ_ave
 
 sort team_id enum_id date_stata
