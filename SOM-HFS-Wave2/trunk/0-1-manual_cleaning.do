@@ -43,6 +43,7 @@ use "${gsdTemp}/hh_without_empty_obs", clear
 replace enum_id = 3105 if interview__id=="ab0e6a8b5df34626b3f17a8ee5182ef0"
 replace enum_id = 3206 if interview__id=="568d421b53b1407ca17d51362e22c68c"
 replace enum_id = 2204 if interview__id=="aa65b9856f6c4437b9397f8b9444549e"
+replace enum_id = 203 if interview__id=="d5abc9e7adb24ff28d98998b4039e273"
 *tab enum_id
 
 *** Pre-war region cleaning
@@ -122,8 +123,15 @@ replace today="2017-12-11T11:25:08-05:00" if interview__id=="4fb4c741aa8446dca5b
 replace today_end="2017-12-11T13:30:34-05:00" if interview__id=="4fb4c741aa8446dca5b22f0e98551cdc"
 replace today="2017-12-11T10:34:36-05:00" if interview__id=="1902ae429c6a42898216501a6a9bfb8c"
 replace today_end="2017-12-11T12:49:55-05:00" if interview__id=="1902ae429c6a42898216501a6a9bfb8c"
+*12/12/2017
+replace today="2017-12-12T07:11:53-05:00" if interview__id=="c032ecd174b545c195b0ebeab70ed519"
+replace today_end="2017-12-12T09:22:45-05:00" if interview__id=="c032ecd174b545c195b0ebeab70ed519"
+replace today="2017-12-12T07:02:49-05:00" if interview__id=="e09a8707a112473984a43827310872a8"
+replace today_end="2017-12-12T08:49:07-05:00" if interview__id=="e09a8707a112473984a43827310872a8"
+replace today="2017-12-12T13:23:41-05:00" if interview__id=="a285a77c94db45c79aec91e4fd401b53"
+replace today_end="2017-12-12T15:07:46-05:00" if interview__id=="a285a77c94db45c79aec91e4fd401b53"
 
-*interview__identify observations with missing dates
+*Identify observations with missing dates
 *br if today == "##N/A##"
 *br if today_end=="##N/A##" & consent==1
 
@@ -153,6 +161,9 @@ replace today_end= "2017-12-10T09:09:25-05:00" if interview__id=="a71bf037b46445
 *11/12/2017
 replace today= "2017-12-11T07:32:44-05:00" if interview__id=="738f3c5acfc24deb832eec22b4212862"
 replace today_end= "2017-12-11T09:07:02-05:00" if interview__id=="738f3c5acfc24deb832eec22b4212862"
+*12/12/2017
+replace today="2017-12-12T06:26:20-05:00" if interview__id=="17ca0b073b3542e88ed06ff9ba76654d"
+replace today_end="2017-12-12T08:49:41-05:00" if interview__id=="17ca0b073b3542e88ed06ff9ba76654d"
 
 *Creating duration variable
 *Start time 
@@ -176,7 +187,7 @@ drop start_time_temp end_time_temp
 g duration_itw_min = minutes(end_time - start_time) if int_break == 1
 label var duration_itw_min "Duration of interview (minutes)" 
 
-*interview__identify observations with incorrect duration
+*Identify observations with incorrect duration
 *br if duration_itw_min < 30
 
 *** Saving dataset with manual corrections
