@@ -217,7 +217,7 @@ reg NDVI_deviation SPI
 gen drought_SPI = SPI_cat<0
 la def ldrought_SPI 0 "Not affected" 1 "Drought affected", replace
 la val drought_SPI ldrought_SPI
-la var drought_SPI "Drought affected (moderately/severely/extremely affected per SPI)"
+la var drought_SPI "Drought affected (moderately/severely/extremely drought affected per SPI)"
 
 
 
