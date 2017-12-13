@@ -6,6 +6,11 @@ set sortseed 11041355
 
 use "${gsdData}/0-RawTemp/hh_f_nfood_valid.dta", clear
 
+
+rnf_nonfood 
+
+
+
 *empty f_item means form was not completed 
 drop if f_item==""
 ren (f_pos f_mod f_rel f_pr_t f_pr_c f_pr_kdk f_fr*) (nfoodid mod purc pr pr_c pr_kdk free*)
