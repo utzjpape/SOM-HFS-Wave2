@@ -6,6 +6,9 @@ set sortseed 11041956
 
 use "${gsdData}/0-RawTemp/hh_n_shocks_valid.dta", clear
 
+shocks
+
+
 ********************************************************************
 * Relabel 'Don't know' and 'Refused to respond'
 ********************************************************************

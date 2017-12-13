@@ -18,3 +18,12 @@ run "${gsdDo}/0-2-obtain_valid_keys.do"
 run "${gsdDo}/0-3-obtain_valid_EAs_and_EBs.do"
 run "${gsdDo}/0-4-create_monitoring_dashboard.do"
 
+*Obtain key for valid and successul submissions 
+run "${gsdDo}/0-5-keep_valid_successful_submissions.do"
+
+*Check the completeness of submissions between parent and child files 
+run "${gsdDo}/0-6-completeness_submissions.do"
+
+*Clean the parent and child files 
+run "${gsdDo}/0-7-clean.do"
+

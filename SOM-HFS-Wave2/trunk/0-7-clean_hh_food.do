@@ -6,6 +6,16 @@ set sortseed 11041675
 
 use "${gsdData}/0-RawTemp/hh_e_food_valid.dta", clear
 
+
+
+rf_food
+rf_food_cereals 
+rf_food_fruit 
+rf_food_meat 
+rf_food_vegetables 
+
+
+
 *empty e_item means form was not completed 
 drop if e_item==""
 labmask e_pos, values(e_item)

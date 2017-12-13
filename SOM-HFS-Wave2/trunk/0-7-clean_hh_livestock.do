@@ -6,6 +6,11 @@ set sortseed 11061955
 
 use "${gsdData}/0-RawTemp/hh_g_livestock_valid.dta", clear
 
+
+rl_livestock 
+rl_livestock_pre 
+
+
 ********************************************************************
 * Relabel 'Don't know' and 'Refused to respond'
 ********************************************************************
