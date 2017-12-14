@@ -121,7 +121,8 @@ replace nb_val_succ_itw_ea = nb_valid_success_itws_ea
 label define ea_status_label 1 "Valid" ///
 	2 "Not sampled nor active replacement" ///
 	3 "Not enough interviews" ///
-	4 "Not balanced in terms of treatment"
+	4 "Not balanced in terms of treatment" ///
+	5 "Not completed because of security reasons"
 label values ea_status ea_status_label 
 
 replace ea_status=1 if _merge == 3
@@ -131,6 +132,7 @@ replace ea_status=4 if _merge == 3 & target_itw_ea == 36 & ((nb_valid_success_tr
 replace ea_status=3 if _merge == 3 & (nb_valid_success_itws_ea<target_itw_ea) & target_itw_ea>1 /*only for EAs with more than 1 block*/
 replace ea_status=2 if _merge == 3 & (sample_final_uri != 1 & sample_final_h != 1)
 replace ea_status=2 if _merge == 2
+replace ea_status=5 if id_ea==64279
 
 *Dummy variable: whether EA is valid or not
 replace ea_valid=(ea_status==1) 
