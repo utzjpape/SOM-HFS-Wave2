@@ -24,6 +24,7 @@ replace state = "Galmudug" if (team_id >= 17 & team_id <= 21) | team_id==44
 replace state = "Hirshabelle" if team_id >= 22 & team_id <= 27
 replace state = "South West" if team_id >= 28 & team_id <= 35
 replace state = "Jubaland" if team_id >= 36 & team_id <= 43
+label var state "State as per the distribution of Teams"
 
 **Region
 decode ea_reg, g(ea_reg_str)
@@ -36,13 +37,17 @@ label drop enum_id
 
 **Interviews meeting validity criteria for GPS coordinates
 g gps_ok = (gps_coord_y_n == 1 & not_within_EA == 0)
+label var gps_ok "Whether the interview is meeting validity criteria for GPS coordinates"
 
 **Behavioural treatment for valid and successful interviews
 g beh_treat0= (beh_treat_opt==0) if successful_valid==1
 g beh_treat1= (beh_treat_opt==1) if successful_valid==1
+label var beh_treat0 "Behavioural nudges not activated"
+label var beh_treat1 "Behavioural nudges activated"
 
 **Dummy variable to identify interviews where the fisheries module was activated
 g fisheries = (fishing_yn == 1) if successful_valid == 1
+label var fisheries "Whether the fisheries module was activated an valid and successful interviews"
 
 /*----------------------------------------------------------------------------*/
 /*       INDICATORS RELATING TO FOOD AND NON-FOOD CONSUMPTION MODULES         */
@@ -76,8 +81,14 @@ foreach var of varlist rf_relevanceyn* rnf_relevanceyn* {
 	}
 *Number of food items consumed
 egen nb_cons_food = rowtotal(cons_rf_relevanceyn*) if successful == 1
+g flag_food_empty = (nb_cons_food==0) if successful == 1
+label var nb_cons_food "Numer of food items said to be consumed"
+label var flag_food_empty "Whether no food item was said to be consumed"
 *Number of non-food items consumed
 egen nb_cons_non_food = rowtotal(cons_rnf_relevanceyn*) if successful == 1
+g flag_non_food_empty = (nb_cons_non_food==0) if successful == 1
+label var nb_cons_non_food "Numer of non-food items said to be consumed"
+label var flag_non_food_empty "Whether no non-food item was said to be consumed"
 *Proportion of no/don't know for food items
 egen ndkn_food = rowmean(not_cons_rf_relevanceyn*) if successful == 1
 label var ndkn_food "Proportion of food items with no or don't know for consumption answer"
@@ -124,10 +135,7 @@ label var ndkn_food_quant "Proportion of missing or don't know or refused to ans
 keep interview__id ndkn_food_quant
 
 **Merging with main dataset
-merge 1:1 interview__id using "${gsdTemp}/hh_monitoring_dashboard_temp1"
-*Flag if no food item was consumed by the household
-g flag_food_empty = (_merge == 2) if successful == 1
-drop _merge
+merge 1:1 interview__id using "${gsdTemp}/hh_monitoring_dashboard_temp1", nogenerate
 order ndkn_food_quant, last
 save "${gsdTemp}/hh_monitoring_dashboard_temp2", replace
 
@@ -173,14 +181,15 @@ drop ndkn_non_food_quant_* rnf_relevanceyn_* rnf_pric_total*
 
 *** 1. Proportion of missing answers in the main dataset
 *Dummy variables: whether each variable of the interview is missing or not
-ds athome-interview__key, has(type string)
+ds athome-share_phone_agencies , has(type string)
 local string0 `r(varlist)'
-local omit1 hh_list*
+ds hh_list__0-hh_list_separated__9
+local omit1 `r(varlist)'
 local string : list string0 - omit1
-ds athome-interview__key, has(type numeric)
-local numeric0 `r(varlist)'
-local omit2 hhh_id1_int
-local numeric : list numeric0 - omit2
+
+ds athome-share_phone_agencies, has(type numeric)
+local numeric `r(varlist)'
+
 foreach var of local string {
 	gen mi_`var' = (`var' == "##N/A##") if `var' != ""
 }
@@ -235,7 +244,8 @@ label var ndkn_remittances_ext "Whether answer to the question on receipt of rem
 g ndkn_remittances_int = (intremit12m_yn == -98 | intremit12m_yn == -99 | intremit12m_yn == -999999999 | intremit12m_yn == -1000000000) if successful == 1
 label var ndkn_remittances_int "Whether answer to the question on receipt of remittances (from within the country) is missing/don't know/refused to answer"
 ** Flag if info on remittances is missing (eithe domestic or international remittances)
-g flag_remit = (ndkn_remittances_ext ==1 | ndkn_remittances_int ==1)
+g flag_remit = (ndkn_remittances_ext ==1 | ndkn_remittances_int ==1) if successful == 1
+label var flag_remit "Whether answers to the question on receipt of remittances - domestic or international - are missing"
 
 *** 4. Key question: IDP status
 **Dummy variable: whether answer to the question on forced displacement is missing
@@ -284,7 +294,7 @@ label var flag_ndkn_edu "Whether all key variables on education are missing for 
 g flag_ndkn_house = ((housingtype == -98 | housingtype == -99 | housingtype == . | housingtype == -999999999 | housingtype == -1000000000) & ///
 				 (cook == -98 | cook == -99 | cook == . | cook == -999999999 | cook == -1000000000) & ///
 				 (toilet == -98 | toilet == -99 | toilet == . | toilet == -999999999 | toilet == -1000000000) & ///
-				 (roof_material == -98 | roof_material == -99 | roof_material == . | roof_material == -999999999 | roof_material == -1000000000)) 
+				 (roof_material == -98 | roof_material == -99 | roof_material == . | roof_material == -999999999 | roof_material == -1000000000)) if successful == 1
 label var flag_ndkn_house "Whether all key variables on housing conditions are missing"
 
 /*----------------------------------------------------------------------------*/
@@ -367,11 +377,21 @@ replace no_consent = 1 if athome == 1 & adult == 1 & maycontinue == 0
 **Number of household members for successful interviews
 g nhhm_succ = nhhm if successful == 1
 
+**Number of assets owned
+foreach var of varlist ra_own* {
+		gen own_`var' = (`var' == 1) if successful == 1
+	}
+egen nb_own_assets = rowtotal(own_*) if successful == 1
+drop own_*
+*Flag if no asset is owned
+g flag_assets_empty = (nb_own_assets == 0) if successful == 1
+label var flag_assets_empty "Whether no asset is said to be owned by the household"
+	
 **Whether the household was displaced
 g disp = (migr_disp == 1) if successful == 1
-
-**Flag if the EA is an IDP camp but the household was said not to be displaced
+*Flag if the EA is an IDP camp but the household was said not to be displaced
 g flag_idp = (migr_disp == 0) if idp_ea_yn == 1
+label var flag_idp "Whether the EA is an IDP camp but the household was said not to be displaced"
 
 save "${gsdTemp}/hh_monitoring_dashboard_temp8", replace
 
@@ -399,7 +419,7 @@ collapse (sum) nb_itw=index itw_valid successful successful_valid val_succ1-val_
 	(mean) no_response nobody_home no_adult no_consent ///
 	(median) duration_med = duration_itw_min (mean) duration_mean = duration_itw_min ///
 	(min) duration_min = duration_itw_min (max) duration_max = duration_itw_min ///
-	(mean) nhhm_succ ///
+	(mean) nhhm_succ nb_own_assets ///
 	(sum) fisheries disp ///
 	(mean) emp_7d_active target_itw_ea , ///
 	by(state ea_reg strata_id strata_name id_ea team_id enum_id enum_name date_stata)
@@ -473,6 +493,7 @@ label var duration_mean "Mean duration of successful interviews - minutes"
 label var duration_min "Min duration of successful interviews - minutes"
 label var duration_max "Max duration of successful interviews - minutes"
 label var nhhm_succ "Average number of household members for successful interviews"
+label var nb_own_assets "Average number of assets owned by the household"
 label var emp_7d_active "Average number of people in employment/inside the labour force"
 label var fisheries "Number of valid and successful inteviews for which the fisheries module was activated"
 label var disp "Total number of displaced households"
@@ -484,7 +505,7 @@ order state ea_reg strata_id strata_name id_ea team_id enum_id enum_name date_st
 	nb_cons_food nb_cons_non_food ndkn_food ndkn_food_quant ndkn_non_food ndkn_non_food_quant ndkn_IDP_status ndkn_remittances_ext ndkn_labour ///
 	nb_skip_patterns prop_skip_patterns soft_const_adult soft_const_edu ///
 	duration_med duration_mean duration_min duration_max ///
-	nhhm_succ emp_7d_active fisheries disp issue target_itw_ea
+	nhhm_succ nb_own_assets emp_7d_active fisheries disp issue target_itw_ea
 	
 sort team_id enum_id date_stata
 
@@ -570,10 +591,10 @@ collapse (sum) nb_itw=index itw_valid successful successful_valid gps_ok ///
 	(mean) no_response nobody_home no_adult no_consent ///
 	(median) duration_med = duration_itw_min (mean) duration_mean = duration_itw_min ///
 	(min) duration_min = duration_itw_min (max) duration_max = duration_itw_min ///
-	(mean) nhhm_succ ///
+	(mean) nhhm_succ nb_own_assets ///
 	(sum) fisheries disp ///
 	(mean) emp_7d_active ///
-	(max) flag_food_empty flag_ndkn_edu flag_ndkn_house flag_ndkn_labour flag_remit flag_idp, ///
+	(max) flag_food_empty flag_non_food_empty flag_assets_empty flag_ndkn_edu flag_ndkn_house flag_ndkn_labour flag_remit flag_idp, ///
 	by(state team_id enum_id enum_name date_stata)
 
 *Number of valid and successful interviews - Cumulative by date
@@ -629,27 +650,29 @@ g nhhm_succ_ave = $nhhm_succ_ave
 11	- Answers on housing conditions missing
 12	- Number of years of education not realistic
 13  - No food item said to be consumed
-14  - Household was said not to be displaced whereas the EA is an IDP camp
+14  - No non-fodd item said to be consumed
+15  - No asset said to be owned
+16  - Household was said not to be displaced whereas the EA is an IDP camp
 */
 
 g flag = ""
 replace flag = flag + "/" + "Shorter duration of interviews than other enumerators" if duration_med < 80 & missing(duration_med) == 0
 replace flag = flag + "/" + "Lower number of household members on average than other enumerators and what is expected in the state" if nhhm_succ <= 3.5
 replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in main dataset" if missing_prop_main > 0.05
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in separated roster" if missing_prop_hh_roster_separated > 0.05 & missing(missing_prop_hh_roster_separated) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in household roster" if missing_prop_hhroster_age > 0.05 & missing(missing_prop_hhroster_age) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in motor roster" if missing_prop_motor > 0.05 & missing(missing_prop_motor) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in assets roster" if missing_prop_ra_assets > 0.05 & missing(missing_prop_ra_assets) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in assets roster before displacement" if missing_prop_ra_assets_prev > 0.05 & missing(missing_prop_ra_assets_prev) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in separated roster" if missing_prop_hh_roster_separated > 0.3 & missing(missing_prop_hh_roster_separated) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in household roster" if missing_prop_hhroster_age > 0.1 & missing(missing_prop_hhroster_age) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in motor roster" if missing_prop_motor > 0.3 & missing(missing_prop_motor) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in assets roster" if missing_prop_ra_assets > 0.1 & missing(missing_prop_ra_assets) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in assets roster before displacement" if missing_prop_ra_assets_prev > 0.3 & missing(missing_prop_ra_assets_prev) == 0
 replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in main food roster" if missing_prop_rf_food > 0.05 & missing(missing_prop_rf_food) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in cereals roster" if missing_prop_rf_food_cereals > 0.05 & missing(missing_prop_rf_food_cereals) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in fruits roster" if missing_prop_rf_food_fruit > 0.05 & missing(missing_prop_rf_food_fruit) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in meat roster" if missing_prop_rf_food_meat > 0.05 & missing(missing_prop_rf_food_meat) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in vegetables roster" if missing_prop_rf_food_vegetables > 0.05 & missing(missing_prop_rf_food_vegetables) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in livestock roster" if missing_prop_rl_livestock > 0.05 & missing(missing_prop_rl_livestock) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in livestock roster before displacement" if missing_prop_rl_livestock_pre > 0.05 & missing(missing_prop_rl_livestock_pre) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in cereals roster" if missing_prop_rf_food_cereals > 0.1 & missing(missing_prop_rf_food_cereals) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in fruits roster" if missing_prop_rf_food_fruit > 0.1 & missing(missing_prop_rf_food_fruit) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in meat roster" if missing_prop_rf_food_meat > 0.1 & missing(missing_prop_rf_food_meat) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in vegetables roster" if missing_prop_rf_food_vegetables > 0.1 & missing(missing_prop_rf_food_vegetables) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in livestock roster" if missing_prop_rl_livestock > 0.1 & missing(missing_prop_rl_livestock) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in livestock roster before displacement" if missing_prop_rl_livestock_pre > 0.3 & missing(missing_prop_rl_livestock_pre) == 0
 replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in non-food roster" if missing_prop_rnf_nonfood > 0.05 & missing(missing_prop_rnf_nonfood) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in shocks roster" if missing_prop_shocks > 0.05 & missing(missing_prop_shocks) == 0
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in shocks roster" if missing_prop_shocks > 0.1 & missing(missing_prop_shocks) == 0
 replace flag = flag + "/" + "Higher proportion of items said not to be consumed than other enumerators" if (ndkn_food + ndkn_non_food)/2 > 0.47 
 replace flag = flag + "/" + "Too high proportion of missing quantities and prices for items consumed" if ///
 	(ndkn_food_quant != . & ndkn_non_food_quant != . & (ndkn_food_quant + ndkn_non_food_quant)/2 > 0.3) | ///
@@ -662,6 +685,8 @@ replace flag = flag + "/" + "Answers on key questions on employment missing" if 
 replace flag = flag + "/" + "Answers on key questions on education missing" if flag_ndkn_edu == 1
 replace flag = flag + "/" + "Answers on housing conditions missing" if flag_ndkn_house == 1
 replace flag = flag + "/" + "No food item said to be consumed" if flag_food_empty == 1
+replace flag = flag + "/" + "No non-food item said to be consumed" if flag_non_food_empty == 1
+replace flag = flag + "/" + "No durable good said to be owned" if flag_assets_empty == 1
 replace flag = flag + "/" + "Household was said not to be displaced whereas the EA is an IDP camp" if flag_idp == 1
 replace flag = flag + "/" + "Number of years of education not realistic" if soft_const_edu > 0 & missing(soft_const_edu) == 0
 replace flag = substr(flag,2,.)
@@ -717,6 +742,7 @@ label var duration_mean "Mean duration of interviews - minutes"
 label var duration_min "Min duration of interviews - minutes"
 label var duration_max "Max duration of interviews - minutes"
 label var nhhm_succ "Average number of household members for successful interviews"
+label var nb_own_assets "Average number of assets owned by the household"
 label var emp_7d_active "Average number of people in employment/inside the labour force"
 label var fisheries "Number of valid and successful inteviews for which the fisheries module was activated"
 label var disp "Total number of displaced households"
@@ -731,7 +757,7 @@ keep state team_id enum_id enum_name date_stata ///
 	missing_prop* nb_cons_food nb_cons_non_food ndkn_food ndkn_food_quant ndkn_non_food ndkn_non_food_quant ///
 	ndkn_IDP_status ndkn_remittances_ext ndkn_labour ///
 	nb_skip_patterns prop_skip_patterns soft_const_adult soft_const_edu ///
-	duration_med duration_mean duration_min duration_max nhhm_succ emp_7d_active fisheries disp flag ///
+	duration_med duration_mean duration_min duration_max nhhm_succ nb_own_assets emp_7d_active fisheries disp flag ///
 	duration_med_all ndkn_food_non_food_ave nhhm_succ_ave
 
 order state team_id enum_id enum_name date_stata ///
@@ -740,7 +766,7 @@ order state team_id enum_id enum_name date_stata ///
 	missing_prop* nb_cons_food nb_cons_non_food ndkn_food ndkn_food_quant ndkn_non_food ndkn_non_food_quant ///
 	ndkn_IDP_status ndkn_remittances_ext ndkn_labour ///
 	nb_skip_patterns prop_skip_patterns soft_const_adult soft_const_edu ///
-	duration_med duration_mean duration_min duration_max nhhm_succ emp_7d_active fisheries disp flag ///
+	duration_med duration_mean duration_min duration_max nhhm_succ nb_own_assets emp_7d_active fisheries disp flag ///
 	duration_med_all ndkn_food_non_food_ave nhhm_succ_ave
 
 sort team_id enum_id date_stata
