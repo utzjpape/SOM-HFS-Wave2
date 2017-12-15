@@ -1,6 +1,5 @@
 *Check the completeness of submissions between parent and child files
  
-
 set more off
 set seed 23081650 
 set sortseed 11041895
@@ -50,28 +49,19 @@ use"${gsdData}/0-RawTemp/hh_valid_successful.dta", clear
 merge 1:m interview__id using "${gsdData}/0-RawTemp/shocks_valid_successful.dta", nogen keep(match master)
 
 
-//IDENTIFY INCOMPLETE SUBMISSIONS 
 
-use "C:\Users\WB484006\Desktop\HHs_no_food.dta", clear
-merge 1:1 interview__id using "C:\Users\WB484006\Desktop\HHs_no_food_cerals.dta"
+*Introduce corrections: drop incomplete submissions with no information on food consumption and assets
+local files hh hh_roster_separated hhroster_age motor ra_assets ra_assets_prev rf_food ///
+	rf_food_cereals rf_food_fruit rf_food_meat rf_food_vegetables rl_livestock rl_livestock_pre ///
+	rnf_nonfood shocks
+qui foreach file in `files' {
+    use "${gsdData}/0-RawTemp/`file'_valid_successful.dta", clear
+	
+	drop if interview__id=="7c751e8842b8484c96c277e8b4daccc4"
+	drop if interview__id=="2bb94bf0fc92475983f93d2a5836f47e"
+	drop if interview__id=="852c6a6662ff44c48d5afcafc9425340"
+	drop if interview__id=="968de76006a847ef80fde49fc8b03bf5"
 
-use "C:\Users\WB484006\Desktop\HHs_no_food.dta", clear
-merge 1:1 interview__id using "C:\Users\WB484006\Desktop\HHs_no_food_fruits.dta"
-
-use "C:\Users\WB484006\Desktop\HHs_no_food.dta", clear
-merge 1:1 interview__id using "C:\Users\WB484006\Desktop\HHs_no_food_vegetables.dta"
-
-use "C:\Users\WB484006\Desktop\HHs_no_food.dta", clear
-merge 1:1 interview__id using "C:\Users\WB484006\Desktop\HHs_no_food_meat.dta"
-
-
-
-
-use "C:\Users\WB484006\Desktop\HHs_no_food.dta", clear
-merge 1:1 interview__id using "C:\Users\WB484006\Desktop\HHs_no_food_cerals.dta", nogen keep(match)
-merge 1:1 interview__id using "C:\Users\WB484006\Desktop\HHs_no_food_fruits.dta", nogen keep(match)
-merge 1:1 interview__id using "C:\Users\WB484006\Desktop\HHs_no_food_vegetables.dta", nogen keep(match)
-merge 1:1 interview__id using "C:\Users\WB484006\Desktop\HHs_no_food_meat.dta", nogen keep(match)
-merge 1:1 interview__id using "C:\Users\WB484006\Desktop\HHs_no_assets.dta", nogen keep(match)
-
+    save "${gsdData}/0-RawTemp/`file'_valid_successful_complete.dta", replace
+}
 
