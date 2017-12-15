@@ -582,6 +582,10 @@ restore
 
 preserve
 
+g nb_cons_food_low = (nb_cons_food <= 5)
+g nb_cons_non_food_low = (nb_cons_non_food <= 2)
+g nb_own_assets_low = (nb_own_assets <= 2)
+
 *Collapse by enumerator and date
 collapse (sum) nb_itw=index itw_valid successful successful_valid gps_ok ///
 	(mean) missing_prop_* ///
@@ -594,7 +598,8 @@ collapse (sum) nb_itw=index itw_valid successful successful_valid gps_ok ///
 	(mean) nhhm_succ nb_own_assets ///
 	(sum) fisheries disp ///
 	(mean) emp_7d_active ///
-	(max) flag_food_empty flag_non_food_empty flag_assets_empty flag_ndkn_edu flag_ndkn_house flag_ndkn_labour flag_remit flag_idp, ///
+	(max) flag_food_empty flag_non_food_empty flag_assets_empty flag_ndkn_edu flag_ndkn_house flag_ndkn_labour flag_remit flag_idp ///
+	(sum) nb_cons_food_low nb_cons_non_food_low nb_own_assets_low , ///
 	by(state team_id enum_id enum_name date_stata)
 
 *Number of valid and successful interviews - Cumulative by date
@@ -652,43 +657,82 @@ g nhhm_succ_ave = $nhhm_succ_ave
 13  - No food item said to be consumed
 14  - No non-fodd item said to be consumed
 15  - No asset said to be owned
-16  - Household was said not to be displaced whereas the EA is an IDP camp
+16  - Low number of food items said to be consumed
+17  - Low number of non-food items said to be consumed
+18  - Low number of assets said to be owned
+19  - Household was said not to be displaced whereas the EA is an IDP camp
 */
 
-g flag = ""
-replace flag = flag + "/" + "Shorter duration of interviews than other enumerators" if duration_med < 80 & missing(duration_med) == 0
-replace flag = flag + "/" + "Lower number of household members on average than other enumerators and what is expected in the state" if nhhm_succ <= 3.5
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in main dataset" if missing_prop_main > 0.05
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in separated roster" if missing_prop_hh_roster_separated > 0.3 & missing(missing_prop_hh_roster_separated) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in household roster" if missing_prop_hhroster_age > 0.1 & missing(missing_prop_hhroster_age) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in motor roster" if missing_prop_motor > 0.3 & missing(missing_prop_motor) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in assets roster" if missing_prop_ra_assets > 0.1 & missing(missing_prop_ra_assets) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in assets roster before displacement" if missing_prop_ra_assets_prev > 0.3 & missing(missing_prop_ra_assets_prev) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in main food roster" if missing_prop_rf_food > 0.05 & missing(missing_prop_rf_food) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in cereals roster" if missing_prop_rf_food_cereals > 0.1 & missing(missing_prop_rf_food_cereals) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in fruits roster" if missing_prop_rf_food_fruit > 0.1 & missing(missing_prop_rf_food_fruit) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in meat roster" if missing_prop_rf_food_meat > 0.1 & missing(missing_prop_rf_food_meat) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in vegetables roster" if missing_prop_rf_food_vegetables > 0.1 & missing(missing_prop_rf_food_vegetables) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in livestock roster" if missing_prop_rl_livestock > 0.1 & missing(missing_prop_rl_livestock) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in livestock roster before displacement" if missing_prop_rl_livestock_pre > 0.3 & missing(missing_prop_rl_livestock_pre) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in non-food roster" if missing_prop_rnf_nonfood > 0.05 & missing(missing_prop_rnf_nonfood) == 0
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in shocks roster" if missing_prop_shocks > 0.1 & missing(missing_prop_shocks) == 0
-replace flag = flag + "/" + "Higher proportion of items said not to be consumed than other enumerators" if (ndkn_food + ndkn_non_food)/2 > 0.47 
-replace flag = flag + "/" + "Too high proportion of missing quantities and prices for items consumed" if ///
-	(ndkn_food_quant != . & ndkn_non_food_quant != . & (ndkn_food_quant + ndkn_non_food_quant)/2 > 0.3) | ///
+g flag_duration = (duration_med < 80 & missing(duration_med) == 0)
+g flag_hhm = (nhhm_succ <= 3.5)
+g flag_missing_main = (missing_prop_main > 0.05)
+g flag_roster_separated = (missing_prop_hh_roster_separated > 0.3 & missing(missing_prop_hh_roster_separated) == 0)
+g flag_roster_hh = (missing_prop_hhroster_age > 0.1 & missing(missing_prop_hhroster_age) == 0)
+g flag_roster_motor = (missing_prop_motor > 0.3 & missing(missing_prop_motor) == 0)
+g flag_roster_assets = (missing_prop_ra_assets > 0.1 & missing(missing_prop_ra_assets) == 0)
+g flag_roster_assets_prev = (missing_prop_ra_assets_prev > 0.3 & missing(missing_prop_ra_assets_prev) == 0)
+g flag_roster_food = (missing_prop_rf_food > 0.05 & missing(missing_prop_rf_food) == 0)
+g flag_roster_cereals = (missing_prop_rf_food_cereals > 0.1 & missing(missing_prop_rf_food_cereals) == 0)
+g flag_roster_fruits = (missing_prop_rf_food_fruit > 0.1 & missing(missing_prop_rf_food_fruit) == 0)
+g flag_roster_meat = (missing_prop_rf_food_meat > 0.1 & missing(missing_prop_rf_food_meat) == 0)
+g flag_roster_vegetables = (missing_prop_rf_food_vegetables > 0.1 & missing(missing_prop_rf_food_vegetables) == 0)
+g flag_roster_livestock = (missing_prop_rl_livestock > 0.1 & missing(missing_prop_rl_livestock) == 0)
+g flag_roster_livestock_pre = (missing_prop_rl_livestock_pre > 0.3 & missing(missing_prop_rl_livestock_pre) == 0)
+g flag_roster_non_food = (missing_prop_rnf_nonfood > 0.05 & missing(missing_prop_rnf_nonfood) == 0)
+g flag_roster_shocks = (missing_prop_shocks > 0.1 & missing(missing_prop_shocks) == 0)
+g flag_ndkn_food_non_food = ((ndkn_food + ndkn_non_food)/2 > 0.47)
+g flag_prices_quant_food_non_food = ((ndkn_food_quant != . & ndkn_non_food_quant != . & (ndkn_food_quant + ndkn_non_food_quant)/2 > 0.3) | ///
 	(ndkn_food_quant != . & ndkn_non_food_quant == . & ndkn_food_quant > 0.3) | ///
-	(ndkn_food_quant == . & ndkn_non_food_quant != . & ndkn_non_food_quant > 0.3)
-replace flag = flag + "/" + "Higher number of key questions skipped" if prop_skip_patterns > $threshold_skip_patterns
+	(ndkn_food_quant == . & ndkn_non_food_quant != . & ndkn_non_food_quant > 0.3))
+g flag_skip = (prop_skip_patterns > $threshold_skip_patterns)
+*flag_remit
+g flag_missing_idp = (ndkn_IDP_status > 0)
+*flag_ndkn_labour
+*flag_ndkn_edu
+*flag_ndkn_house
+*flag_food_empty
+*flag_non_food_empty
+*flag_assets_empty
+g flag_nb_cons_food_low = (nb_cons_food_low >= 1)
+g flag_nb_cons_non_food_low = (nb_cons_non_food_low >= 1)
+g flag_nb_own_assets_low = (nb_own_assets_low >= 2)
+replace flag_idp = 0 if missing(flag_idp)
+g flag_edu_not_realistic = (soft_const_edu > 0 & missing(soft_const_edu) == 0)
+
+g flag = ""
+replace flag = flag + "/" + "Shorter duration of interviews than other enumerators" if flag_duration == 1
+replace flag = flag + "/" + "Lower number of household members on average than other enumerators and what is expected in the state" if flag_hhm == 1
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in main dataset" if flag_missing_main == 1
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in separated roster" if flag_roster_separated == 1
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in household roster" if flag_roster_hh == 1
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in motor roster" if flag_roster_motor == 1
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in assets roster" if flag_roster_assets == 1
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in assets roster before displacement" if flag_roster_assets_prev == 1
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in main food roster" if flag_roster_food == 1
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in cereals roster" if flag_roster_cereals == 1
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in fruits roster" if flag_roster_fruits == 1
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in meat roster" if flag_roster_meat == 1
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in vegetables roster" if flag_roster_vegetables == 1
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in livestock roster" if flag_roster_livestock == 1
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in livestock roster before displacement" if flag_roster_livestock_pre == 1
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in non-food roster" if flag_roster_non_food == 1
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in shocks roster" if flag_roster_shocks == 1
+replace flag = flag + "/" + "Higher proportion of items said not to be consumed than other enumerators" if flag_ndkn_food_non_food == 1
+replace flag = flag + "/" + "Too high proportion of missing quantities and prices for items consumed" if flag_prices_quant_food_non_food == 1
+replace flag = flag + "/" + "Higher number of key questions skipped" if flag_skip == 1
 replace flag = flag + "/" + "Answers on questions on remittances missing" if flag_remit == 1
-replace flag = flag + "/" + "Answers on questions on IDP status missing" if ndkn_IDP_status > 0
+replace flag = flag + "/" + "Answers on questions on IDP status missing" if flag_missing_idp == 1
 replace flag = flag + "/" + "Answers on key questions on employment missing" if flag_ndkn_labour == 1
 replace flag = flag + "/" + "Answers on key questions on education missing" if flag_ndkn_edu == 1
 replace flag = flag + "/" + "Answers on housing conditions missing" if flag_ndkn_house == 1
 replace flag = flag + "/" + "No food item said to be consumed" if flag_food_empty == 1
 replace flag = flag + "/" + "No non-food item said to be consumed" if flag_non_food_empty == 1
 replace flag = flag + "/" + "No durable good said to be owned" if flag_assets_empty == 1
+replace flag = flag + "/" + "Low number of food items said to be consumed" if flag_nb_cons_food_low == 1
+replace flag = flag + "/" + "Low number of non-food items said to be consumed" if flag_nb_cons_non_food_low == 1
+replace flag = flag + "/" + "Low number of durable goods said to be owned" if flag_nb_own_assets_low == 1
 replace flag = flag + "/" + "Household was said not to be displaced whereas the EA is an IDP camp" if flag_idp == 1
-replace flag = flag + "/" + "Number of years of education not realistic" if soft_const_edu > 0 & missing(soft_const_edu) == 0
+replace flag = flag + "/" + "Number of years of education not realistic" if flag_edu_not_realistic == 1
 replace flag = substr(flag,2,.)
 
 *Final cleaning and labelling
@@ -751,6 +795,8 @@ label var duration_med_all "Median duration of successful interviews - across al
 label var ndkn_food_non_food_ave "Average proportion of 'no'/'don't know' in the food and non-food consumption module - across all Enumerators"	
 label var nhhm_succ_ave "Average number of household members - across all Enumerators"
 
+save "${gsdTemp}/hh_monitoring_dashboard_temp10", replace
+
 keep state team_id enum_id enum_name date_stata ///
 	nb_itw itw_valid successful successful_valid successful_valid_cum ///
 	gps_ok gps_prop valid_prop no_response nobody_home no_adult no_consent ///
@@ -781,6 +827,9 @@ restore
 /*----------------------------------------------------------------------------*/
 
 preserve
+
+*Include one EA which could not be completed for security reasons in the final sample so that it is not flagged as not sampled
+replace sample_final_uri = 1 if id_ea==64279
 
 *** Number of EAs originally sampled or active replacements used per date
 *Originally sampled or active replacements
@@ -854,6 +903,9 @@ save "${gsdTemp}/strata_target_itw.dta", replace
 restore
 
 preserve
+
+*Include one EA which could not be completed for security reasons in the final sample so that it is not flagged as not sampled
+replace sample_final_uri = 1 if id_ea==64279
 
 *** Number of EAs originally sampled or active replacements used per strata
 *Originally sampled or active replacements
@@ -1015,4 +1067,22 @@ gsort -date_stata team_id enum_id int_no itw_invalid_reason
 
 *Export
 export excel using "${gsdShared}/2-Output/SHFS2_Monitoring_Dashboard_Master.xlsm", sheet("Output - Invalid interviews") cell(B9) sheetmodify
+restore
+
+/*----------------------------------------------------------------------------*/
+/*               MONITORING DASHBOARD: OUTPUT FLAGS                           */
+/*----------------------------------------------------------------------------*/
+
+preserve
+
+use "${gsdTemp}/hh_monitoring_dashboard_temp10", clear
+
+keep state team_id enum_id enum_name date_stata flag_*
+order state team_id enum_id enum_name date_stata flag_duration flag_hhm ///
+	flag_missing_main flag_roster_separated flag_roster_hh flag_roster_motor flag_roster_assets flag_roster_assets_prev flag_roster_food flag_roster_cereals flag_roster_fruits  flag_roster_meat flag_roster_vegetables flag_roster_livestock flag_roster_livestock_pre flag_roster_non_food flag_roster_shocks ///
+	flag_ndkn_food_non_food flag_prices_quant_food_non_food flag_skip flag_remit flag_missing_idp flag_ndkn_labour flag_ndkn_edu flag_ndkn_house ///
+	flag_food_empty flag_non_food_empty flag_assets_empty flag_nb_cons_food_low flag_nb_cons_non_food_low flag_nb_own_assets_low flag_idp flag_edu_not_realistic
+*Export	
+export excel using "${gsdShared}/2-Output/SHFS2_Monitoring_Dashboard_Master.xlsm", sheet("Output - Flags") cell(B6) sheetmodify
+
 restore
