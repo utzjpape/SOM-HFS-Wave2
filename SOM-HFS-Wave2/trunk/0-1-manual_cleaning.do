@@ -50,14 +50,23 @@ replace enum_id = 203 if interview__id=="d5abc9e7adb24ff28d98998b4039e273"
 *04/12/2017
 replace ea_reg=5 if interview__id=="568d421b53b1407ca17d51362e22c68c"
 replace ea_reg=5 if interview__id=="92950f08645d485a8261144204ab4e5c"
+*05/12/2017
+replace ea_reg=18 if interview__id=="cb6f2d926ba548d796e0816b29c7d183"
 *08/12/2017
 replace ea_reg=14 if interview__id=="42755ff8b2324f27b13fb6c19b58c914"
+*10/12/2017
+replace ea_reg=18 if interview__id=="5e7488837e1e4798baa4dea9a8e92930"
+*13/12/2017
+replace ea_reg=3 if interview__id=="2f4a50488d6c43769cbea7764b9c853c"
+replace ea_reg=5 if interview__id=="2f54487868994e87b194740416f6fd98"
 *tab ea_reg
+*tab ea ea_reg
 
 *** EA number cleaning
 *08/12/2017
 replace ea=6116000 if interview__id=="5c40caffe54044deb59ed86dc5610e85"
 *tab ea
+*tab team_id ea
 
 *** Missing date cleaning at the beginning and at the end of the interview
 *Correcting when missing date using dates and times in metadata
