@@ -137,6 +137,17 @@ replace today="2017-12-13T07:32:27-05:00" if interview__id=="6bd4d93f229241d3a14
 replace today_end="2017-12-13T15:24:05-05:00" if interview__id=="6bd4d93f229241d3a142fc3d8ac51c1b"
 replace today="2017-12-13T05:02:39-05:00" if interview__id=="cde1b78c1eca4334a40d1487f4be68c2"
 replace today_end="2017-12-13T07:40:11-05:00" if interview__id=="cde1b78c1eca4334a40d1487f4be68c2"
+*14/12/2017
+replace today="2017-12-14T10:28:05-05:00" if interview__id=="9d6f1610a8934bbf94278d5d223ae0a8"
+replace today_end="2017-12-14T14:41:17-05:00" if interview__id=="9d6f1610a8934bbf94278d5d223ae0a8"
+replace today="2017-12-14T04:34:47-05:00" if interview__id=="df701fbdcded45c793b27b7b7e6c3ded"
+replace today_end="2017-12-14T09:49:51-05:00" if interview__id=="df701fbdcded45c793b27b7b7e6c3ded"
+replace today="2017-12-14T07:33:38-05:00" if interview__id=="763cee868daf498a8336ea76b41a449f"
+replace today_end="2017-12-14T10:03:08-05:00" if interview__id=="763cee868daf498a8336ea76b41a449f"
+replace today="2017-12-14T00:35:19-05:00" if interview__id=="958089fc40d248a8b99953f6b11bf4b2"
+replace today_end="2017-12-14T03:06:43-05:00" if interview__id=="958089fc40d248a8b99953f6b11bf4b2"
+replace today="2017-12-14T05:17:10-05:00" if interview__id=="eeb56606929c4d67926496469a113859"
+replace today_end="2017-12-14T07:33:04-05:00" if interview__id=="eeb56606929c4d67926496469a113859"
 
 *Identify observations with missing dates
 *br if today == "##N/A##"
