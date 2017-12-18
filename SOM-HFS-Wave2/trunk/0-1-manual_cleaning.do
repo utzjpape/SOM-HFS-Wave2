@@ -15,6 +15,8 @@ use "${gsdDownloads}/Somali High Frequency Survey - Wave 2 - Fieldwork", clear
 drop if interview__id=="42755ff8b2324f27b13fb6c19b58c914"
 drop if interview__id=="5098f72447fe4d4fa031cc3376c71c4c"
 drop if interview__id=="c59c6ad28b2d4365a54874c7e86a4790"
+drop if interview__id=="38a4e9aef58840f8a344415df12b6ccd"
+drop if interview__id=="c2a6f03a61234ddd847fb0c8c61a9b17"
 save "${gsdTemp}/hh_without_empty_obs", replace
 
 * Rosters
@@ -26,6 +28,8 @@ foreach file in `files' {
 	drop if interview__id=="42755ff8b2324f27b13fb6c19b58c914" 
 	drop if interview__id=="5098f72447fe4d4fa031cc3376c71c4c"
 	drop if interview__id=="c59c6ad28b2d4365a54874c7e86a4790"
+	drop if interview__id=="38a4e9aef58840f8a344415df12b6ccd"
+	drop if interview__id=="c2a6f03a61234ddd847fb0c8c61a9b17"
 	save "${gsdData}/0-RawTemp/`file'_manual_cleaning.dta", replace
 }
 
@@ -59,6 +63,8 @@ replace ea_reg=18 if interview__id=="5e7488837e1e4798baa4dea9a8e92930"
 *13/12/2017
 replace ea_reg=3 if interview__id=="2f4a50488d6c43769cbea7764b9c853c"
 replace ea_reg=5 if interview__id=="2f54487868994e87b194740416f6fd98"
+*15/12/2017
+replace ea_reg=11 if interview__id=="9dd0b0a2adeb41a1940795bb1c705e3b"
 *tab ea_reg
 *tab ea ea_reg
 
@@ -67,6 +73,31 @@ replace ea_reg=5 if interview__id=="2f54487868994e87b194740416f6fd98"
 replace ea=6116000 if interview__id=="5c40caffe54044deb59ed86dc5610e85"
 *tab ea
 *tab team_id ea
+
+*** Team number cleaning
+*15/12/2017
+replace team_id=25 if interview__id=="b5c05ad294c54541bf5935af4af9f143"
+replace team_id=25 if interview__id=="895ca6bc2ea2462eb1aec1d4f0181d9c"
+replace team_id=25 if interview__id=="6887628dd19e4cd896addeb9c60b3d8e"
+replace team_id=26 if interview__id=="6a68e5a0d113442baf111bdb1e9e5e6a"
+replace team_id=26 if interview__id=="ddb22faac8a043a4821cb7c20a577029"
+replace team_id=26 if interview__id=="9c2e66e34803410886193b96c428d566"
+replace team_id=26 if interview__id=="c2df02cdf67e4ae9a207080edf01bb28"
+replace team_id=26 if interview__id=="567bfe7c36ad4f71b01edc91af10ad80"
+
+*16/12/2017
+replace team_id=25 if interview__id=="46469c99777b43cdb08c9bc7d6fbac43"
+replace team_id=25 if interview__id=="45ec02b4a6eb4f92b82a84b5257782ae"
+replace team_id=25 if interview__id=="db79c5fbde0f4fcb89baaa49d4fe2481"
+replace team_id=26 if interview__id=="7efe096ecf414c1eaf2f4349053419d0"
+
+*17/12/2017
+replace team_id=25 if interview__id=="9a4d3daeef0e4a7d81a5ffa748472347"
+replace team_id=25 if interview__id=="702823a58f2640a19eef9c08c1c7d43f"
+replace team_id=25 if interview__id=="a6c495964269458eadb51ec2061e2889"
+replace team_id=27 if interview__id=="b34df01d78b447188888163a461d9b3f"
+replace team_id=27 if interview__id=="db42ad2e2999498d83d530a4163c72e1"
+replace team_id=27 if interview__id=="e1481985c9814935b8a97130192c87cf"
 
 *** Missing date cleaning at the beginning and at the end of the interview
 *Correcting when missing date using dates and times in metadata
@@ -157,6 +188,35 @@ replace today="2017-12-14T00:35:19-05:00" if interview__id=="958089fc40d248a8b99
 replace today_end="2017-12-14T03:06:43-05:00" if interview__id=="958089fc40d248a8b99953f6b11bf4b2"
 replace today="2017-12-14T05:17:10-05:00" if interview__id=="eeb56606929c4d67926496469a113859"
 replace today_end="2017-12-14T07:33:04-05:00" if interview__id=="eeb56606929c4d67926496469a113859"
+*15/12/2017
+replace today="2017-12-15T15:33:05-05:00" if interview__id=="38a4e9aef58840f8a344415df12b6ccd"
+replace today_end="2017-12-15T16:04:04-05:00" if interview__id=="38a4e9aef58840f8a344415df12b6ccd"
+replace today="2017-12-15T11:13:05-05:00" if interview__id=="2221ddd0e64c4333ad0d4db696bd6ce2"
+replace today_end="2017-12-15T18:41:04-05:00" if interview__id=="2221ddd0e64c4333ad0d4db696bd6ce2"
+replace today="2017-12-15T08:35:05-05:00" if interview__id=="d1b9464013274672870cc13cf2a620ef"
+replace today_end="2017-12-15T10:32:04-05:00" if interview__id=="d1b9464013274672870cc13cf2a620ef"
+replace today="2017-12-15T09:40:05-05:00" if interview__id=="9dd0b0a2adeb41a1940795bb1c705e3b"
+replace today_end="2017-12-15T13:54:04-05:00" if interview__id=="9dd0b0a2adeb41a1940795bb1c705e3b"
+replace today="2017-12-15T03:32:04-05:00" if interview__id=="95881491c988497ea0d7d7fda60353c3"
+replace today_end="2017-12-15T06:03:11-05:00" if interview__id=="95881491c988497ea0d7d7fda60353c3"
+replace today="2017-12-15T07:44:37-05:00" if interview__id=="16f9ebcc15b34c65b9dc2e67ba97cefa"
+replace today_end="2017-12-15T10:04:17-05:00" if interview__id=="16f9ebcc15b34c65b9dc2e67ba97cefa"
+*16/12/2017
+replace today="2017-12-16T07:56:05-05:00" if interview__id=="7d807d821717481aab99fe0c4720b64f"
+replace today_end="2017-12-16T10:23:04-05:00" if interview__id=="7d807d821717481aab99fe0c4720b64f"
+replace today="2017-12-16T08:08:05-05:00" if interview__id=="6eaaa22803364de493484798b5035e70"
+replace today_end="2017-12-16T10:28:05-05:00" if interview__id=="6eaaa22803364de493484798b5035e70"
+replace today="2017-12-16T08:13:45-05:00" if interview__id=="714c226694074d4f957c945dbe8fad8f"
+replace today_end="2017-12-16T10:02:05-05:00" if interview__id=="714c226694074d4f957c945dbe8fad8f"
+replace today="2017-12-16T00:57:23-05:00" if interview__id=="d4d229d0f04249709a488d125963cfa0"
+replace today_end="2017-12-16T03:06:31-05:00" if interview__id=="d4d229d0f04249709a488d125963cfa0"
+replace today="2017-12-16T04:17:55-05:00" if interview__id=="5e2abc1c33724f0c805acddefe1dcb08"
+replace today_end="2017-12-16T06:23:33-05:00" if interview__id=="5e2abc1c33724f0c805acddefe1dcb08"
+*17/12/2017
+replace today="2017-12-17T14:10:55-05:00" if interview__id=="886a67c353834d11998284b407f2801a"
+replace today_end="2017-12-17T15:39:33-05:00" if interview__id=="886a67c353834d11998284b407f2801a"
+
+
 
 *Identify observations with missing dates
 *br if today == "##N/A##"
@@ -194,6 +254,10 @@ replace today_end="2017-12-12T08:49:41-05:00" if interview__id=="17ca0b073b3542e
 *13/12/2017
 replace today="2017-12-13T08:48:41-05:00" if interview__id=="8b6af7e522d04aa9b5c6248ecc704f41"
 replace today_end="2017-12-13T11:05:58-05:00" if interview__id=="8b6af7e522d04aa9b5c6248ecc704f41"
+*15/12/2017
+replace today="2017-12-13T09:04:41-05:00" if interview__id=="7612a0d81d9143e9a6ffbd14a4c0665b"
+replace today_end="2017-12-13T12:10:58-05:00" if interview__id=="7612a0d81d9143e9a6ffbd14a4c0665b"
+
 
 *Creating duration variable
 *Start time 
