@@ -129,6 +129,8 @@ replace ea_status=1 if _merge == 3
 replace ea_status=4 if _merge == 3 & target_itw_ea == 12 & ((nb_valid_success_treat1_ea<2) | (nb_valid_success_treat2_ea<2) | (nb_valid_success_treat3_ea<2) | (nb_valid_success_treat4_ea<2)) & target_itw_ea>1 /*only for EAs with more than 1 block*/
 replace ea_status=4 if _merge == 3 & target_itw_ea == 24 & ((nb_valid_success_treat1_ea<4) | (nb_valid_success_treat2_ea<4) | (nb_valid_success_treat3_ea<4) | (nb_valid_success_treat4_ea<4)) & target_itw_ea>1 /*only for EAs with more than 1 block*/
 replace ea_status=4 if _merge == 3 & target_itw_ea == 36 & ((nb_valid_success_treat1_ea<6) | (nb_valid_success_treat2_ea<6) | (nb_valid_success_treat3_ea<6) | (nb_valid_success_treat4_ea<6)) & target_itw_ea>1 /*only for EAs with more than 1 block*/
+replace ea_status=4 if _merge == 3 & target_itw_ea == 48 & ((nb_valid_success_treat1_ea<8) | (nb_valid_success_treat2_ea<8) | (nb_valid_success_treat3_ea<8) | (nb_valid_success_treat4_ea<8)) & target_itw_ea>1 /*only for EAs with more than 1 block*/
+replace ea_status=4 if _merge == 3 & target_itw_ea == 60 & ((nb_valid_success_treat1_ea<10) | (nb_valid_success_treat2_ea<10) | (nb_valid_success_treat3_ea<10) | (nb_valid_success_treat4_ea<10)) & target_itw_ea>1 /*only for EAs with more than 1 block*/
 replace ea_status=3 if _merge == 3 & (nb_valid_success_itws_ea<target_itw_ea) & target_itw_ea>1 /*only for EAs with more than 1 block*/
 replace ea_status=2 if _merge == 3 & (sample_final_uri != 1 & sample_final_h != 1)
 replace ea_status=2 if _merge == 2
