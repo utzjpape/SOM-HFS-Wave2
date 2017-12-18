@@ -386,7 +386,17 @@ drop own_*
 *Flag if no asset is owned
 g flag_assets_empty = (nb_own_assets == 0) if successful == 1
 label var flag_assets_empty "Whether no asset is said to be owned by the household"
-	
+
+**Number of shocks faced during the last 12 months
+foreach var of varlist shocks0__* {
+		gen faced_`var' = (`var' == 1) if successful == 1
+	}
+egen nb_shocks = rowtotal(faced_*) if successful == 1
+drop faced_*
+*Flag if no shock was faced
+g flag_shocks_empty = (nb_shocks == 0) if successful == 1
+label var flag_shocks_empty "Whether no asset is said to be owned by the household"
+
 **Whether the household was displaced
 g disp = (migr_disp == 1) if successful == 1
 *Flag if the EA is an IDP camp but the household was said not to be displaced
@@ -599,7 +609,8 @@ collapse (sum) nb_itw=index itw_valid successful successful_valid gps_ok ///
 	(sum) fisheries disp ///
 	(mean) emp_7d_active ///
 	(max) flag_food_empty flag_non_food_empty flag_assets_empty flag_ndkn_edu flag_ndkn_house flag_ndkn_labour flag_remit flag_idp ///
-	(sum) nb_cons_food_low nb_cons_non_food_low nb_own_assets_low , ///
+	(min) flag_shocks_empty ///
+	(sum) nb_cons_food_low nb_cons_non_food_low nb_own_assets_low, ///
 	by(state team_id enum_id enum_name date_stata)
 
 *Number of valid and successful interviews - Cumulative by date
@@ -654,13 +665,15 @@ g nhhm_succ_ave = $nhhm_succ_ave
 10	- Answers on key questions on education missing
 11	- Answers on housing conditions missing
 12	- Number of years of education not realistic
-13  - No food item said to be consumed
-14  - No non-fodd item said to be consumed
-15  - No asset said to be owned
-16  - Low number of food items said to be consumed
-17  - Low number of non-food items said to be consumed
-18  - Low number of assets said to be owned
-19  - Household was said not to be displaced whereas the EA is an IDP camp
+13  - No food item said to be consumed for at least one interview
+14  - No non-food item said to be consumed for at least one interview
+15  - No asset said to be owned for at least one interview
+16  - Low number of food items said to be consumed on average
+17  - Low number of non-food items said to be consumed on average
+18  - Low number of assets said to be owned on average
+19  - No shocks faced for all interviews
+20  - Household was said not to be displaced whereas the EA is an IDP camp
+21  - Number of years of education not realistic
 */
 
 g flag_duration = (duration_med < 80 & missing(duration_med) == 0)
@@ -696,6 +709,7 @@ g flag_missing_idp = (ndkn_IDP_status > 0)
 g flag_nb_cons_food_low = (nb_cons_food_low >= 1)
 g flag_nb_cons_non_food_low = (nb_cons_non_food_low >= 1)
 g flag_nb_own_assets_low = (nb_own_assets_low >= 2)
+*flag_shocks_empty
 replace flag_idp = 0 if missing(flag_idp)
 g flag_edu_not_realistic = (soft_const_edu > 0 & missing(soft_const_edu) == 0)
 
@@ -706,8 +720,8 @@ replace flag = flag + "/" + "Higher proportion of missing answers than other enu
 replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in separated roster" if flag_roster_separated == 1
 replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in household roster" if flag_roster_hh == 1
 replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in motor roster" if flag_roster_motor == 1
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in assets roster" if flag_roster_assets == 1
-replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in assets roster before displacement" if flag_roster_assets_prev == 1
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in durable goods roster" if flag_roster_assets == 1
+replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in durable goods roster before displacement" if flag_roster_assets_prev == 1
 replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in main food roster" if flag_roster_food == 1
 replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in cereals roster" if flag_roster_cereals == 1
 replace flag = flag + "/" + "Higher proportion of missing answers than other enumerators in fruits roster" if flag_roster_fruits == 1
@@ -731,6 +745,7 @@ replace flag = flag + "/" + "No durable good said to be owned" if flag_assets_em
 replace flag = flag + "/" + "Low number of food items said to be consumed" if flag_nb_cons_food_low == 1
 replace flag = flag + "/" + "Low number of non-food items said to be consumed" if flag_nb_cons_non_food_low == 1
 replace flag = flag + "/" + "Low number of durable goods said to be owned" if flag_nb_own_assets_low == 1
+replace flag = flag + "/" + "No shocks for any of the interviews" if flag_shocks_empty == 1
 replace flag = flag + "/" + "Household was said not to be displaced whereas the EA is an IDP camp" if flag_idp == 1
 replace flag = flag + "/" + "Number of years of education not realistic" if flag_edu_not_realistic == 1
 replace flag = substr(flag,2,.)
@@ -1081,7 +1096,7 @@ keep state team_id enum_id enum_name date_stata flag_*
 order state team_id enum_id enum_name date_stata flag_duration flag_hhm ///
 	flag_missing_main flag_roster_separated flag_roster_hh flag_roster_motor flag_roster_assets flag_roster_assets_prev flag_roster_food flag_roster_cereals flag_roster_fruits  flag_roster_meat flag_roster_vegetables flag_roster_livestock flag_roster_livestock_pre flag_roster_non_food flag_roster_shocks ///
 	flag_ndkn_food_non_food flag_prices_quant_food_non_food flag_skip flag_remit flag_missing_idp flag_ndkn_labour flag_ndkn_edu flag_ndkn_house ///
-	flag_food_empty flag_non_food_empty flag_assets_empty flag_nb_cons_food_low flag_nb_cons_non_food_low flag_nb_own_assets_low flag_idp flag_edu_not_realistic
+	flag_food_empty flag_non_food_empty flag_assets_empty flag_nb_cons_food_low flag_nb_cons_non_food_low flag_nb_own_assets_low flag_shocks_empty flag_idp flag_edu_not_realistic
 *Export	
 export excel using "${gsdShared}/2-Output/SHFS2_Monitoring_Dashboard_Master.xlsm", sheet("Output - Flags") cell(B6) sheetmodify
 
