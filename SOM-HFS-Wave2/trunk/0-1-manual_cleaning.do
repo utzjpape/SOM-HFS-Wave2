@@ -65,6 +65,8 @@ replace ea_reg=3 if interview__id=="2f4a50488d6c43769cbea7764b9c853c"
 replace ea_reg=5 if interview__id=="2f54487868994e87b194740416f6fd98"
 *15/12/2017
 replace ea_reg=11 if interview__id=="9dd0b0a2adeb41a1940795bb1c705e3b"
+*18/12/2017
+replace ea_reg=3 if interview__id=="fb892e464ec546d39440f3a45bd6bfcc"
 *tab ea_reg
 *tab ea ea_reg
 
@@ -84,13 +86,11 @@ replace team_id=26 if interview__id=="ddb22faac8a043a4821cb7c20a577029"
 replace team_id=26 if interview__id=="9c2e66e34803410886193b96c428d566"
 replace team_id=26 if interview__id=="c2df02cdf67e4ae9a207080edf01bb28"
 replace team_id=26 if interview__id=="567bfe7c36ad4f71b01edc91af10ad80"
-
 *16/12/2017
 replace team_id=25 if interview__id=="46469c99777b43cdb08c9bc7d6fbac43"
 replace team_id=25 if interview__id=="45ec02b4a6eb4f92b82a84b5257782ae"
 replace team_id=25 if interview__id=="db79c5fbde0f4fcb89baaa49d4fe2481"
 replace team_id=26 if interview__id=="7efe096ecf414c1eaf2f4349053419d0"
-
 *17/12/2017
 replace team_id=25 if interview__id=="9a4d3daeef0e4a7d81a5ffa748472347"
 replace team_id=25 if interview__id=="702823a58f2640a19eef9c08c1c7d43f"
@@ -98,6 +98,12 @@ replace team_id=25 if interview__id=="a6c495964269458eadb51ec2061e2889"
 replace team_id=27 if interview__id=="b34df01d78b447188888163a461d9b3f"
 replace team_id=27 if interview__id=="db42ad2e2999498d83d530a4163c72e1"
 replace team_id=27 if interview__id=="e1481985c9814935b8a97130192c87cf"
+*17/12/2017
+replace team_id=27 if interview__id=="6309fe996c1d42d5967a6be6f19cd06f"
+replace team_id=27 if interview__id=="9ba2275830554fd1b2b05eeaf45462d9"
+replace team_id=25 if interview__id=="269c449042254ace8c12abe422ac418e"
+replace team_id=25 if interview__id=="ea9cd729dc704a1fa35d0e4422916072"
+replace team_id=25 if interview__id=="f8a0015a20f1441b98eeeeb3c3620e63"
 
 *** Missing date cleaning at the beginning and at the end of the interview
 *Correcting when missing date using dates and times in metadata
@@ -215,8 +221,9 @@ replace today_end="2017-12-16T06:23:33-05:00" if interview__id=="5e2abc1c33724f0
 *17/12/2017
 replace today="2017-12-17T14:10:55-05:00" if interview__id=="886a67c353834d11998284b407f2801a"
 replace today_end="2017-12-17T15:39:33-05:00" if interview__id=="886a67c353834d11998284b407f2801a"
-
-
+*18/12/2017
+replace today="2017-12-18T13:57:55-05:00" if interview__id=="bab81ba3231d4c5a901df93a8340bc5c"
+replace today_end="2017-12-18T17:50:33-05:00" if interview__id=="bab81ba3231d4c5a901df93a8340bc5c"
 
 *Identify observations with missing dates
 *br if today == "##N/A##"
@@ -257,7 +264,6 @@ replace today_end="2017-12-13T11:05:58-05:00" if interview__id=="8b6af7e522d04aa
 *15/12/2017
 replace today="2017-12-13T09:04:41-05:00" if interview__id=="7612a0d81d9143e9a6ffbd14a4c0665b"
 replace today_end="2017-12-13T12:10:58-05:00" if interview__id=="7612a0d81d9143e9a6ffbd14a4c0665b"
-
 
 *Creating duration variable
 *Start time 
