@@ -68,13 +68,13 @@ replace ea_reg=11 if interview__id=="9dd0b0a2adeb41a1940795bb1c705e3b"
 *18/12/2017
 replace ea_reg=3 if interview__id=="fb892e464ec546d39440f3a45bd6bfcc"
 *tab ea_reg
-*tab ea ea_reg
+*tab ea_reg ea
 
 *** EA number cleaning
 *08/12/2017
 replace ea=6116000 if interview__id=="5c40caffe54044deb59ed86dc5610e85"
 *tab ea
-*tab team_id ea
+*tab ea team_id
 
 *** Team number cleaning
 *15/12/2017
@@ -104,6 +104,17 @@ replace team_id=27 if interview__id=="9ba2275830554fd1b2b05eeaf45462d9"
 replace team_id=25 if interview__id=="269c449042254ace8c12abe422ac418e"
 replace team_id=25 if interview__id=="ea9cd729dc704a1fa35d0e4422916072"
 replace team_id=25 if interview__id=="f8a0015a20f1441b98eeeeb3c3620e63"
+*19/12/2017
+replace team_id=25 if interview__id=="85b3b6e5682347d4bb7751f5c520252e"
+replace team_id=26 if interview__id=="713a583312b643308f3d2a758e94f99a"
+replace team_id=26 if interview__id=="6870f8e69a3f4b82a07bd770b295c211"
+replace team_id=25 if interview__id=="81bdd1f953334adba49790ed13a80af7"
+replace team_id=26 if interview__id=="49a5add477ab456fb22378e4ba87dce6"
+replace team_id=25 if interview__id=="fc9d911b257c4964a9027af38be7fde2"
+replace team_id=27 if interview__id=="08258508606a4a998f9743b6a9ede70d"
+replace team_id=27 if interview__id=="383583d2073d40a6a8940587096e1fdf"
+replace team_id=27 if interview__id=="87afffad86f74490a478823cff2e6c17"
+replace team_id=27 if interview__id=="cc226b1e6de246308a3023d9d3e29cac"
 
 *** Missing date cleaning at the beginning and at the end of the interview
 *Correcting when missing date using dates and times in metadata
@@ -262,8 +273,11 @@ replace today_end="2017-12-12T08:49:41-05:00" if interview__id=="17ca0b073b3542e
 replace today="2017-12-13T08:48:41-05:00" if interview__id=="8b6af7e522d04aa9b5c6248ecc704f41"
 replace today_end="2017-12-13T11:05:58-05:00" if interview__id=="8b6af7e522d04aa9b5c6248ecc704f41"
 *15/12/2017
-replace today="2017-12-13T09:04:41-05:00" if interview__id=="7612a0d81d9143e9a6ffbd14a4c0665b"
-replace today_end="2017-12-13T12:10:58-05:00" if interview__id=="7612a0d81d9143e9a6ffbd14a4c0665b"
+replace today="2017-12-15T09:04:41-05:00" if interview__id=="7612a0d81d9143e9a6ffbd14a4c0665b"
+replace today_end="2017-12-15T12:10:58-05:00" if interview__id=="7612a0d81d9143e9a6ffbd14a4c0665b"
+*19/12/2017
+replace today="2017-12-19T09:54:00-05:00" if interview__id=="c582db0537c54ba888bdfa355a561be1"
+replace today_end="2017-12-19T12:23:00-05:00" if interview__id=="c582db0537c54ba888bdfa355a561be1"
 
 *Creating duration variable
 *Start time 
@@ -288,7 +302,7 @@ g duration_itw_min = minutes(end_time - start_time) if int_break == 1
 label var duration_itw_min "Duration of interview (minutes)" 
 
 *Identify observations with incorrect duration
-*br if duration_itw_min < 30
+br if duration_itw_min < 30
 
 *** Saving dataset with manual corrections
 save "${gsdData}/0-RawTemp/hh_manual_cleaning.dta", replace
