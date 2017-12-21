@@ -395,7 +395,7 @@ egen nb_shocks = rowtotal(faced_*) if successful == 1
 drop faced_*
 *Flag if no shock was faced
 g flag_shocks_empty = (nb_shocks == 0) if successful == 1
-label var flag_shocks_empty "Whether no shock said to be faced by the household"
+label var flag_shocks_empty "Whether no shock is said to be faced by the household"
 
 **Whether the household was displaced
 g disp = (migr_disp == 1) if successful == 1
@@ -592,9 +592,9 @@ restore
 
 preserve
 
-g nb_cons_food_low = (nb_cons_food <= 5)
-g nb_cons_non_food_low = (nb_cons_non_food <= 2)
-g nb_own_assets_low = (nb_own_assets <= 2)
+g nb_cons_food_low = (nb_cons_food <= 10)
+g nb_cons_non_food_low = (nb_cons_non_food <= 5)
+g nb_own_assets_low = (nb_own_assets <= 5)
 
 *Collapse by enumerator and date
 collapse (sum) nb_itw=index itw_valid successful successful_valid gps_ok ///
