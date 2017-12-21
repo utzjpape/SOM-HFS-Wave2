@@ -349,5 +349,4 @@ foreach i of numlist 1/11 {
 }
 *
 
-label dir
-numlabel `r(names)', add
+

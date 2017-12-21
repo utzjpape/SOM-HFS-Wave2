@@ -24,6 +24,12 @@ export delim "${gsdOutput}/ACLED.csv", replace
 
 
 * Import and format rainfall data
+* All SOM
+import delim using "${gsdShared}\0-Auxiliary\Climate Data\combined_rainfall_som0.txt", clear
+replace value = value / 3
+ren value rainfall_deviation
+la var rainfall_deviation "Deviation % in rainfall from long-term average"
+save "${gsdData}/1-CleanTemp/Rainfall_SOM0.dta", replace
 * Wave 1
 local lrain = "2016deyr 2017gu 2016gu 2016deyr2017gu combined"
 foreach c in `lrain' {
@@ -113,6 +119,11 @@ la var SPI_cat "SPI Category"
 la var SPI "Standard Precipitation Index (SPI)"
 tabstat SPI, by(SPI_cat) stats(mean min max N) 
 tab team SPI_cat
+gen drought_SPI = SPI_cat<0
+la def ldrought_SPI 0 "Not affected" 1 "Drought affected", replace
+la val drought_SPI ldrought_SPI
+la var drought_SPI "Drought affected (moderately/severely/extremely drought affected per SPI)"
+destring block, replace
 save "${gsdData}/1-CleanTemp/Wave1_SPI.dta", replace
 * All SOM
 shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\SPI\spi_combined_SOM0.shp", data("${gsdTemp}/spi_combined_SOM0.dta") coor("${gsdTemp}/spi_combined_SOM0_coordinates.dta") replace
@@ -134,6 +145,7 @@ tabstat SPI, by(SPI_cat) stats(mean min max N)
 la var SPI_cat "SPI Category"
 la var SPI "Standard Precipitation Index (SPI)"
 drop _ID
+
 save "${gsdData}/1-CleanTemp/SPI_SOM0.dta", replace
 
 
@@ -149,19 +161,20 @@ drop if grid_code==0
 drop if grid_code>100
 drop if grid_code<-100
 collapse (mean) NDVI_deviation=grid_code, by(team strata ea block hh)
-hist NDVI_deviation
 su NDVI_deviation, d
 la var NDVI_deviation "NDVI % difference from pre-drought years (2012-2015)"
-*gen NDVI_drought_cat = 0 if NDVI_deviation>=0
-*replace NDVI_drought_cat = 1 if NDVI_deviation<0 & NDVI_deviation>=-10
-*replace NDVI_drought_cat = 2 if NDVI_deviation<-10 & NDVI_deviation>=-20
-*replace NDVI_drought_cat = 3 if NDVI_deviation<-20 & NDVI_deviation>=-30
-*replace NDVI_drought_cat = 4 if NDVI_deviation<-30 
-*la def lNDVI_drought_cat 0 "Not affected" 1 "Slightly affected" 2 "Moderately affected" 3 "Severely Affected" 4 "Extremely Affected", replace
-*gen drought_affected = 0 if NDVI_deviation>=0
-*replace drought_affected = 1 if inrange(NDVI_deviation, -10, 0)
+gen NDVI_drought_cat = 0 if NDVI_deviation>=0
+replace NDVI_drought_cat = 1 if NDVI_deviation<0 & NDVI_deviation>=-10
+replace NDVI_drought_cat = 2 if NDVI_deviation<-10 & NDVI_deviation>=-20
+replace NDVI_drought_cat = 3 if NDVI_deviation<-20 & NDVI_deviation>=-30
+replace NDVI_drought_cat = 4 if NDVI_deviation<-30 
+la def lNDVI_drought_cat 0 "Not affected (NDVI deviation > 0)" 1 "Moderately affected (NDVI deviation 0% to -10%)" 2 "Highly Affected (NDVI deviation -10% to -20%)" 3 "Severely Affected (NDVI deviation -20% to -30%)" 3 "Extremely Affected (NDVI deviation <-30%)", replace
+la val NDVI_drought_cat lNDVI_drought_cat
+gen drought_NDVI = NDVI_drought_cat>1
+la def ldrought_NDVI 0 "Not affected" 1 "Drought affected", replace
+la val drought_NDVI ldrought_NDVI
+destring block, replace
 save "${gsdData}/1-CleanTemp/Wave1_NDVI.dta", replace
-
 
 * NDVI full data
 shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\NDVI\ndvi2017_points_SOM0_1000m.shp", data("${gsdTemp}/ndvi2017_points_SOM0_1000m.dta") coor("${gsdTemp}/ndvi2017_points_SOM0_1000m_coordinates.dta") replace
