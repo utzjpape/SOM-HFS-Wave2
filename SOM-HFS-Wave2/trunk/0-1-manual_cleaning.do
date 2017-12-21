@@ -9,6 +9,8 @@
 
 *** Importing questionnaire
 use "${gsdDownloads}/Somali High Frequency Survey - Wave 2 - Fieldwork", clear
+* add version 2 data
+append using "${gsdDownloads}/v2/Somali High Frequency Survey - Wave 2 - Fieldwork"
 
 **** Dropping empty observations in all datasets (main + rosters)
 * Main dataset
