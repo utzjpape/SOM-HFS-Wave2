@@ -403,10 +403,10 @@ save "${gsdTemp}/eb_collapse.dta", replace
 
 *Adding summary elements in the EB replacement table
 use "${gsdTemp}/EB_Replacement_Table_temp.dta", clear
-merge 1:1 id_ea id_block using "${gsdTemp}/eb_collapse.dta", nogenerate 
+merge 1:1 id_ea id_block using "${gsdTemp}/eb_collapse.dta"
 
 *Adding blocks in which at least one interview was conducted to the final sample
-replace sample_final_block=1 if nb_interviews_eb >=1
+replace sample_final_block=1 if nb_interviews_eb >=1 & missing(nb_interviews_eb) == 0
 
 *Labelling of variables
 label var strata_name "Strata name"
