@@ -4,7 +4,10 @@ set more off
 set seed 23081650 
 set sortseed 11041895
 
+
+********************************************************************
 *Check all the different sections of the survey agains the parent file
+********************************************************************
 
 *Household roster files
 use"${gsdData}/0-RawTemp/hh_valid_successful.dta", clear
@@ -49,8 +52,9 @@ use"${gsdData}/0-RawTemp/hh_valid_successful.dta", clear
 merge 1:m interview__id using "${gsdData}/0-RawTemp/shocks_valid_successful.dta", nogen keep(match master)
 
 
-
+********************************************************************
 *Introduce corrections: drop incomplete submissions with no information on food consumption and assets
+********************************************************************
 local files hh hh_roster_separated hhroster_age motor ra_assets ra_assets_prev rf_food ///
 	rf_food_cereals rf_food_fruit rf_food_meat rf_food_vegetables rl_livestock rl_livestock_pre ///
 	rnf_nonfood shocks

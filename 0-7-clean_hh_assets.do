@@ -1,12 +1,43 @@
-*clean and organize child file regarding livestock
+*clean and organize child file regarding assets
 
 set more off
 set seed 23081660 
 set sortseed 11041665
 
 
-ra_assets 
-ra_assets_prev 
+
+
+********************************************************************
+*Roster on durable goods for all the households 
+********************************************************************
+
+use "${gsdData}/0-RawTemp/ra_assets_valid_successful_complete.dta", clear
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+********************************************************************
+*Roster on durable goods for IDP households
+********************************************************************
+use "${gsdData}/0-RawTemp/ra_assets_prev_valid_successful_complete.dta", clear
+
+
+
+
+
+
+
 
 
 

@@ -7,7 +7,10 @@
 *                         
 *-------------------------------------------------------------------
 
-*** Importing questionnaire
+********************************************************************
+* Importing questionnaire
+********************************************************************
+
 ** Version 1
 use "${gsdDownloads}/Somali High Frequency Survey - Wave 2 - Fieldwork", clear
 tostring ea_barcode, replace
@@ -90,7 +93,10 @@ foreach file in `files' {
 
 use "${gsdTemp}/hh_append", clear
 
-**** Dropping empty observations in all datasets (main + rosters)
+
+********************************************************************
+* Dropping empty observations in all datasets (main + rosters)
+********************************************************************
 * Main dataset
 drop if interview__id=="42755ff8b2324f27b13fb6c19b58c914"
 drop if interview__id=="5098f72447fe4d4fa031cc3376c71c4c"
@@ -125,14 +131,19 @@ save "${gsdData}/0-RawTemp/rnf_nonfood_manual_cleaning.dta", replace
 *** Importing questionnaire
 use "${gsdTemp}/hh_without_empty_obs", clear
 
-*** Enumerator name cleaning
+********************************************************************
+* Enumerator name cleaning
+********************************************************************
 replace enum_id = 3105 if interview__id=="ab0e6a8b5df34626b3f17a8ee5182ef0"
 replace enum_id = 3206 if interview__id=="568d421b53b1407ca17d51362e22c68c"
 replace enum_id = 2204 if interview__id=="aa65b9856f6c4437b9397f8b9444549e"
 replace enum_id = 203 if interview__id=="d5abc9e7adb24ff28d98998b4039e273"
 *tab enum_id
 
-*** Pre-war region cleaning
+
+********************************************************************
+* Pre-war region cleaning
+********************************************************************
 *04/12/2017
 replace ea_reg=5 if interview__id=="568d421b53b1407ca17d51362e22c68c"
 replace ea_reg=5 if interview__id=="92950f08645d485a8261144204ab4e5c"
@@ -152,13 +163,19 @@ replace ea_reg=3 if interview__id=="fb892e464ec546d39440f3a45bd6bfcc"
 *tab ea_reg
 *tab ea_reg ea
 
-*** EA number cleaning
+
+********************************************************************
+* EA number cleaning
+********************************************************************
 *08/12/2017
 replace ea=6116000 if interview__id=="5c40caffe54044deb59ed86dc5610e85"
 *tab ea
 *tab ea team_id
 
-*** Team number cleaning
+
+********************************************************************
+* Team number cleaning
+********************************************************************
 *15/12/2017
 replace team_id=25 if interview__id=="b5c05ad294c54541bf5935af4af9f143"
 replace team_id=25 if interview__id=="895ca6bc2ea2462eb1aec1d4f0181d9c"
@@ -209,7 +226,10 @@ replace team_id=26 if interview__id=="67a95e23d5014b76952b484cffdc3a19"
 replace team_id=26 if interview__id=="68b3133d99a545519d1530270076f14d"
 replace team_id=26 if interview__id=="6c01e956db09458188e97f651ad46d95"
 
+
+********************************************************************
 *** Missing date cleaning at the beginning and at the end of the interview
+********************************************************************
 *Correcting when missing date using dates and times in metadata
 *04/12/2017
 replace today = "2017-12-04T05:14:36-05:00" if interview__id=="02166905804d4506b48e76266a0e2515"
@@ -343,11 +363,16 @@ replace today_end="2017-12-21T15:00:46-05:00" if interview__id=="b8b4c1da5dd94b2
 replace today="2017-12-21T03:04:44-05:00" if interview__id=="3f691b0166c44a879fa9c169d88f25db"
 replace today_end="2017-12-21T09:08:41-05:00" if interview__id=="3f691b0166c44a879fa9c169d88f25db"
 
+********************************************************************
 *Identify observations with missing dates
+********************************************************************
 *br if today == "##N/A##"
 *br if today_end=="##N/A##" & consent==1
 
-*** Incorrect duration cleaning (cases of incorrect date and time records)
+
+********************************************************************
+* Incorrect duration cleaning (cases of incorrect date and time records)
+********************************************************************
 *Correcting when incorrect duration using dates and times in metadata
 *04/12/2017
 replace today="2017-12-04T04:59:24-05:00" if interview__id=="7a11a820379040bd88ce2a0d95290e36"
@@ -411,5 +436,8 @@ label var duration_itw_min "Duration of interview (minutes)"
 *Identify observations with incorrect duration
 br if duration_itw_min < 30
 
-*** Saving dataset with manual corrections
+
+********************************************************************
+* Saving dataset with manual corrections
+********************************************************************
 save "${gsdData}/0-RawTemp/hh_manual_cleaning.dta", replace
