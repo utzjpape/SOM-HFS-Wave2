@@ -50,7 +50,7 @@ g fisheries = (fishing_yn == 1) if successful_valid == 1
 label var fisheries "Whether the fisheries module was activated an valid and successful interviews"
 
 /*----------------------------------------------------------------------------*/
-/*       INDICATORS RELATING TO FOOD AND NON-FOOD CONSUMPTION MODULES         */
+/*       INDICATORS RELATED TO FOOD AND NON-FOOD CONSUMPTION MODULES          */
 /*----------------------------------------------------------------------------*/
 
 *** 1. Cleaning of the main dataset
@@ -176,7 +176,7 @@ label var ndkn_non_food_quant "Proportion of missing/unknown/refused to answer p
 drop ndkn_non_food_quant_* rnf_relevanceyn_* rnf_pric_total*
 
 /*----------------------------------------------------------------------------*/
-/*      	INDICATORS RELATING TO COMPLETENESS OF ANSWERS		              */
+/*      	INDICATORS RELATED TO COMPLETENESS OF ANSWERS		              */
 /*----------------------------------------------------------------------------*/
 
 *** 1. Proportion of missing answers in the main dataset
@@ -208,6 +208,7 @@ local files hh_roster_separated hhroster_age motor ra_assets ra_assets_prev rf_f
 	rnf_nonfood shocks
 foreach file in `files' {
 	use "${gsdData}/0-RawTemp/`file'_manual_cleaning.dta", clear
+	more
 	*Dummy variables: whether each variable is missing or not
 	ds *, has(type string)
 	local str_all_`file' `r(varlist)'
@@ -233,6 +234,7 @@ foreach file in `files' {
 	merge 1:1 interview__id using "${gsdTemp}/hh_monitoring_dashboard_temp3", nogenerate
 	label var missing_prop_`file' "Proportion of missing answers in roster `file'" 
 	order missing_prop_`file', last
+	more
 	save "${gsdTemp}/hh_monitoring_dashboard_temp3", replace
 }
 
@@ -429,7 +431,7 @@ collapse (sum) nb_itw=index itw_valid successful successful_valid val_succ1-val_
 	(mean) no_response nobody_home no_adult no_consent ///
 	(median) duration_med = duration_itw_min (mean) duration_mean = duration_itw_min ///
 	(min) duration_min = duration_itw_min (max) duration_max = duration_itw_min ///
-	(mean) nhhm_succ nb_own_assets ///
+	(mean) nhhm_succ nb_own_assets nb_shocks ///
 	(sum) fisheries disp ///
 	(mean) emp_7d_active target_itw_ea , ///
 	by(state ea_reg strata_id strata_name id_ea team_id enum_id enum_name date_stata)
@@ -504,6 +506,7 @@ label var duration_min "Min duration of successful interviews - minutes"
 label var duration_max "Max duration of successful interviews - minutes"
 label var nhhm_succ "Average number of household members for successful interviews"
 label var nb_own_assets "Average number of assets owned by the household"
+label var nb_shocks "Average number of shocks"
 label var emp_7d_active "Average number of people in employment/inside the labour force"
 label var fisheries "Number of valid and successful inteviews for which the fisheries module was activated"
 label var disp "Total number of displaced households"
@@ -515,7 +518,7 @@ order state ea_reg strata_id strata_name id_ea team_id enum_id enum_name date_st
 	nb_cons_food nb_cons_non_food ndkn_food ndkn_food_quant ndkn_non_food ndkn_non_food_quant ndkn_IDP_status ndkn_remittances_ext ndkn_labour ///
 	nb_skip_patterns prop_skip_patterns soft_const_adult soft_const_edu ///
 	duration_med duration_mean duration_min duration_max ///
-	nhhm_succ nb_own_assets emp_7d_active fisheries disp issue target_itw_ea
+	nhhm_succ nb_own_assets nb_shocks emp_7d_active fisheries disp issue target_itw_ea
 	
 sort team_id enum_id date_stata
 
@@ -605,7 +608,7 @@ collapse (sum) nb_itw=index itw_valid successful successful_valid gps_ok ///
 	(mean) no_response nobody_home no_adult no_consent ///
 	(median) duration_med = duration_itw_min (mean) duration_mean = duration_itw_min ///
 	(min) duration_min = duration_itw_min (max) duration_max = duration_itw_min ///
-	(mean) nhhm_succ nb_own_assets ///
+	(mean) nhhm_succ nb_own_assets nb_shocks ///
 	(sum) fisheries disp ///
 	(mean) emp_7d_active ///
 	(max) flag_food_empty flag_non_food_empty flag_assets_empty flag_ndkn_edu flag_ndkn_house flag_ndkn_labour flag_remit flag_idp ///
@@ -802,6 +805,7 @@ label var duration_min "Min duration of interviews - minutes"
 label var duration_max "Max duration of interviews - minutes"
 label var nhhm_succ "Average number of household members for successful interviews"
 label var nb_own_assets "Average number of assets owned by the household"
+label var nb_shocks "Average number of shocks"
 label var emp_7d_active "Average number of people in employment/inside the labour force"
 label var fisheries "Number of valid and successful inteviews for which the fisheries module was activated"
 label var disp "Total number of displaced households"
@@ -818,7 +822,7 @@ keep state team_id enum_id enum_name date_stata ///
 	missing_prop* nb_cons_food nb_cons_non_food ndkn_food ndkn_food_quant ndkn_non_food ndkn_non_food_quant ///
 	ndkn_IDP_status ndkn_remittances_ext ndkn_labour ///
 	nb_skip_patterns prop_skip_patterns soft_const_adult soft_const_edu ///
-	duration_med duration_mean duration_min duration_max nhhm_succ nb_own_assets emp_7d_active fisheries disp flag ///
+	duration_med duration_mean duration_min duration_max nhhm_succ nb_own_assets nb_shocks emp_7d_active fisheries disp flag ///
 	duration_med_all ndkn_food_non_food_ave nhhm_succ_ave
 
 order state team_id enum_id enum_name date_stata ///
@@ -827,7 +831,7 @@ order state team_id enum_id enum_name date_stata ///
 	missing_prop* nb_cons_food nb_cons_non_food ndkn_food ndkn_food_quant ndkn_non_food ndkn_non_food_quant ///
 	ndkn_IDP_status ndkn_remittances_ext ndkn_labour ///
 	nb_skip_patterns prop_skip_patterns soft_const_adult soft_const_edu ///
-	duration_med duration_mean duration_min duration_max nhhm_succ nb_own_assets emp_7d_active fisheries disp flag ///
+	duration_med duration_mean duration_min duration_max nhhm_succ nb_own_assets nb_shocks emp_7d_active fisheries disp flag ///
 	duration_med_all ndkn_food_non_food_ave nhhm_succ_ave
 
 sort team_id enum_id date_stata
