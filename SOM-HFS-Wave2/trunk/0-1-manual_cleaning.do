@@ -8,9 +8,87 @@
 *-------------------------------------------------------------------
 
 *** Importing questionnaire
+** Version 1
 use "${gsdDownloads}/Somali High Frequency Survey - Wave 2 - Fieldwork", clear
-* add version 2 data
-append using "${gsdDownloads}/v2/Somali High Frequency Survey - Wave 2 - Fieldwork"
+tostring ea_barcode, replace
+tostring *_spec, replace
+tostring *_sp, replace
+tostring toilet_ot, replace
+tostring land_use_disp_s, replace
+tostring rl_other, replace
+tostring *_specify, replace
+tostring  housingtype_disp_s, replace
+save "${gsdTemp}/hh_append_v1", replace
+
+** Version 2
+use "${gsdDownloads}/v2/Somali High Frequency Survey - Wave 2 - Fieldwork", clear
+tostring *_spec, replace
+tostring *_sp, replace
+tostring *_specify, replace
+tostring loc_retry__Timestamp, replace
+tostring loc_barcode__Timestamp, replace
+tostring loc_hhid_seg1ret1__Timestamp, replace
+tostring  housingtype_disp_s, replace
+tostring ea_barcode, replace
+tostring hh_list_separated__*, replace
+tostring housingtype_s, replace
+tostring toilet_ot, replace
+tostring land_use_disp_s, replace
+tostring rl_other, replace
+tostring land_unit_spec_disp, replace
+tostring disp_date, replace
+tostring disp_arrive_date, replace
+tostring phone_number, g(phone_number2)
+drop phone_number
+rename phone_number2 phone_number
+save "${gsdTemp}/hh_append_v2", replace
+
+** Append all versions
+* Main dataset
+use "${gsdTemp}/hh_append_v1", clear
+append using "${gsdTemp}/hh_append_v2"
+save "${gsdTemp}/hh_append", replace
+
+*Rosters
+local files hh_roster_separated hhroster_age motor ra_assets ra_assets_prev rf_food ///
+	rf_food_cereals rf_food_fruit rf_food_meat rf_food_vegetables rl_livestock rl_livestock_pre ///
+	rnf_nonfood shocks
+foreach file in `files' {
+	use "${gsdDownloads}/`file'", clear
+	capture: tostring *_spec, replace
+	capture: tostring *_sp, replace
+	capture: tostring *_specify, replace
+	capture: tostring ra_namelp_prev, replace
+	capture: tostring rl_give_reason_o, replace
+	capture: tostring hhm_relation_sep_s, replace
+	capture: tostring rl_lose_reason_o, replace
+	save "${gsdTemp}/`file'_append_v1", replace
+	
+	use "${gsdDownloads}/v2/`file'", clear
+	tostring interview__id, replace
+	tostring interview__key, replace
+	capture: tostring *_spec, replace
+	capture: tostring *_sp, replace
+	capture: tostring *_specify, replace
+	capture: tostring hhm_edu_level_other, replace
+	capture: tostring hhm_relation_sep_s, replace
+	capture: tostring rl_lose_reason_o, replace
+	capture: tostring hh_list_separated, replace
+	capture: tostring hhm_relation_other, replace
+	capture: tostring ra_namelp_prev, replace
+	capture: tostring rl_give_reason_o, replace
+	capture: tostring *_spec, replace
+	capture: tostring *_sp, replace
+	capture: tostring *_specify, replace
+	capture: tostring rnf_free_other, replace
+	save "${gsdTemp}/`file'_append_v2", replace
+	
+	use "${gsdTemp}/`file'_append_v1", clear
+	append using "${gsdTemp}/`file'_append_v2"
+	save "${gsdTemp}/`file'_append", replace
+}
+
+use "${gsdTemp}/hh_append", clear
 
 **** Dropping empty observations in all datasets (main + rosters)
 * Main dataset
@@ -26,7 +104,7 @@ local files hh_roster_separated hhroster_age motor ra_assets ra_assets_prev rf_f
 	rf_food_cereals rf_food_fruit rf_food_meat rf_food_vegetables rl_livestock rl_livestock_pre ///
 	rnf_nonfood shocks
 foreach file in `files' {
-	use "${gsdDownloads}/`file'.dta", clear
+	use "${gsdTemp}/`file'_append", clear
 	drop if interview__id=="42755ff8b2324f27b13fb6c19b58c914" 
 	drop if interview__id=="5098f72447fe4d4fa031cc3376c71c4c"
 	drop if interview__id=="c59c6ad28b2d4365a54874c7e86a4790"
@@ -40,6 +118,8 @@ use "${gsdData}/0-RawTemp/rnf_nonfood_manual_cleaning.dta", clear
 drop if interview__id =="d887f734686c421d8621563041c069f5" & rnf_nonfood__id==1088 & rnf_item_recall=="##N/A##"
 drop if interview__id =="d887f734686c421d8621563041c069f5" & rnf_nonfood__id==1089 & rnf_item_recall=="##N/A##"
 drop if interview__id =="d887f734686c421d8621563041c069f5" & rnf_nonfood__id==1090 & rnf_item_recall=="##N/A##"
+drop if interview__id =="252fa757d26644fdb3571cd6f3838f17" & rnf_nonfood__id==1089 & rnf_item_recall=="##N/A##"
+drop if interview__id =="252fa757d26644fdb3571cd6f3838f17" & rnf_nonfood__id==1090 & rnf_item_recall=="##N/A##"
 save "${gsdData}/0-RawTemp/rnf_nonfood_manual_cleaning.dta", replace
 
 *** Importing questionnaire
@@ -100,7 +180,7 @@ replace team_id=25 if interview__id=="a6c495964269458eadb51ec2061e2889"
 replace team_id=27 if interview__id=="b34df01d78b447188888163a461d9b3f"
 replace team_id=27 if interview__id=="db42ad2e2999498d83d530a4163c72e1"
 replace team_id=27 if interview__id=="e1481985c9814935b8a97130192c87cf"
-*17/12/2017
+*18/12/2017
 replace team_id=27 if interview__id=="6309fe996c1d42d5967a6be6f19cd06f"
 replace team_id=27 if interview__id=="9ba2275830554fd1b2b05eeaf45462d9"
 replace team_id=25 if interview__id=="269c449042254ace8c12abe422ac418e"
@@ -124,6 +204,10 @@ replace team_id=27 if interview__id=="ec5f5488c1cf4b4d8a09b188ae6b21a6"
 replace team_id=26 if interview__id=="29a7208d909c45d18a72361634d90775"
 replace team_id=26 if interview__id=="87eef2b0b89b488ab0d79624373abcec"
 replace team_id=26 if interview__id=="3f7f990f5dd545e1b7884008d62023f4"
+*21/12/2017
+replace team_id=26 if interview__id=="67a95e23d5014b76952b484cffdc3a19"
+replace team_id=26 if interview__id=="68b3133d99a545519d1530270076f14d"
+replace team_id=26 if interview__id=="6c01e956db09458188e97f651ad46d95"
 
 *** Missing date cleaning at the beginning and at the end of the interview
 *Correcting when missing date using dates and times in metadata
@@ -251,6 +335,13 @@ replace today="2017-12-20T22:42:57-05:00" if interview__id=="0482dc3de21e4531bad
 replace today_end="2017-12-21T00:17:46-05:00" if interview__id=="0482dc3de21e4531bad43105b84b4c50"
 replace today="2017-12-20T22:38:44-05:00" if interview__id=="35054f64a9a04b1d9db73a9f175f717f"
 replace today_end="2017-12-21T00:18:41-05:00" if interview__id=="35054f64a9a04b1d9db73a9f175f717f"
+*21/12/2017
+replace today="2017-12-21T09:05:32-05:00" if interview__id=="aa313e61b1c74c6ba6d185e54ebd490f"
+replace today_end="2017-12-21T12:51:20-05:00" if interview__id=="aa313e61b1c74c6ba6d185e54ebd490f"
+replace today="2017-12-21T09:08:57-05:00" if interview__id=="b8b4c1da5dd94b20ae37cd6c1e1a21f9"
+replace today_end="2017-12-21T15:00:46-05:00" if interview__id=="b8b4c1da5dd94b20ae37cd6c1e1a21f9"
+replace today="2017-12-21T03:04:44-05:00" if interview__id=="3f691b0166c44a879fa9c169d88f25db"
+replace today_end="2017-12-21T09:08:41-05:00" if interview__id=="3f691b0166c44a879fa9c169d88f25db"
 
 *Identify observations with missing dates
 *br if today == "##N/A##"
