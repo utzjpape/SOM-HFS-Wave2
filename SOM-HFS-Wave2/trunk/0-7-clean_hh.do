@@ -6,7 +6,9 @@ set sortseed 11041952
 
 use "${gsdData}/0-RawTemp/hh_valid_successful_complete.dta", clear
 
+********************************************************************
 *Include the correct strata
+********************************************************************
 rename ea psu_id
 merge m:1 psu_id using "${gsdDataRaw}/List_Strata_EAs.dta", nogen keep(master match) keepusing(strata_name_list strata_id_list)
 rename psu_id ea
@@ -16,7 +18,10 @@ drop strata strata_name_list strata_id_list
 rename strata_id strata
 order strata strata_name type_pop, after(loc_check_barcode)
 
+
+********************************************************************
 *Include the correct type of population 
+********************************************************************
 drop type
 gen type=1 if (type_pop=="Urban/Rural" | type_pop=="Urban/Rural and Host") & inlist(strata,26,28,30,31,33,37,39,41,43,45,49,51,52,54,57)
 replace type=2 if (type_pop=="Urban/Rural" | type_pop=="Urban/Rural and Host") & inlist(strata,25,27,29,32,34,38,40,42,44,48,50,53,55,56)
@@ -94,7 +99,9 @@ drop rand_198009 n_198009
 //PENDING INTERVIEWS FROM THIS EA
 
 
+********************************************************************
 *Include lables for variables without them
+********************************************************************
 label var interview__id "Unique Household ID" 
 label var block_id "Block" 
 rename nhhm hhsize 
@@ -112,7 +119,9 @@ order mod_opt hhsize nadults , after(n_ints)
 rename return1 return
 
 
+********************************************************************
 *Check skip patterns: please refer to the questionnaire for relevat conditions
+********************************************************************
 *migr_disp_past
 assert mi(migr_disp_past) if !(no_success==0 & migr_disp==0)
 *migr_disp
@@ -372,7 +381,10 @@ qui foreach var of varlist interview__id-shock_2 {
 }
 }
 
-*Review skip patterns and introduce .z to identify not administered questions
+
+********************************************************************
+*Introduce .z to identify not administered questions
+********************************************************************
 replace migr_disp=.z if idp_ea_yn==1 
 replace migr_disp_past=.z if migr_disp==1 
 replace hhh_absence_reason=.z if hhh_presence!=0
@@ -590,7 +602,9 @@ replace fishing_with_sons=.z if fishing_sons!=1
 replace fishing_no_sons=.z if fishing_sons!=1 | fishing_with_sons!=1
 
 
+********************************************************************
 *Label values correctly 
+********************************************************************
 local variables migr_disp migr_disp_past hhh_absence_reason disp_hhm_otherloc land_legal_main land_own_dur_n_main ///
       land_legal_main_d tenant_legal water_time light electricity_phone electricity_choice electricity_price electricity_price_curr electricity_fee /// 
       electricity_price_perception electricity_hours electricity_blackout share_num	sewage acc_road_use ///
@@ -651,7 +665,10 @@ foreach variable in `variables4' {
 	label values `variable' limportantyn
 }
 
-*Drop administrative info
+
+********************************************************************
+*Drop administrative info & specify questions
+********************************************************************
 drop today examnumber modules__1 modules__2 modules__3 modules__4 modules__5 modules__6 modules__7 modules__8 modules__9 modules__10 modules__11 modules__12 modules__13 modules__14 modules__15 treat_training 
 drop ea_barcode ea_barcode_check somsld ea_barcode_confirm loc_barcode__Latitude loc_barcode__Longitude loc_barcode__Accuracy loc_barcode__Altitude loc_barcode__Timestamp loc_check_barcode
 drop ea_list ea_list_confirm loc_list__Latitude loc_list__Longitude loc_list__Accuracy loc_list__Altitude loc_list__Timestamp loc_check_list 
@@ -665,8 +682,6 @@ drop has__errors interview__status start_time end_time duration_itw_min date_sta
 drop status_psu_UR_IDP status_psu_host tot_block x_min x_max y_min y_max main_uri rank_rep_uri rank_rep_uri_2 main_h rank_rep_h sample_initial_uri sample_initial_h sample_final_uri sample_final_h o_ea o_ea_2 o_ea_3 r_seq r_seq_2 r_seq_3 r_date r_ea r_ea_2 r_ea_3 r_reason test_rep o_ea_h o_ea_2_h o_ea_3_h r_seq_h r_seq_2_h r_seq_3_h r_date_h r_ea_h r_ea_2_h r_ea_3_h r_reason_h test_rep_h final_main_uri final_rep_uri final_rank_rep_uri final_rep_uri_2 final_rank_rep_uri_2 final_main_h final_rep_h final_rank_rep_h target_itw_ea nb_val_succ_itw_ea ea_status ea_valid nb_interviews_ea nb_treat1_ea nb_treat2_ea nb_treat3_ea nb_treat4_ea nb_valid_interviews_ea nb_valid_treat1_ea nb_valid_treat2_ea nb_valid_treat3_ea nb_valid_treat4_ea nb_success_interviews_ea nb_success_treat1_ea nb_success_treat2_ea nb_success_treat3_ea nb_success_treat4_ea nb_valid_success_itws_ea nb_valid_success_treat1_ea nb_valid_success_treat2_ea nb_valid_success_treat3_ea nb_valid_success_treat4_ea
 drop visit_no consent electricity_str rf_sum_consumed_cereals cook_str
 drop strata_name n_str hhr_id_int hhh_id0_int hhm_unite hh_number_original
-
-*Drop specify questions
 drop idp_ea_yn housingtype_s drink_water_spec cook_source spec_water_spec light_sp electricity_price_kdk toilet_ot sewage_spec land_use_disp__1000 land_use_disp__n98 land_use_disp__n99
 drop waste_spec floor_material_sp roof_material_sp land_help_disp_spec housingtype_disp_s land_use_disp_s land_res_reason_disp_spec
 drop land_help_disp land_res_reason_disp drink_source_disp_sp land_unit_spec land_tenure_sp land_unit_spec_disp landag_use_disp_spec social_saf_net_spec lhood_spec lhood_prev_spec
@@ -678,7 +693,9 @@ drop move_yes_pull__1000 move_yes_pull__n98 move_yes_pull__n99 move_yes_pull_spe
 drop fishing_gear_used__n98 fishing_gear_used__n99 fishing_equipment__n98 fishing_equipment__n99 high_season__n998 high_season__n999 low_season__n98 low_season__n99 fishing_volume__1000 fishing_volume__n98 fishing_volume__n99 fishing_use_spec shocks0__1000 shocks0_sp inf_source_sp no_success
 
 
+********************************************************************
 *Further tidy and save
+********************************************************************
 rename ea_reg region
 label var region "Somali region"
 sort strata interview__id
