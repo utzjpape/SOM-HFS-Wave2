@@ -160,6 +160,8 @@ replace ea_reg=5 if interview__id=="2f54487868994e87b194740416f6fd98"
 replace ea_reg=11 if interview__id=="9dd0b0a2adeb41a1940795bb1c705e3b"
 *18/12/2017
 replace ea_reg=3 if interview__id=="fb892e464ec546d39440f3a45bd6bfcc"
+*20/12/2017
+replace ea_reg=2 if interview__id=="d508f9bcc52b43ba89238a484efc519c"
 *tab ea_reg
 *tab ea_reg ea
 
@@ -170,7 +172,7 @@ replace ea_reg=3 if interview__id=="fb892e464ec546d39440f3a45bd6bfcc"
 *08/12/2017
 replace ea=6116000 if interview__id=="5c40caffe54044deb59ed86dc5610e85"
 *tab ea
-*tab ea team_id
+*tab ea team_id if substr(today,1,10)=="2017-12-22"
 
 
 ********************************************************************
@@ -225,10 +227,12 @@ replace team_id=26 if interview__id=="3f7f990f5dd545e1b7884008d62023f4"
 replace team_id=26 if interview__id=="67a95e23d5014b76952b484cffdc3a19"
 replace team_id=26 if interview__id=="68b3133d99a545519d1530270076f14d"
 replace team_id=26 if interview__id=="6c01e956db09458188e97f651ad46d95"
+*22/12/2017
+replace team_id=26 if interview__id=="dc8dd3385c634e7686fbcb95ff23557f"
 
 
 ********************************************************************
-*** Missing date cleaning at the beginning and at the end of the interview
+* Missing date cleaning at the beginning and at the end of the interview
 ********************************************************************
 *Correcting when missing date using dates and times in metadata
 *04/12/2017
@@ -350,18 +354,18 @@ replace today="2017-12-18T13:57:55-05:00" if interview__id=="bab81ba3231d4c5a901
 replace today_end="2017-12-18T17:50:33-05:00" if interview__id=="bab81ba3231d4c5a901df93a8340bc5c"
 *20/12/2017
 replace today="2017-12-20T22:33:32-05:00" if interview__id=="6732c86d57ef4e40b67c1e9f1c23aead"
-replace today_end="2017-12-21T01:31:20-05:00" if interview__id=="6732c86d57ef4e40b67c1e9f1c23aead"
+replace today_end="2017-12-20T01:31:20-05:00" if interview__id=="6732c86d57ef4e40b67c1e9f1c23aead"
 replace today="2017-12-20T22:42:57-05:00" if interview__id=="0482dc3de21e4531bad43105b84b4c50"
-replace today_end="2017-12-21T00:17:46-05:00" if interview__id=="0482dc3de21e4531bad43105b84b4c50"
+replace today_end="2017-12-20T00:17:46-05:00" if interview__id=="0482dc3de21e4531bad43105b84b4c50"
 replace today="2017-12-20T22:38:44-05:00" if interview__id=="35054f64a9a04b1d9db73a9f175f717f"
-replace today_end="2017-12-21T00:18:41-05:00" if interview__id=="35054f64a9a04b1d9db73a9f175f717f"
+replace today_end="2017-12-20T00:18:41-05:00" if interview__id=="35054f64a9a04b1d9db73a9f175f717f"
 *21/12/2017
 replace today="2017-12-21T09:05:32-05:00" if interview__id=="aa313e61b1c74c6ba6d185e54ebd490f"
 replace today_end="2017-12-21T12:51:20-05:00" if interview__id=="aa313e61b1c74c6ba6d185e54ebd490f"
 replace today="2017-12-21T09:08:57-05:00" if interview__id=="b8b4c1da5dd94b20ae37cd6c1e1a21f9"
 replace today_end="2017-12-21T15:00:46-05:00" if interview__id=="b8b4c1da5dd94b20ae37cd6c1e1a21f9"
-replace today="2017-12-21T03:04:44-05:00" if interview__id=="3f691b0166c44a879fa9c169d88f25db"
-replace today_end="2017-12-21T09:08:41-05:00" if interview__id=="3f691b0166c44a879fa9c169d88f25db"
+replace today="2017-12-21T06:08:30-05:00" if interview__id=="3f691b0166c44a879fa9c169d88f25db"
+replace today_end="2017-12-21T15:20:10-05:00" if interview__id=="3f691b0166c44a879fa9c169d88f25db"
 
 ********************************************************************
 *Identify observations with missing dates
@@ -371,7 +375,7 @@ replace today_end="2017-12-21T09:08:41-05:00" if interview__id=="3f691b0166c44a8
 
 
 ********************************************************************
-* Incorrect duration cleaning (cases of incorrect date and time records)
+*Incorrect duration cleaning (cases of incorrect date and time records)
 ********************************************************************
 *Correcting when incorrect duration using dates and times in metadata
 *04/12/2017
@@ -434,7 +438,7 @@ g duration_itw_min = minutes(end_time - start_time) if int_break == 1
 label var duration_itw_min "Duration of interview (minutes)" 
 
 *Identify observations with incorrect duration
-br if duration_itw_min < 30
+*br if duration_itw_min < 30
 
 
 ********************************************************************
