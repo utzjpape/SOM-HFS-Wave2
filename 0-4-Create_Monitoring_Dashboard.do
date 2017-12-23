@@ -997,16 +997,18 @@ collapse (sum) nb_itw=index itw_valid successful successful_valid val_succ1 val_
 g target_itw_ea_uri = 12*final_main_uri
 *Target number of interviews for the host communities sample
 g target_itw_ea_h = 12*final_main_h
-*Number of valid and successful interviews conducted in the EA for the Urban/Rural/IDP sample
-g successful_valid_uri = max(successful_valid, target_itw_ea_uri)
 *Number of valid and successful interviews conducted in the EA for the host communities sample
-g successful_valid_h = max(0, successful_valid - target_itw_ea_uri)
+g successful_valid_h = max(0, target_itw_ea_h) if type_pop == "Urban/Rural and Host" | type_pop == "Host Only"
+*Number of valid and successful interviews conducted in the EA for the Urban/Rural/IDP sample
+g successful_valid_uri = max(successful_valid, successful_valid - target_itw_ea_h)
+
 
 *Final cleaning and labelling
 label values ea_status ea_status_label
 label var ea_reg "Region"
 label var strata_id "Strata ID"
 label var strata_name "Strata name"
+label var type_pop "Type of population"
 label var id_ea "EA"
 label var nb_itw "Total number of interviews per EA"
 label var itw_valid "Number of valid interviews per EA"
@@ -1025,9 +1027,10 @@ label var ea_status "Status of the EA"
 label var ea_valid "Whether EA is valid"
 label var list_val_succ_ea "List of valid and successful interviews in the EA"
 
-keep ea_reg strata_id strata_name id_ea nb_itw itw_valid successful successful_valid successful_valid_uri successful_valid_h ///
+keep ea_reg strata_id strata_name id_ea type_pop nb_itw itw_valid successful successful_valid successful_valid_uri successful_valid_h ///
  target_itw_ea target_itw_ea_uri target_itw_ea_h val_succ1-val_succ4 ea_status ea_valid list_val_succ_ea
-order ea_reg strata_id strata_name id_ea nb_itw itw_valid successful successful_valid successful_valid_uri successful_valid_h ///
+ 
+order ea_reg strata_id strata_name id_ea type_pop nb_itw itw_valid successful successful_valid successful_valid_uri successful_valid_h ///
  target_itw_ea target_itw_ea_uri target_itw_ea_h val_succ1-val_succ4 ea_status ea_valid list_val_succ_ea
 	
 sort strata_id id_ea
