@@ -122,7 +122,8 @@ label define ea_status_label 1 "Valid" ///
 	2 "Not sampled nor active replacement" ///
 	3 "Not enough interviews" ///
 	4 "Not balanced in terms of treatment" ///
-	5 "Not completed because of security reasons"
+	5 "Not completed because of security reasons" ///
+	6 "Not completed because not enough interviews could be conducted"
 label values ea_status ea_status_label 
 
 replace ea_status=1 if _merge == 3
@@ -135,6 +136,9 @@ replace ea_status=3 if _merge == 3 & (nb_valid_success_itws_ea<target_itw_ea) & 
 replace ea_status=2 if _merge == 3 & (sample_final_uri != 1 & sample_final_h != 1)
 replace ea_status=2 if _merge == 2
 replace ea_status=5 if id_ea == 64279 | id_ea == 160751
+replace ea_status=6 if id_ea == 198061
+*EA in which only 9 interviews could be conducted but that is considered valid
+replace ea_status=1 if id_ea == 134194
 
 *Dummy variable: whether EA is valid or not
 replace ea_valid=(ea_status==1) 
