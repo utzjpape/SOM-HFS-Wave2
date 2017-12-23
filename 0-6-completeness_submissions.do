@@ -53,6 +53,60 @@ merge 1:m interview__id using "${gsdData}/0-RawTemp/shocks_valid_successful.dta"
 
 
 ********************************************************************
+*Check incomplete submissions
+********************************************************************
+*Food items
+use"${gsdData}/0-RawTemp/hh_valid_successful.dta", clear
+merge 1:m interview__id using "${gsdData}/0-RawTemp/rf_food_valid_successful.dta"
+keep if _merge==1
+drop _merge
+save "${gsdTemp}/check_incomplete_food1.dta", replace
+use"${gsdData}/0-RawTemp/hh_valid_successful.dta", clear
+merge 1:m interview__id using "${gsdData}/0-RawTemp/rf_food_cereals_valid_successful.dta"
+keep if _merge==1
+drop _merge
+save "${gsdTemp}/check_incomplete_food2.dta", replace
+use"${gsdData}/0-RawTemp/hh_valid_successful.dta", clear
+merge 1:m interview__id using "${gsdData}/0-RawTemp/rf_food_fruit_valid_successful.dta"
+keep if _merge==1
+drop _merge
+save "${gsdTemp}/check_incomplete_food3.dta", replace
+use"${gsdData}/0-RawTemp/hh_valid_successful.dta", clear
+merge 1:m interview__id using "${gsdData}/0-RawTemp/rf_food_meat_valid_successful.dta"
+keep if _merge==1
+drop _merge
+save "${gsdTemp}/check_incomplete_food4.dta", replace
+use"${gsdData}/0-RawTemp/hh_valid_successful.dta", clear
+merge 1:m interview__id using "${gsdData}/0-RawTemp/rf_food_vegetables_valid_successful.dta"
+keep if _merge==1
+drop _merge
+save "${gsdTemp}/check_incomplete_food5.dta", replace
+
+*Non-food items
+use"${gsdData}/0-RawTemp/hh_valid_successful.dta", clear
+merge 1:m interview__id using "${gsdData}/0-RawTemp/rnf_nonfood_valid_successful.dta"
+keep if _merge==1
+drop _merge
+save "${gsdTemp}/check_incomplete_nfood.dta", replace
+
+*Assets
+use"${gsdData}/0-RawTemp/hh_valid_successful.dta", clear
+merge 1:m interview__id using "${gsdData}/0-RawTemp/ra_assets_valid_successful.dta"
+keep if _merge==1
+drop _merge
+save "${gsdTemp}/check_incomplete_assets.dta", replace
+
+*Identify incomplete submissions
+use "${gsdTemp}/check_incomplete_food1.dta", clear
+merge 1:1 interview__id using "${gsdTemp}/check_incomplete_food2.dta", nogen keep(match)
+merge 1:1 interview__id using "${gsdTemp}/check_incomplete_food3.dta", nogen keep(match)
+merge 1:1 interview__id using "${gsdTemp}/check_incomplete_food4.dta", nogen keep(match)
+merge 1:1 interview__id using "${gsdTemp}/check_incomplete_food5.dta", nogen keep(match)
+merge 1:1 interview__id using "${gsdTemp}/check_incomplete_assets.dta", nogen keep(match)
+*browse interview__id 
+
+
+********************************************************************
 *Introduce corrections: drop incomplete submissions with no information on food consumption and assets
 ********************************************************************
 local files hh hh_roster_separated hhroster_age motor ra_assets ra_assets_prev rf_food ///
@@ -68,4 +122,5 @@ qui foreach file in `files' {
 
     save "${gsdData}/0-RawTemp/`file'_valid_successful_complete.dta", replace
 }
+
 

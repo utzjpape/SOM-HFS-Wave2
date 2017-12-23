@@ -5,101 +5,98 @@ set seed 23081660
 set sortseed 11041665
 
 
-
-
 ********************************************************************
 *Roster on durable goods for all the households 
 ********************************************************************
-
 use "${gsdData}/0-RawTemp/ra_assets_valid_successful_complete.dta", clear
 
+*Categorise missing values: "Don't know": -98 --> .a, "Refused to respond": -99 --> .b
+labmv, mv(-99 .b  -98 .a) all
+qui foreach var of varlist ra_assets__id-interview__key {
+	local type = substr("`: type `var''", 1, 3) 
+		if "`type'" != "str" { 
+		recode `var' (-999999999 = .) 
+}
+}
 
+*Introduce own dummy for each item
+gen own=1
+label var own "H.2 Does anyone in your household own the item?"
+label define lyesno 0 "No" 1 "Yes" .a "Don't know" .b "Refused to respond" .z "Not administered" 
+label values own lyesno
 
+*Clean variables 
+split ra_ynew, parse(-)
+drop ra_ynew ra_ynew2 ra_ynew3
+rename ra_ynew1 ra_ynew
+replace ra_ynew="" if ra_ynew=="##N/A##"
+destring ra_ynew, replace
 
+*Include skip patterns 
+replace ra_owntotal=.z if ra_owntotal_kdk>=.
+replace ra_ynew=.z if ra_ynew_kdk>=.
+replace ra_prnew=.z if ra_prnew_kdk>=.
+replace ra_prnew_curr=.z if ra_prnew>=.
+replace ra_sellnew=.z if ra_sellnew_kdk>=.
+replace ra_sellnew_curr=.z if ra_sellnew>=.
+replace ra_sellall_kdk=.z if ra_owntotal<=1 | ra_owntotal>=.
+replace ra_sellall=.z if ra_sellall_kdk>=.
+replace ra_sellall_curr=.z if ra_sellall>=.
 
+*Label and rename 
+foreach var in ra_owntotal_kdk ra_ynew_kdk ra_prnew_kdk ra_sellnew_kdk ra_sellall_kdk ra_prnew_curr ra_sellnew_curr ra_sellall_curr {
+	label define `var' .a "Don't know" .b "Refused to respond" .z "Not administered", modify
+}
+label var ra_assets__id "Asset ID"
+label var ra_ynew "H.4 What year did the household buy the newest %rostertitle%?"
+drop ra_namelp interview__key ra_prnewzero ra_sellnewzero ra_sellallzero
+order interview__id ra_assets__id own ra_owntotal_kdk ra_owntotal ra_ynew_kdk ra_ynew ra_prnew_kdk ra_prnew ra_prnew_curr ra_sellnew_kdk ra_sellnew ra_sellnew_curr ra_sellall_kdk ra_sellall ra_sellall_curr 
+rename (ra_assets__id ra_owntotal ra_owntotal_kdk ra_ynew_kdk ra_ynew) (assetid own_n own_n_kdk newest_y_kdk newest_y)
+rename (ra_prnew_kdk ra_prnew ra_prnew_curr) (newest_pr_kdk newest_pr newest_c)
+rename (ra_sellnew_kdk ra_sellnew ra_sellnew_curr )(newest_val_kdk newest_val newest_val_c)
+rename (ra_sellall_kdk ra_sellall ra_sellall_curr) (all_val_kdk all_val all_val_c)
 
+*Include the name of each item
+label define lassetid 1 "Bed with mattress" 2 "Mattress without bed" 3 "Chair" 4 "Upholstered chair, sofa set" 5 "Desk" 6 "Table" 7 "Coffee table (for sitting room)" 8 "Cupboard, drawers, bureau" 9 "Kitchen furniture" 10 "Mortar/pestle" 11 "Iron" 12 "Clock" 13 "Fan" 14 "Air conditioner" 15 "Sewing machine" 16 "Refrigerator" 17 "Washing machine" 18 "Stove for charcoal" 19 "Electric stove or hot plate" 20 "Gas stove" 21 "Kerosene/paraffin stove" 22 "Lantern (paraffin)" 23 "Small solar light" 24 "Cell phone" 25 "Photo camera" 26 "Radio ('wireless')" 27 "Tape or CD/DVD player; HiFi" 28 "Television" 29 "VCR" 30 "Computer equipment & accessories" 31 "Satellite dish" 32 "Solar panel" 33 "Generator" 34 "Motorcycle/scooter" 35 "Car" 36 "Mini-bus" 37 "Lorry"
+label values assetid lassetid
 
-
-
-
-
-
+save "${gsdData}/0-RawTemp/hh_assets_clean.dta", replace
 
 
 
 ********************************************************************
-*Roster on durable goods for IDP households
+*Roster on durable goods for IDP households before displacement
 ********************************************************************
 use "${gsdData}/0-RawTemp/ra_assets_prev_valid_successful_complete.dta", clear
 
-
-
-
-
-
-
-
-
-
-
-use "${gsdData}/0-RawTemp/hh_h_assets_valid.dta", clear
-********************************************************************
-* Relabel 'Don't know' and 'Refused to respond'
-********************************************************************
-* Categorise missing values: "Don't know": -98 --> .a, "Refused to respond": -99 --> .b
+*Categorise missing values: "Don't know": -98 --> .a, "Refused to respond": -99 --> .b
 labmv, mv(-99 .b  -98 .a) all
-
-**************************************************************************
-* Relabel Skip patterns: Please refer to Questionnaire for relevance conditions
-**************************************************************************
-foreach v in ra_owntotal ra_xown ra_ynew ra_xynew ra_prnew ra_cprnew ra_xprnew ra_sellnew ra_csellnew ra_xsellnew ra_sellnewzero {
-	assert missing(`v') if  ra_own!=1
-	recode `v' (.=.z) if ra_own!=1 
+qui foreach var of varlist ra_assets_prev__id-interview__key {
+	local type = substr("`: type `var''", 1, 3) 
+		if "`type'" != "str" { 
+		recode `var' (-999999999 = .) 
+}
 }
 
-assert missing(ra_prnewzero) if ra_prnew!=0 
-recode ra_prnewzero (.=.z) if ra_prnew!=0 
+*Introduce own dummy for each item
+gen own=1
+label var own "H.2 Does anyone in your household own the item?"
+label define lyesno 0 "No" 1 "Yes" .a "Don't know" .b "Refused to respond" .z "Not administered" 
+label values own lyesno
 
-assert missing(ra_sellnewzero) if ra_sellnew!=0 
-recode ra_sellnewzero (.=.z) if ra_sellnew!=0 
+*Include skip patterns 
+replace ra_owntotal_prev=.z if ra_owntotal_prev_kdk>=.
 
-foreach v in ra_sellall ra_csellall ra_xsellall ra_sellallzero {
-	assert missing(`v') if ra_owntotal<=1 | ra_own!=1
-	recode `v' (.=.z) if ra_owntotal<=1  | ra_own!=1 
-}
+*Label and rename 
+label define ra_owntotal_prev_kdk .a "Don't know" .b "Refused to respond" .z "Not administered", modify
+label var ra_assets_prev__id "Asset ID"
+drop ra_namelp_prev interview__key 
+order interview__id ra_assets_prev__id own ra_owntotal_prev_kdk ra_owntotal_prev 
+rename (ra_assets_prev__id ra_owntotal_prev ra_owntotal_prev_kdk) (assetid own_n own_n_kdk)
 
-assert missing(ra_sellallzero) if ra_sellall!=0
-recode ra_sellallzero (.=.z) if ra_sellall!=0
+*Include the name of each item
+label define lassetid 1 "Bed with mattress" 2 "Mattress without bed" 3 "Chair" 4 "Upholstered chair, sofa set" 5 "Desk" 6 "Table" 7 "Coffee table (for sitting room)" 8 "Cupboard, drawers, bureau" 9 "Kitchen furniture" 10 "Mortar/pestle" 11 "Iron" 12 "Clock" 13 "Fan" 14 "Air conditioner" 15 "Sewing machine" 16 "Refrigerator" 17 "Washing machine" 18 "Stove for charcoal" 19 "Electric stove or hot plate" 20 "Gas stove" 21 "Kerosene/paraffin stove" 22 "Lantern (paraffin)" 23 "Small solar light" 24 "Cell phone" 25 "Photo camera" 26 "Radio ('wireless')" 27 "Tape or CD/DVD player; HiFi" 28 "Television" 29 "VCR" 30 "Computer equipment & accessories" 31 "Satellite dish" 32 "Solar panel" 33 "Generator" 34 "Motorcycle/scooter" 35 "Car" 36 "Mini-bus" 37 "Lorry"
+label values assetid lassetid
 
-**************************************************************************
-* Cleaning
-**************************************************************************
-*empty means form was not completed 
-drop if ra_nametitle==""
+save "${gsdData}/0-RawTemp/hh_assets_prev_clean.dta", replace
 
-labmask ra_index, values(ra_nametitle)
-drop *name*
-keep ra_index ra_own ra_owntotal ra_ynew ra_prnew ra_cprnew ra_sellnew ra_csellnew ra_sellall ra_csellall key
-ren ra_* *
-ren (index owntotal ynew prnew cprnew sellnew csellnew sellall csellall) (assetid own_n newest_y newest_pr newest_pr_c newest_val newest_val_c all_val all_val_c)
-
-*for households with only one of the item, sell value for all items is the sell value for the newest item.
-foreach suf in val val_c {
-	replace all_`suf'=newest_`suf' if own_n==1
-}
-label var assetid "Asset ID"
-label var own_n "Number owned today"
-label var newest_y "Year newest item was purchased"
-label var newest_pr "Price of newest item at time of purchase"
-label var newest_pr_c "Currency for price"
-label var newest_val "Current sell value for newest item"
-label var newest_val_c "Currency for newest item sell value"
-label var all_val "Current sell value for all items"
-label var all_val_c "Currency for all items sell value"
-label var key "Key to merge with parent"
-order key
-
-*drop empty variables
-missings dropvars, force 
-
-save "${gsdData}/0-RawTemp/hh_h_assets_clean.dta", replace
