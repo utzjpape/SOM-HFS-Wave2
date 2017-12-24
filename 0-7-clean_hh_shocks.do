@@ -1,45 +1,36 @@
-*clean and organize child file shocks
+*Clean and organize child file shocks
 
 set more off
 set seed 23081981 
 set sortseed 11041956
 
-use "${gsdData}/0-RawTemp/hh_n_shocks_valid.dta", clear
-
-shocks
-
 
 ********************************************************************
-* Relabel 'Don't know' and 'Refused to respond'
+*Clean and prepare the shocks data
 ********************************************************************
-* Categorise missing values: "Don't know": -98 --> .a, "Refused to respond": -99 --> .b
+use "${gsdData}/0-RawTemp/shocks_valid_successful_complete.dta", clear
+drop shresp1_sp interview__key shresp1__1000 shresp1__n98 shresp1__n99 shocks__id
+order interview__id 
+
+*Categorise missing values: "Don't know": -98 --> .a, "Refused to respond": -99 --> .b
 labmv, mv(-99 .b  -98 .a) all
+qui foreach var of varlist interview__id-shresp1__18 {
+	local type = substr("`: type `var''", 1, 3) 
+		if "`type'" != "str" { 
+		recode `var' (-999999999 = .) 
+}
+}
 
-**************************************************************************
-* Relabel Skip patterns: Please Refer to Questionnaire for relevance conditions
-**************************************************************************
-assert missing(shresp2) if shresp1<=0
-recode shresp2 (.=.z) if shresp1<=0
+*Label and rename 
+rename (shaffect__1 shaffect__2 shaffect__3 shaffect__4 shaffect__5) (shock_affect_1 shock_affect_2 shock_affect_3 shock_affect_4 shock_affect_5)
+rename (shresp1__0 shresp1__1 shresp1__2 shresp1__3 shresp1__4 shresp1__5 shresp1__6 shresp1__7 shresp1__8 shresp1__9 shresp1__10 shresp1__11 shresp1__12 shresp1__13 shresp1__14 shresp1__15 shresp1__16 shresp1__17 shresp1__18) (shock_resp_0 shock_resp_1 shock_resp_2 shock_resp_3 shock_resp_4 shock_resp_5 shock_resp_6 shock_resp_7 shock_resp_8 shock_resp_9 shock_resp_10 shock_resp_11 shock_resp_12 shock_resp_13 shock_resp_14 shock_resp_15 shock_resp_16 shock_resp_17 shock_resp_18)
+label define lyesno 0 "No" 1 "Yes" .a "Don't know" .b "Refused to respond" .z "Not administered" 
+forval i=1/5  {
+	label values shock_affect_`i' lyesno
+}
+label define limportant 0 "Not important" 1 "Most important" 2 "2nd most important" 3 "3rd most important" .a "Don't know" .b "Refused to respond" .z "Not administered" 
+forval i=0/18 {
+	label values shock_resp_`i' limportant
+}
 
-assert missing(shresp3) if shresp1<=0 | shresp2<=0
-recode shresp3 (.=.z) if shresp1<=0 | shresp2<=0
-
-**************************************************************************
-* Cleaning
-**************************************************************************
-label var r_shock_id "ID for each type of shock"
-label var r_shock_name "Type of shock"
-label var r_shock_pos "Severity of the shock"
-label define lr_shock_pos 1 "Most severe shock" 2 "Second most severe shock" 3 "Third most severe shock"
-label values r_shock_pos lr_shock_pos
-label define lr_shock_id  1 "Drought/Irregular Rains"  2 "Floods/Landslides"  3 "Fire"  4 "Earthquakes"  5 "Insufficient water supply for farming/gardening"  6 "Insufficient energy demand"  7 "Unusually high level of crop Pests or disease"  8 "Unusually High level of livestock disease"  9 "Unusually low prices for agricultural output"  10 "Unusually high costs of agricultural inputs"  11 "Unusually high prices for food"  12 "End of regular assistance/aid/remittances from outside"  13 "Reduction in the Earnings from Household (Non-Agricultural) Business (Not due to Illness or Accident)"  14 "Household (Non-Agricultural) business failure (Not due to Illness or Accident)"  15 "Reduction in the Earnings of Currently Salaried Household Member(s) (Not due to Illness or Accident)"  16 "Loss of employment of previously salaried household member(s) (Not due to Illness or Accident)"  17 "Serious illness or accident of household member(s)"  18 "Birth in the household"  19 "Death of income earner(s)"  20 "Death of other household member(s)"  21 "Accident"  22 "Break-up of household"  23 "Theft of money/valuables/assets/agricultural output"  24 "Disputes on land issues"  25 "Destruction of assets/valuables/agricultural output"  26 "Conflict/Violence"  27 "Land eviction"  28 "Inadequate Employment" 29 "Temporary/permanent loss of access to school/health"
-label values r_shock_id lr_shock_id
-
-drop child_key setofshocks r_shock_pos r_shock_name
-label var key "Key to merge with parent"
-order key 
-
-*drop empty variables
-missings dropvars, force 
-
-save "${gsdData}/0-RawTemp/hh_n_shocks_clean.dta", replace
+save "${gsdData}/0-RawTemp/hh_shocks_clean.dta", replace
