@@ -107,7 +107,7 @@ merge 1:1 interview__id using "${gsdTemp}/check_incomplete_assets.dta", nogen ke
 
 
 ********************************************************************
-*Introduce corrections: drop incomplete submissions with no information on food consumption and assets
+*Introduce corrections
 ********************************************************************
 local files hh hh_roster_separated hhroster_age motor ra_assets ra_assets_prev rf_food ///
 	rf_food_cereals rf_food_fruit rf_food_meat rf_food_vegetables rl_livestock rl_livestock_pre ///
@@ -115,10 +115,14 @@ local files hh hh_roster_separated hhroster_age motor ra_assets ra_assets_prev r
 qui foreach file in `files' {
     use "${gsdData}/0-RawTemp/`file'_valid_successful.dta", clear
 	
+	*Drop incomplete submissions with no information on food consumption and assets
 	drop if interview__id=="7c751e8842b8484c96c277e8b4daccc4"
 	drop if interview__id=="2bb94bf0fc92475983f93d2a5836f47e"
 	drop if interview__id=="852c6a6662ff44c48d5afcafc9425340"
 	drop if interview__id=="968de76006a847ef80fde49fc8b03bf5"
+	
+	*Drop incomplete submissions with missing values on food and household roster
+	drop if interview__id=="07d72a3e85fa4bae962a6b974d48cc5f"
 
     save "${gsdData}/0-RawTemp/`file'_valid_successful_complete.dta", replace
 }

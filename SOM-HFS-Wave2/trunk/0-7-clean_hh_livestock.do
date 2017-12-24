@@ -1,111 +1,105 @@
-*clean and organize child file regarding livestock
+*Clean and organize child file regarding livestock
 
 set more off
 set seed 23061980 
 set sortseed 11061955
 
-use "${gsdData}/0-RawTemp/hh_g_livestock_valid.dta", clear
-
-
-rl_livestock 
-rl_livestock_pre 
-
-
+ 
 ********************************************************************
-* Relabel 'Don't know' and 'Refused to respond'
+*Roster on livestock for all households 
 ********************************************************************
-* Categorise missing values: "Don't know": -98 --> .a, "Refused to respond": -99 --> .b
+use "${gsdData}/0-RawTemp/rl_livestock_valid_successful_complete.dta", clear
+order interview__id rl_livestock__id rl_own_n_kdk rl_own_n rl_own_r_n_kdk rl_own_r_n rl_price_today_kdk rl_price_today rl_price_today_curr rl_sell_n_kdk rl_sell_n rl_sell_val_kdk rl_sell_val rl_sell_val_curr rl_kill_n_kdk rl_kill_n rl_give_n_kdk rl_give_n rl_give_reason rl_buy_n_kdk rl_buy_n rl_buy_val_kdk rl_buy_val rl_buy_val_curr rl_lose_n_kdk rl_lose_n rl_lose_reason
+drop interview__key rl_give_reason_o rl_lose_reason_o 
+
+*Categorise missing values: "Don't know": -98 --> .a, "Refused to respond": -99 --> .b
 labmv, mv(-99 .b  -98 .a) all
-
-**************************************************************************
-* Relabel Skip patterns: Please Refer to Questionnaire for relevance conditions
-**************************************************************************
-* Some missing values are due to the fact that they are not administered, i.e. they don't apply. For example, a child under 10 will not be asked about their profession. These are a special category of missing values and this section categorises them as such. 
-* Skip pattern consistency and missing values due to skip patterns . ==> .z
-
-assert missing(g_other_p_) if !(g_rel==1 & g_pos==7)
-recode g_other_p_ (.=.z) if !(g_rel==1 & g_pos==7)
-
-foreach v in g_born_n g_own_other g_own_n g_born_other g_kill_n g_sell_n g_sell_other g_kill_other g_give_n g_give_other g_buy_n g_buy_other g_lose_n g_lose_other  {
-	assert missing(`v') if !(g_rel==1)
-	recode `v' (.=.z) if !(g_rel==1)
+qui foreach var of varlist interview__id-rl_lose_reason {
+	local type = substr("`: type `var''", 1, 3) 
+		if "`type'" != "str" { 
+		recode `var' (-999999999 = .) 
+}
 }
 
-foreach stub in sell kill give buy lose {
-	foreach abb in val val_c val_other {
-		assert missing(g_`stub'_`abb') if !(g_`stub'_n>0)
-		recode g_`stub'_`abb' (.=.z) if !(g_`stub'_n>0)
-	}
-}
+*Introduce own dummy for each item
+gen own=1
+label var own "G.2 Item is owned by the household?"
+label define lyesno 0 "No" 1 "Yes" .a "Don't know" .b "Refused to respond" .z "Not administered" 
+label values own lyesno
+order own, after(rl_livestock__id)
 
-foreach stub in give lose {
-	assert missing(g_`stub'_reason) if !(g_`stub'_n>0)
-	recode g_`stub'_reason (.=.z) if !(g_`stub'_n>0)
+*Include skip patterns 
+replace rl_own_n=.z if rl_own_n_kdk>=.
+replace rl_own_r_n=.z if rl_own_r_n_kdk>=. 
+replace rl_price_today_kdk=.z if rl_own_n<=0 | rl_own_n>=.
+replace rl_price_today=.z if rl_own_n<=0 | rl_price_today_kdk>=.
+replace rl_price_today_curr=.z if rl_price_today>=. 
+replace rl_sell_n=.z if rl_sell_n_kdk>=.
+replace rl_sell_val_kdk=.z if  rl_sell_n<=0 | rl_sell_n>=.
+replace rl_sell_val=.z if  rl_sell_n<=0 | rl_sell_val_kdk>=.
+replace rl_sell_val_curr=.z if rl_sell_val>=.
+replace rl_kill_n=.z if rl_kill_n_kdk>=. 
+replace rl_give_n=.z if rl_give_n_kdk>=.
+replace rl_give_reason=.z if rl_give_n<=0 | rl_give_n>=. 
+replace rl_buy_n=.z if rl_buy_n_kdk>=. 
+replace rl_buy_val_kdk=.z if rl_buy_n<=0 | rl_buy_n>=.
+replace rl_buy_val=.z if rl_buy_n<=0 | rl_buy_val_kdk>=.
+replace rl_buy_val_curr=.z if rl_buy_val>=. 
+replace rl_lose_n=.z if rl_lose_n_kdk>=. 
+replace rl_lose_reason=.z if rl_lose_n<=0 | rl_lose_n>=.
+
+*Label and rename 
+foreach var in rl_own_n_kdk rl_own_r_n_kdk rl_price_today_kdk rl_price_today_curr rl_sell_n_kdk rl_sell_val_kdk rl_sell_val_curr rl_kill_n_kdk rl_give_n_kdk rl_give_reason rl_buy_n_kdk rl_buy_val_kdk rl_buy_val_curr rl_lose_n_kdk rl_lose_reason {
+	label define `var' .a "Don't know" .b "Refused to respond" .z "Not administered", modify
 }
-	
-foreach v in g_price_today g_price_today_c g_price_today_other {
-	assert missing(`v') if !(g_own_n>0)
-	recode `v' (.=.z) if !(g_own_n>0)
-}
-  
+label var rl_livestock__id "Livestock ID"
+rename (rl_livestock__id rl_own_n_kdk rl_own_n rl_own_r_n_kdk rl_own_r_n rl_price_today_kdk rl_price_today rl_price_today_curr) (livestockid own_n_kdk own_n own_r_n_kdk own_r_n pr_today_kdk pr_today pr_today_c)
+rename (rl_sell_n_kdk rl_sell_n rl_sell_val_kdk rl_sell_val rl_sell_val_curr rl_kill_n_kdk rl_kill_n) (sell_n_kdk sell_n sell_val_kdk sell_val sell_val_c kill_n_kdk kill_n )
+rename (rl_give_n_kdk rl_give_n rl_give_reason rl_buy_n_kdk rl_buy_n rl_buy_val_kdk rl_buy_val rl_buy_val_curr rl_lose_n_kdk rl_lose_n rl_lose_reason) (give_n_kdk give_n give_reason buy_n_kdk  buy_n buy_val_kdk buy_val buy_val_c lose_n_kdk lose_n lose_reason)
+
+*Include the name of each item
+label define livestockid 1 "Cattle" 2 "Sheep" 3 "Goats" 4 "Camels" 5 "Chickens" 6 "Donkeys" 7 "Horses" 1000 "Other"
+label values livestockid livestockid
+
+save "${gsdData}/0-RawTemp/hh_livestock_clean.dta", replace
+
+
 ********************************************************************
-* Adjust Value Labels
+*Roster on livestock for IDP households before displacement
 ********************************************************************
-labmm .z "Not administered"
-labdu , delete report
+use "${gsdData}/0-RawTemp/rl_livestock_pre_valid_successful_complete.dta", clear
+order interview__id rl_livestock_pre__id rl_own_pre_kdk rl_own_pre rl_own_pre_r_n_kdk rl_own_pre_r_n
+drop interview__key 
 
-*empty means form was not completed 
-drop if g_n==""
-ren g_* *
-
-*other livestock or poultry should be string (but may be empty)
-tostring other_, replace
-tostring other_p_, replace
-assert !(other_=="" & other_p_=="")
-gen lstock_o=other_+other_p_
-labmask pos, values(n)
-drop n* *other* child_key setofrep_g
-
-*rename and label
-ren (pos rel price_today*) (lstockid raised pr_today*)
-label var lstockid "Livestock ID"
-label var lstock_o "Other livestock (specify)"
-label var raised "Livestock was raised in last 12 months"
-label var own_n "Number owned today"
-label var pr_today "Price for one today"
-label var pr_today_c "Price currency"
-local pres = "born sell kill give buy lose"
-local prelabs "born sold killed given bought lost"
-local npre: word count `pres'
-local sufs = "n val val_c reason reason_o"
-local suflabs ""number" "value" "value currency" "reason" "reason (other)""
-local nsuf: word count `sufs'
-forval i = 1/`npre' {
-	local pre: word `i' of `pres'
-	local prelab: word `i' of `prelabs'
-	local Pre = proper("`pre'")
-	forval j = 1/`nsuf' {
-		local suf: word `j' of `sufs'
-		local suflab: word `j' of `suflabs'
-		di "`suf' `suflab'"
-		if "`suf'"=="n" {
-			label var `pre'_`suf' "Number `prelab' in last 12 months"
-		}
-		else {
-			cap label var `pre'_`suf' "`Pre' `suflab'"
-		}
-	}
+*Categorise missing values: "Don't know": -98 --> .a, "Refused to respond": -99 --> .b
+labmv, mv(-99 .b  -98 .a) all
+qui foreach var of varlist interview__id-rl_own_pre_r_n {
+	local type = substr("`: type `var''", 1, 3) 
+		if "`type'" != "str" { 
+		recode `var' (-999999999 = .) 
 }
-label var key "Key to merge with parent"
-order key lstock*
+}
 
-*drop empty variables
-missings dropvars, force 
+*Introduce own dummy for each item
+gen own=1
+label var own "G.2 Item is owned by the household?"
+label define lyesno 0 "No" 1 "Yes" .a "Don't know" .b "Refused to respond" .z "Not administered" 
+label values own lyesno
+order own, after(rl_livestock_pre__id)
 
-*drop variables with open answers, multiple numeric entries and/or in Somali
-*drop lstock_o give_reason_o lose_reason_o
+*Include skip patterns 
+replace rl_own_pre=.z if rl_own_pre_kdk>=.
+replace rl_own_pre_r_n=.z if rl_own_pre_r_n_kdk>=.
 
+*Label and rename 
+foreach var in rl_own_pre_kdk rl_own_pre_r_n_kdk {
+	label define `var' .a "Don't know" .b "Refused to respond" .z "Not administered", modify
+}
+label var rl_livestock_pre__id "Livestock ID"
+rename (rl_livestock_pre__id rl_own_pre_kdk rl_own_pre rl_own_pre_r_n_kdk rl_own_pre_r_n) (livestockid own_pre_kdk own_pre own_pre_r_n_kdk own_pre_r_n)
 
+*Include the name of each item
+label define livestockid 1 "Cattle" 2 "Sheep" 3 "Goats" 4 "Camels" 5 "Chickens" 6 "Donkeys" 7 "Horses" 1000 "Other"
+label values livestockid livestockid
 
-save "${gsdData}/0-RawTemp/hh_g_livestock_clean.dta", replace
-
+save "${gsdData}/0-RawTemp/hh_livestock_pre_clean.dta", replace
