@@ -135,10 +135,12 @@ replace ea_status=4 if _merge == 3 & target_itw_ea == 60 & ((nb_valid_success_tr
 replace ea_status=3 if _merge == 3 & (nb_valid_success_itws_ea<target_itw_ea) & target_itw_ea>1 /*only for EAs with more than 1 block*/
 replace ea_status=2 if _merge == 3 & (sample_final_uri != 1 & sample_final_h != 1)
 replace ea_status=2 if _merge == 2
-replace ea_status=5 if id_ea == 64279 | id_ea == 160751
+replace ea_status=5 if id_ea == 160751
 replace ea_status=6 if id_ea == 198061
-*EA in which only 9 interviews could be conducted but that is considered valid
-replace ea_status=1 if id_ea == 134194
+*EAs in which less than 12 interviews could be conducted but that are considered valid
+replace ea_status=1 if id_ea == 134194 | id_ea == 64279 | id_ea == 166200 | id_ea == 66295
+
+
 
 *Dummy variable: whether EA is valid or not
 replace ea_valid=(ea_status==1) 
@@ -274,10 +276,10 @@ g block_beginning = block_id
 keep if bl_replace == 1
 
 *Keeping variables related to replacement
-keep today id_ea block_beginning bl_replace bl_replace_reason ///
+keep today strata_id strata_name id_ea block_beginning bl_replace bl_replace_reason ///
 	 rep1 bl_replace1 bl_replace_reason1 rep2 bl_replace2 bl_replace_reason2 rep3 bl_replace3 bl_replace_reason3
-order today id_ea block_beginning
-sort id_ea block_beginning today
+order today strata_id strata_name id_ea block_beginning
+sort strata_id strata_name id_ea block_beginning today
 
 **Keeping only replacement blocks which have been activated as replacements
 *If the first replacement block (rep1) that was proposed by the questionnaire did not need to be replaced, rep2 and rep3 have not been activated
@@ -326,7 +328,7 @@ g o_block = block_beginning if r_seq_block > 0
 g sample_final_block_temp = (bl_replace == 0)
 bysort id_ea bl_ref: egen sample_final_block = max(sample_final_block_temp)
 drop sample_final_block_temp
-
+order strata_id strata_name, first
 
 *** PART 1 OF BLOCK REPLACEMENT TABLE: REFERENCE BLOCKS AND THEIR ORIGINAL BLOCKS
 
@@ -343,10 +345,10 @@ bysort id_ea bl_ref: g index_o = _n
 sum index_o
 global index_o_max = `r(max)'
 *Keeping variables related to original blocks
-keep id_ea bl_ref index_o o_block r_seq_block sample_final_block
-order id_ea bl_ref index_o o_block r_seq_block sample_final_block
+keep strata_id strata_name id_ea bl_ref index_o o_block r_seq_block sample_final_block
+order strata_id strata_name id_ea bl_ref index_o o_block r_seq_block sample_final_block
 *Reshaping to get one row per reference block with the original blocks and their replacement sequence number in columns
-reshape wide o_block r_seq_block, i(id_ea bl_ref sample_final_block) j(index_o)
+reshape wide o_block r_seq_block, i(strata_id strata_name id_ea bl_ref sample_final_block) j(index_o)
 *Saving part 1 of block replacement table
 save "${gsdTemp}/EB_Replacement_Table_Part1.dta", replace
 restore
@@ -367,10 +369,10 @@ bysort id_ea bl_ref: g index_r = _n
 sum index_r
 global index_r_max = `r(max)'
 *Keeping variables related to replacement blocks
-keep id_ea bl_ref index_r r_block r_date_block r_reason_block
-order id_ea bl_ref index_r r_block r_date_block r_reason_block 
+keep strata_id strata_name id_ea bl_ref index_r r_block r_date_block r_reason_block
+order strata_id strata_name id_ea bl_ref index_r r_block r_date_block r_reason_block 
 *Reshaping to get one row per reference block with the replacement blocks and the date and reason for replacement in columns
-reshape wide r_block r_date_block r_reason_block, i(id_ea bl_ref) j(index_r)
+reshape wide r_block r_date_block r_reason_block, i(strata_id strata_name id_ea bl_ref) j(index_r)
 *Saving part 2 of block replacement table
 save "${gsdTemp}/EB_Replacement_Table_Part2.dta", replace
 restore
@@ -382,18 +384,35 @@ drop if _n == 1 | _n == 3
 foreach var of varlist * {
 	rename `var' `=`var'[1]'
 }
-rename (ea block_sel_dummy) (id_ea sample_initial)
+rename (ea block_sel_dummy) (id_ea sample_initial_block)
 drop if _n ==1
 destring *, replace
 
-keep strata_id strata_name id_ea block_number sample_initial
-order strata_id strata_name id_ea block_number sample_initial
+keep strata_id strata_name id_ea block_number sample_initial_block
+order strata_id strata_name id_ea block_number sample_initial_block
+save "${gsdTemp}/EB_Replacement_Table_temp1.dta", replace
+
+*Updating the sample initial variable: blocks which were initially sampled but only in EAs which are included in the final sample
+import excel "${gsdDataRaw}/EA Replacement Table.xls", sheet("Step 3_Final sample and repl") clear
+drop if _n == 1 | _n == 3
+foreach var of varlist * {
+	rename `var' `=`var'[1]'
+}
+rename ea id_ea
+drop if _n ==1
+destring *, replace
+
+g sample_final_ea = (sample_final_uri == 1 | sample_final_h == 1)
+keep id_ea sample_final_ea
+merge 1:m id_ea using "${gsdTemp}/EB_Replacement_Table_temp1.dta", keep(match using) nogenerate
+replace sample_initial_block = 0 if sample_final_ea == 0
+drop sample_final_ea
 
 rename block_number bl_ref
-merge 1:1 id_ea bl_ref using "${gsdTemp}/EB_Replacement_Table_Part1.dta", nogenerate
-merge 1:1 id_ea bl_ref using "${gsdTemp}/EB_Replacement_Table_Part2.dta", nogenerate
+merge 1:1 strata_id strata_name id_ea bl_ref using "${gsdTemp}/EB_Replacement_Table_Part1.dta", nogenerate
+merge 1:1 strata_id strata_name id_ea bl_ref using "${gsdTemp}/EB_Replacement_Table_Part2.dta", nogenerate
 rename  bl_ref id_block
-save "${gsdTemp}/EB_Replacement_Table_temp.dta", replace
+save "${gsdTemp}/EB_Replacement_Table_temp2.dta", replace
 
 *** FINALIZING EB REPLACEMENT TABLE WITH INFORMATION ON BLOCKS WHICH WERE NOT REPLACED
 ** GENERATING NUMBER OF VALID AND SUCCESSFUL INTERVIEWS PER EB
@@ -401,23 +420,26 @@ save "${gsdTemp}/EB_Replacement_Table_temp.dta", replace
 *Importing questionnaire
 use "${gsdData}/0-RawTemp/hh_valid_keys_and_EAs.dta", clear 
 *Collapse to make a dataset of summary elements for each EB
-collapse (sum) nb_interviews_eb=index nb_valid_success_itws_eb=successful_valid, by(id_ea id_block)
-order id_ea id_block, first
+collapse (sum) nb_interviews_eb=index nb_valid_success_itws_eb=successful_valid, by(strata_id strata_name id_ea id_block)
+order strata_id strata_name id_ea id_block, first
 save "${gsdTemp}/eb_collapse.dta", replace
 
 *Adding summary elements in the EB replacement table
-use "${gsdTemp}/EB_Replacement_Table_temp.dta", clear
-merge 1:1 id_ea id_block using "${gsdTemp}/eb_collapse.dta"
+use "${gsdTemp}/EB_Replacement_Table_temp2.dta", clear
+merge 1:1 strata_id strata_name id_ea id_block using "${gsdTemp}/eb_collapse.dta"
+*Blocks which did not match are not included in the intial sample (due to mistakes from enumerators who forgot to select the block number and was thus displayed as -100000000)
+replace sample_initial_block = 0 if _merge == 2
+drop _merge
 
 *Adding blocks in which at least one interview was conducted to the final sample
-replace sample_final_block=1 if nb_interviews_eb >=1 & missing(nb_interviews_eb) == 0
+replace sample_final_block = (nb_interviews_eb >=1 & missing(nb_interviews_eb) == 0)
 
 *Labelling of variables
 label var strata_name "Strata name"
 label var strata_id "Strata ID"
 label var id_ea "EA"
 label var id_block "Block"
-label var sample_initial "Whether block was initially sampled"
+label var sample_initial_block "Whether block was initially sampled"
 label var sample_final_block "Whether block is included in the final sample"
 forvalues i = 1/$index_r_max{
 	label var r_block`i' "Replacement block number `i'"
@@ -431,6 +453,8 @@ forvalues i = 1/$index_o_max{
 label var nb_interviews_eb "Number of interviews conducted in the block"
 label var nb_valid_success_itws_eb "Number of valid and successful interviews conducted in the block"
 
+sort strata_id strata_name id_ea id_block
+
 *Exporting EB replacement table
 save "${gsdData}/0-RawOutput/EB_Replacement_Table_Complete.dta", replace
-export excel using "${gsdData}/0-RawOutput/EB_Replacement_Table_Complete.xlsx", firstrow(variables) sheetmodify
+export excel "${gsdData}/0-RawOutput/EB_Replacement_Table_Complete.xlsx", firstrow(variables) replace
