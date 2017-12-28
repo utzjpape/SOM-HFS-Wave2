@@ -207,7 +207,10 @@ local files hh_roster_separated hhroster_age motor ra_assets ra_assets_prev rf_f
 	rf_food_cereals rf_food_fruit rf_food_meat rf_food_vegetables rl_livestock rl_livestock_pre ///
 	rnf_nonfood shocks
 foreach file in `files' {
+more
 	use "${gsdData}/0-RawTemp/`file'_manual_cleaning.dta", clear
+	more
+	more
 	more
 	*Dummy variables: whether each variable is missing or not
 	ds *, has(type string)
@@ -235,7 +238,15 @@ foreach file in `files' {
 	label var missing_prop_`file' "Proportion of missing answers in roster `file'" 
 	order missing_prop_`file', last
 	more
+	more
+	more
+	more
+	more
+	more
 	save "${gsdTemp}/hh_monitoring_dashboard_temp3", replace
+	more
+	more
+	more
 }
 
 *** 3. Key question: Remittances
@@ -847,9 +858,6 @@ restore
 
 preserve
 
-*Include one EA which could not be completed for security reasons in the final sample so that it is not flagged as not sampled
-replace sample_final_uri = 1 if id_ea==64279
-
 *** Number of EAs originally sampled or active replacements used per date
 *Originally sampled or active replacements
 bysort date_stata id_ea: g nb_eas_sampled = 1 if _n == 1 & (sample_final_uri == 1 | sample_final_h == 1)
@@ -922,9 +930,6 @@ save "${gsdTemp}/strata_target_itw.dta", replace
 restore
 
 preserve
-
-*Include one EA which could not be completed for security reasons in the final sample so that it is not flagged as not sampled
-replace sample_final_uri = 1 if id_ea==64279
 
 *** Number of EAs originally sampled or active replacements used per strata
 *Originally sampled or active replacements
