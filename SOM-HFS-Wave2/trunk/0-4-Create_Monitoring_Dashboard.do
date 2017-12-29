@@ -209,9 +209,6 @@ local files hh_roster_separated hhroster_age motor ra_assets ra_assets_prev rf_f
 foreach file in `files' {
 more
 	use "${gsdData}/0-RawTemp/`file'_manual_cleaning.dta", clear
-	more
-	more
-	more
 	*Dummy variables: whether each variable is missing or not
 	ds *, has(type string)
 	local str_all_`file' `r(varlist)'
@@ -238,15 +235,7 @@ more
 	label var missing_prop_`file' "Proportion of missing answers in roster `file'" 
 	order missing_prop_`file', last
 	more
-	more
-	more
-	more
-	more
-	more
 	save "${gsdTemp}/hh_monitoring_dashboard_temp3", replace
-	more
-	more
-	more
 }
 
 *** 3. Key question: Remittances
@@ -1003,9 +992,9 @@ g target_itw_ea_uri = 12*final_main_uri
 *Target number of interviews for the host communities sample
 g target_itw_ea_h = 12*final_main_h
 *Number of valid and successful interviews conducted in the EA for the host communities sample
-g successful_valid_h = max(0, target_itw_ea_h) if type_pop == "Urban/Rural and Host" | type_pop == "Host Only"
+g successful_valid_h = min(successful_valid, target_itw_ea_h) if type_pop == "Urban/Rural and Host" | type_pop == "Host Only"
 *Number of valid and successful interviews conducted in the EA for the Urban/Rural/IDP sample
-g successful_valid_uri = max(successful_valid, successful_valid - target_itw_ea_h)
+g successful_valid_uri = max(0, successful_valid - target_itw_ea_h)
 
 
 *Final cleaning and labelling
