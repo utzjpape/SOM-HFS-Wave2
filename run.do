@@ -12,6 +12,9 @@ if "${gsdData}"=="" {
 run "${gsdDo}/api_download.do"
 api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(1) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}") curl("${gsdBin}") 
 api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(2) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/v2") curl("${gsdBin}") 
+api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(4) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/v4") curl("${gsdBin}") 
+api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(6) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/v6") curl("${gsdBin}") 
+
 
 *Monitoring Dashboard 
 run "${gsdDo}/0-1-manual_cleaning.do"
