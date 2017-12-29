@@ -220,6 +220,9 @@ replace enum_id = 203 if interview__id=="d5abc9e7adb24ff28d98998b4039e273"
 label define enum_id 3602 "Mohamed Isak Mohamed" ///
 	3603 "Fadumo Mohamed Jilal" ///
 	3604 "Farhiya Abass Mohamed" ///
+	3702 "Abdirahman Khalif Abdi" ///
+	3703 "Hashim Abdi Weheliye" ///
+	3704 "Abshir Abdule Noor" ///
 	3802 "Abdullahi Ibrahim Abdi" ///
 	3803 "Hassan Mohamed Abdi" ///
 	3804 "Jeylani Mohamed Dhere" ///
@@ -228,7 +231,13 @@ label define enum_id 3602 "Mohamed Isak Mohamed" ///
 	3904 "Hussein Madey Mohamed" ///
 	4002 "Ali Farah Adow" ///
 	4003 "Jama Ali Sheikh" ///
-	4004 "Hassan Muhumad Rashiid", modify
+	4004 "Hassan Muhumad Rashiid" ///
+	4102 "Abdiaziz Rage Ahmed" ///
+	4103 "Amina Hilowle Isak" ///
+	4104 "Najmo Omar Kalinle" ///
+	4302 "Mohamed Adan Mohamed" ///
+	4303 "Mohamed Adan Hassan" ///
+	4304 "Mohamed Sheik Abdullahi", modify	
 *tab enum_id
 
 *** Pre-war region cleaning
@@ -251,16 +260,15 @@ replace ea_reg=3 if interview__id=="fb892e464ec546d39440f3a45bd6bfcc"
 *20/12/2017
 replace ea_reg=2 if interview__id=="d508f9bcc52b43ba89238a484efc519c"
 *tab ea_reg
-*tab ea_reg ea if substr(today,1,10)=="2017-12-27"
+*tab ea_reg ea if substr(today,1,10)=="2017-12-28"
 
 *** EA number cleaning
 *08/12/2017
 replace ea=6116000 if interview__id=="5c40caffe54044deb59ed86dc5610e85"
 *25/12/2017
 replace ea=198760 if interview__id=="89fd6810cc534326ac279a8fb63e5456"
-
 *tab ea
-*tab ea team_id if substr(today,1,10)=="2017-12-27"
+*tab ea team_id if substr(today,1,10)=="2017-12-28"
 
 *** Team number cleaning
 *15/12/2017
