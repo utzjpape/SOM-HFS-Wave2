@@ -213,8 +213,8 @@ label var ea_status "Validity status of the EA"
 label var ea_valid "Whether the EA is valid"
 
 *Exporting EA replacement table in Excel and Stata format
-save "${gsdData}/0-RawOutput/EA_Replacement_Table_Complete.dta", replace
-export excel using "${gsdData}/0-RawOutput/EA_Replacement_Table_Complete.xls", cell(A3) sheetmodify
+save "${gsdData}/0-RawTemp/EA_Replacement_Table_Complete.dta", replace
+export excel using "${gsdData}/0-RawTemp/EA_Replacement_Table_Complete.xls", cell(A3) sheetmodify
 
 ** ADDING INFORMATION FROM EA REPLACEMENT TABLE TO THE MAIN DATASET **
 
@@ -222,7 +222,7 @@ export excel using "${gsdData}/0-RawOutput/EA_Replacement_Table_Complete.xls", c
 use "${gsdTemp}/hh_valid_keys_and_EAs_temp.dta", clear
 
 *Merging with replacement table
-merge m:1 id_ea using "${gsdData}/0-RawOutput/EA_Replacement_Table_Complete.dta", nogenerate keep(match master)
+merge m:1 id_ea using "${gsdData}/0-RawTemp/EA_Replacement_Table_Complete.dta", nogenerate keep(match master)
 merge m:1 id_ea using "${gsdTemp}/ea_collapse", nogenerate keep(match master)
 
 *Final cleaning and labelling
@@ -456,5 +456,5 @@ label var nb_valid_success_itws_eb "Number of valid and successful interviews co
 sort strata_id strata_name id_ea id_block
 
 *Exporting EB replacement table
-save "${gsdData}/0-RawOutput/EB_Replacement_Table_Complete.dta", replace
-export excel "${gsdData}/0-RawOutput/EB_Replacement_Table_Complete.xlsx", firstrow(variables) replace
+save "${gsdData}/0-RawTemp/EB_Replacement_Table_Complete.dta", replace
+export excel "${gsdData}/0-RawTemp/EB_Replacement_Table_Complete.xlsx", firstrow(variables) replace
