@@ -206,6 +206,7 @@ drop if interview__id =="7a365578819d4d47b11ff60bbff02385" & rnf_nonfood__id==10
 drop if interview__id =="7a365578819d4d47b11ff60bbff02385" & rnf_nonfood__id==1088 & rnf_item_recall=="##N/A##"
 drop if interview__id =="7a365578819d4d47b11ff60bbff02385" & rnf_nonfood__id==1089 & rnf_item_recall=="##N/A##"
 drop if interview__id =="7a365578819d4d47b11ff60bbff02385" & rnf_nonfood__id==1090 & rnf_item_recall=="##N/A##"
+drop if interview__id =="66d695dfd0be441e9f84af790596be89" & rnf_nonfood__id==1090 & rnf_item_recall=="##N/A##"
 save "${gsdData}/0-RawTemp/rnf_nonfood_manual_cleaning.dta", replace
 
 *** Importing questionnaire
@@ -235,6 +236,9 @@ label define enum_id 3602 "Mohamed Isak Mohamed" ///
 	4102 "Abdiaziz Rage Ahmed" ///
 	4103 "Amina Hilowle Isak" ///
 	4104 "Najmo Omar Kalinle" ///
+	4202 "Arab Mohamed Jamac" ///
+	4203 "Ahmed Hashi Ahmed" ///
+	4204 "Osman Hire Sabtow" ///
 	4302 "Mohamed Adan Mohamed" ///
 	4303 "Mohamed Adan Hassan" ///
 	4304 "Mohamed Sheik Abdullahi", modify	
@@ -260,7 +264,7 @@ replace ea_reg=3 if interview__id=="fb892e464ec546d39440f3a45bd6bfcc"
 *20/12/2017
 replace ea_reg=2 if interview__id=="d508f9bcc52b43ba89238a484efc519c"
 *tab ea_reg
-*tab ea_reg ea if substr(today,1,10)=="2017-12-28"
+*tab ea_reg ea if substr(today,1,10)=="2017-12-30"
 
 *** EA number cleaning
 *08/12/2017
@@ -268,7 +272,7 @@ replace ea=6116000 if interview__id=="5c40caffe54044deb59ed86dc5610e85"
 *25/12/2017
 replace ea=198760 if interview__id=="89fd6810cc534326ac279a8fb63e5456"
 *tab ea
-*tab ea team_id if substr(today,1,10)=="2017-12-28"
+*tab ea team_id if substr(today,1,10)=="2017-12-30"
 
 *** Team number cleaning
 *15/12/2017
