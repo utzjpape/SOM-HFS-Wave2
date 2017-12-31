@@ -323,11 +323,12 @@ replace r_date_block = substr(r_date_block,1,10)
 *Creating original block variable if the reference block is a replacement block
 g o_block = block_beginning if r_seq_block > 0
 
-*Creating dummy variable: whether the reference block is included in the final sample
+*Creating temporary dummy variable: whether the reference block is included in the final sample
 *A reference block is included in the final sample if there is at least one record where it was not replaced
-g sample_final_block_temp = (bl_replace == 0)
-bysort id_ea bl_ref: egen sample_final_block = max(sample_final_block_temp)
-drop sample_final_block_temp
+*This variable will be updated later with a value for all blocks
+g sample_final_block_temp0 = (bl_replace == 0)
+bysort id_ea bl_ref: egen sample_final_block_temp = max(sample_final_block_temp0)
+drop sample_final_block_temp0
 order strata_id strata_name, first
 
 *** PART 1 OF BLOCK REPLACEMENT TABLE: REFERENCE BLOCKS AND THEIR ORIGINAL BLOCKS
@@ -345,10 +346,10 @@ bysort id_ea bl_ref: g index_o = _n
 sum index_o
 global index_o_max = `r(max)'
 *Keeping variables related to original blocks
-keep strata_id strata_name id_ea bl_ref index_o o_block r_seq_block sample_final_block
-order strata_id strata_name id_ea bl_ref index_o o_block r_seq_block sample_final_block
+keep strata_id strata_name id_ea bl_ref index_o o_block r_seq_block sample_final_block_temp
+order strata_id strata_name id_ea bl_ref index_o o_block r_seq_block sample_final_block_temp
 *Reshaping to get one row per reference block with the original blocks and their replacement sequence number in columns
-reshape wide o_block r_seq_block, i(strata_id strata_name id_ea bl_ref sample_final_block) j(index_o)
+reshape wide o_block r_seq_block, i(strata_id strata_name id_ea bl_ref sample_final_block_temp) j(index_o)
 *Saving part 1 of block replacement table
 save "${gsdTemp}/EB_Replacement_Table_Part1.dta", replace
 restore
@@ -402,7 +403,7 @@ rename ea id_ea
 drop if _n ==1
 destring *, replace
 
-g sample_final_ea = (sample_final_uri == 1 | sample_final_h == 1)
+g sample_final_ea = (sample_final_uri >= 1 | sample_final_h >= 1)
 keep id_ea sample_final_ea
 merge 1:m id_ea using "${gsdTemp}/EB_Replacement_Table_temp1.dta", keep(match using) nogenerate
 replace sample_initial_block = 0 if sample_final_ea == 0
@@ -431,8 +432,16 @@ merge 1:1 strata_id strata_name id_ea id_block using "${gsdTemp}/eb_collapse.dta
 replace sample_initial_block = 0 if _merge == 2
 drop _merge
 
-*Adding blocks in which at least one interview was conducted to the final sample
-replace sample_final_block = (nb_interviews_eb >=1 & missing(nb_interviews_eb) == 0)
+*Final sample 1 (theoretical): blocks from sampled EAs and including replacements recorded by the questionnaire
+g sample_final_block_th = sample_initial_block
+*Adding to the final sample the blocks which have been selected through the questionnaire 
+replace sample_final_block_th = 1 if sample_final_block_temp == 1
+*Removing from the final sample the blocks which have been replaced through the questionnaire
+replace sample_final_block_th = 1 if sample_final_block_temp == 0
+drop sample_final_block_temp
+
+*Final sample 2 (based on the interviews conducted): blocks in which at least one interview was conducted
+g sample_final_block_itw = (nb_interviews_eb >=1 & missing(nb_interviews_eb) == 0)
 
 *Labelling of variables
 label var strata_name "Strata name"
@@ -440,7 +449,8 @@ label var strata_id "Strata ID"
 label var id_ea "EA"
 label var id_block "Block"
 label var sample_initial_block "Whether block was initially sampled"
-label var sample_final_block "Whether block is included in the final sample"
+label var sample_final_block_th "Whether block is included in the theoretical final sample"
+label var sample_final_block_itw "Whether some interviews were conducted in the block"
 forvalues i = 1/$index_r_max{
 	label var r_block`i' "Replacement block number `i'"
 	label var r_reason_block`i' "Reason for replacement number `i'"
