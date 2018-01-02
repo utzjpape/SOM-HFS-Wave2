@@ -26,7 +26,7 @@ order emp_7d_hours_kdk, before(emp_7d_hours)
 order emp_prev_hours_kdk, before (emp_prev_hours)
 
 *Clean some variables
-merge m:1 interview__id  using "${gsdData}/0-RawTemp/hh_clean.dta", assert(match) nogen keepusing(hhh_id0 migr_idp hhr_id)
+merge m:1 interview__id  using "${gsdData}/0-RawOutput/hh_clean.dta", assert(match) nogen keepusing(hhh_id0 migr_idp hhr_id)
 replace hhm_relation=1 if hhm_relation>=. & hhroster_age__id==hhh_id0
 label define hhm_relation 1 "Household Head" .a "Don't know" .b "Refused to respond" .z "Not administered", modify
 drop hhh_id0
@@ -127,5 +127,5 @@ label var unemp_7d "Unemployed household member in the last 7 days"
 rename (hhroster_age__id) (hhm_id)
 drop migr_idp hhr_id
 
-save "${gsdData}/0-RawTemp/hhm_clean.dta", replace
+save "${gsdData}/0-RawOutput/hhm_clean.dta", replace
 

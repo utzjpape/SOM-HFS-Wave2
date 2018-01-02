@@ -104,4 +104,4 @@ replace mod_item=4 if inlist(foodid,15,21,23,30,37,38,39,49,58,60,68,73,87,88,89
 label var mod_item "Assignment of item to core/optional module"
 order mod_item, after(foodid)
 
-save "${gsdData}/0-RawTemp/hh_food_clean.dta", replace
+save "${gsdData}/0-RawOutput/hh_food_clean.dta", replace

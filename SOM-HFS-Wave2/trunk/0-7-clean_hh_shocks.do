@@ -33,4 +33,4 @@ forval i=0/18 {
 	label values shock_resp_`i' limportant
 }
 
-save "${gsdData}/0-RawTemp/hh_shocks_clean.dta", replace
+save "${gsdData}/0-RawOutput/hh_shocks_clean.dta", replace

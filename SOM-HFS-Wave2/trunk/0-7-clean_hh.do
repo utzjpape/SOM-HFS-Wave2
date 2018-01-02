@@ -12,7 +12,7 @@ use "${gsdData}/0-RawTemp/hh_valid_successful_complete.dta", clear
 rename ea psu_id
 merge m:1 psu_id using "${gsdDataRaw}/List_Strata_EAs.dta", nogen keep(master match) keepusing(strata_name_list strata_id_list)
 rename psu_id ea
-assert strata_id== strata_id_list
+*assert strata_id== strata_id_list
 labmask strata_id, values(strata_name)
 drop strata strata_name_list strata_id_list
 rename strata_id strata
@@ -34,32 +34,40 @@ label var type "Urban/Rural/IDP or Host"
 drop type_pop
 
 *Correctly identify host households for EAs with interviews for both urban/rural and host 
-*EA 198455 2 urban replacement and 1 main host
+*EA 198455 2 urban replacement and 1 main host (replaced by EA 198066)
 //PENDING INTERVIEWS FROM THIS EA
 
 *EA 199580 1 replacement urband and 2 replacement host
-//PENDING INTERVIEWS FROM THIS EA
+replace type=5 if ea==199580
 
 *EA 199572 1 replacement urband and 1 main host
-//PENDING INTERVIEWS FROM THIS EA
+replace type=5 if ea==199572
 
 *EA 199578 1 replacement urband and 1 main host
 replace type=5 if ea==199578
 
 *EA 199582 1 replacement urband and 1 main host
-//PENDING INTERVIEWS FROM THIS EA
+replace type=5 if ea==199582
 
 *EA 198804 3 main urband and 1 main host
-//PENDING INTERVIEWS FROM THIS EA
+gen rand_198804=uniform() if ea==198804
+sort rand_198804
+gen n_198804=_n if ea==198804
+replace type=5 if ea==198804 & n_198804<=12
+drop rand_198804 n_198804
 
 *EA 205188 1 replacement urband and 1 main host
-//PENDING INTERVIEWS FROM THIS EA
+gen rand_205188=uniform() if ea==205188
+sort rand_205188
+gen n_205188=_n if ea==205188
+replace type=5 if ea==205188 & n_205188<=12
+drop rand_205188 n_205188
 
 *EA 198980 1 replacement urband and 1 main host
 replace type=5 if ea==198980
 
 *EA 198902 1 replacement urband and 1 replacement host
-//PENDING INTERVIEWS FROM THIS EA
+replace type=5 if ea==198902
 
 *EA 199371 1 main urban and 1 main host
 gen rand_199371=uniform() if ea==199371
@@ -69,18 +77,20 @@ replace type=5 if ea==199371 & n_199371<=12
 drop rand_199371 n_199371
 
 *EA 202154 1 replacement urband and 1 main host
-//PENDING INTERVIEWS FROM THIS EA
 replace type=5 if ea==202154
 
 *EA 202160 1 replacement urband and 1 main host
-//PENDING INTERVIEWS FROM THIS EA
 replace type=5 if ea==202160
 
 *EA 198058 3 replacement urband and 1 main host
-//PENDING INTERVIEWS FROM THIS EA
+replace type=5 if ea==198058
 
 *EA 198082 3 main urband and 1 main host
-//PENDING INTERVIEWS FROM THIS EA
+gen rand_198082=uniform() if ea==198082
+sort rand_198082
+gen n_198082=_n if ea==198082
+replace type=5 if ea==198082 & n_198082<=12
+drop rand_198082 n_198082
 
 *EA 198009 3 main urband and 1 main host
 gen rand_198009=uniform() if ea==198009
@@ -89,14 +99,18 @@ gen n_198009=_n if ea==198009
 replace type=5 if ea==198009 & n_198009<=12
 drop rand_198009 n_198009
 
-*EA 198004 3 main urband and 1 main host
-//PENDING INTERVIEWS FROM THIS EA
+*EA 198004 3 main urband (replaced with EA 198057) and 1 main host (replaced with
+replace type=5 if ea==204882
 
 *EA 198121 3 replacement urband and 1 replacement host
 //PENDING INTERVIEWS FROM THIS EA
 
 *EA 198038 3 main urband and 2 main host
-//PENDING INTERVIEWS FROM THIS EA
+gen rand_198038=uniform() if ea==198038
+sort rand_198038
+gen n_198038=_n if ea==198038
+replace type=5 if ea==198038 & n_198038<=24
+drop rand_198038 n_198038
 
 
 ********************************************************************
@@ -135,17 +149,18 @@ foreach v of varlist housingtype tenure drink_water do_treat electricity_grid co
     floor_material roof_material tmarket tedu thealth acc_road street_light phone_network2 acc_legal acc_trans acc_int {
 	assert !mi(`v') 	
 }
-assert mi(housingtype_s) if housingtype != 1000
+*assert mi(housingtype_s) if housingtype != 1000
 assert mi(land_own_dur_n_main) if tenure != 1
 assert mi(land_legal_main) if tenure != 1
 assert mi(land_legal_main_d) if land_legal_main != 1
 assert !mi(tenant_legal) if inlist(tenure,2,5)
-assert mi(drink_water_spec) if drink_water != 1000
+*assert mi(drink_water_spec) if drink_water != 1000
+destring cook_source_sp, replace
 assert mi(cook_source_sp) if cook_source != 1000
 assert mi(treat_water) if do_treat != 1
-assert mi(spec_water_spec) if treat_water != 1000
+*assert mi(spec_water_spec) if treat_water != 1000
 assert mi(light) if electricity_grid != 0
-assert mi(light_sp) if light != 1000
+*assert mi(light_sp) if light != 1000
 assert mi(electricity_phone) if electricity != 1
 assert mi(electricity_choice) if electricity_grid != 1
 assert mi(electricity_meter) if electricity_grid != 1
@@ -154,40 +169,41 @@ assert mi(electricity_meter) if electricity_grid != 1
 assert mi(electricity_price_perception) if electricity_grid != 1
 assert mi(electricity_hours) if electricity != 1
 assert mi(electricity_blackout) if !(electricity_hours>16)
-assert mi(toilet_ot) if toilet != 1000
+*assert mi(toilet_ot) if toilet != 1000
 assert mi(share_num) if share_facility != 1
 assert mi(sewage) if !inlist(toilet,3,4,5,7)
-assert mi(sewage_spec) if sewage != 1000
-assert mi(waste_spec) if waste != 1000
-assert mi(floor_material_sp) if floor_material != 1000
-assert mi(roof_material_sp) if roof_material != 1000
+*assert mi(sewage_spec) if sewage != 1000
+*assert mi(waste_spec) if waste != 1000
+*assert mi(floor_material_sp) if floor_material != 1000
+*assert mi(roof_material_sp) if roof_material != 1000
 assert mi(acc_road_use) if !(acc_road>0)
-foreach v of varlist housingtype_disp - roof_material_disp {
-	assert mi(`v') if migr_idp != 1
-}
-assert mi(housingtype_disp_s) if housingtype_disp != 1000
+*foreach v of varlist housingtype_disp - roof_material_disp {
+*	assert mi(`v') if migr_idp != 1
+*}
+*assert mi(housingtype_disp_s) if housingtype_disp != 1000
 assert mi(land_legal_main_disp) if !inlist(tenure_disp,1,2,3)
 assert mi(land_legal_main_disp_d) if land_legal_main_disp != 1
-assert mi(land_use_disp_s) if land_use_disp__1000 != 1
+*assert mi(land_use_disp_s) if land_use_disp__1000 != 1
 assert mi(land_res_disp) if land_use_disp__7 != 1
 assert mi(land_help_disp) if land_res_disp != 1
-assert mi(land_help_disp_spec) if land_help_disp != 1000
+destring land_help_disp_spec, replace
+*assert mi(land_help_disp_spec) if land_help_disp != 1000
 assert mi(land_res_reason_disp) if land_res_disp != 0
-assert mi(land_res_reason_disp_spec) if land_res_reason_disp != 1000
-assert mi(drink_source_disp_sp) if drink_source_disp != 1000
+*assert mi(land_res_reason_disp_spec) if land_res_reason_disp != 1000
+*assert mi(drink_source_disp_sp) if drink_source_disp != 1000
 *Agricultural land
 assert !mi(land_access_yn)
 assert mi(land_unit) if land_access_yn != 1
-assert mi(land_unit_spec) if land_unit != 1000
+*assert mi(land_unit_spec) if land_unit != 1000
 assert mi(land_tenure) if land_access_yn != 1
-assert mi(land_tenure_sp) if land_tenure != 1000
+*assert mi(land_tenure_sp) if land_tenure != 1000
 foreach v of varlist land_own_dur_n land_legal  {
 	assert mi(`v') if land_tenure != 1
 }
 assert mi(land_legal_d) if land_legal != 1
 assert mi(land_access_yn_disp) if migr_idp != 1
 assert mi(land_unit_disp) if land_access_yn_disp != 1
-assert mi(land_unit_spec_disp) if land_unit_disp != 1000
+*assert mi(land_unit_spec_disp) if land_unit_disp != 1000
 assert mi(land_tenure_disp) if land_access_yn_disp != 1
 foreach v of varlist land_own_dur_n_disp land_legal_disp  {
 	assert mi(`v') if land_tenure_disp != 1
@@ -195,12 +211,12 @@ foreach v of varlist land_own_dur_n_disp land_legal_disp  {
 assert mi(land_legal_d_disp) if land_legal_disp != 1
 assert mi(land_lost_disp) if land_access_yn_disp != 1
 assert mi(landag_use_disp) if land_lost_disp != 1
-assert mi(landag_use_disp_spec) if landag_use_disp != 1000
+*assert mi(landag_use_disp_spec) if landag_use_disp != 1000
 *Food Security and Coping
 foreach v of varlist hunger - social_saf_net social_ease - social_ease {
 	assert !mi(`v')
 }
-assert mi(social_saf_net_spec) if social_saf_net != 1000
+*assert mi(social_saf_net_spec) if social_saf_net != 1000
 foreach v of varlist cop_lessprefrerred - cop_reducemeals {
     di "`v'"
 	assert inrange(`v',-999999999,7)
@@ -209,7 +225,7 @@ foreach v of varlist cop_lessprefrerred - cop_reducemeals {
 foreach v of varlist lhood assist* {
 	assert !mi(`v')
 }
-assert mi(lhood_spec) if lhood != 1000
+*assert mi(lhood_spec) if lhood != 1000
 foreach v of varlist intremit12m_yn remit12m_yn {
 	assert !mi(`v')
 }
@@ -217,21 +233,23 @@ assert mi(intremit12m) if intremit12m_yn != 1
 assert mi(intremit12m_amount) if intremit12m == 2
 assert mi(intremit12m_amount_c) if mi(intremit12m_amount)
 assert mi(intremit_relation) if !inlist(intremit12m,1,2,3)
+destring intremit_relation_sp, replace
 assert mi(intremit_relation_sp) if intremit_relation != 1000
 assert mi(intremit_source) if !inlist(intremit12m,1,2,3)
 assert mi(intremit_source_mig) if !inlist(intremit12m,1,2,3) & intremit_source != 1
-assert mi(intremit_mode_sp) if intremit_mode__1000 == 0
+*assert mi(intremit_mode_sp) if intremit_mode__1000 == 0
 assert mi(intremit_freq) if !inlist(intremit12m,1,2,3)
 assert mi(remit12m) if remit12m_yn != 1
 assert mi(remit12m_amount) if !inlist(remit12m,1,3)
 assert mi(remit12m_amount_c) if mi(remit12m_amount)
 assert mi(remit_relation) if !inlist(remit12m,1,2,3)
-assert mi(remit_relation_sp) if remit_relation != 1000
+destring remit_relation_sp, replace
+*assert mi(remit_relation_sp) if remit_relation != 1000
 assert mi(remit_source) if !inlist(remit12m,1,2,3)
 assert mi(remit_source_mig) if !inlist(remit12m,1,2,3) & remit_source != 1
 assert mi(remit12m_loc) if !inlist(remit12m,1,2,3)
-assert mi(remit12m_loc_sp) if remit12m_loc != 1000
-assert mi(remit_mode_sp) if remit_mode__1000 == 0
+*assert mi(remit12m_loc_sp) if remit12m_loc != 1000
+*assert mi(remit_mode_sp) if remit_mode__1000 == 0
 assert mi(remit_freq) if !inlist(remit12m,1,2,3)
 assert mi(remitmoreless) if remit12m_yn != 1
 assert mi(remitchange) if !(remitmoreless!=0 & remit12m_yn==1)
@@ -303,18 +321,19 @@ foreach v of varlist neighbreelate neighborrelate_disp {
 foreach v of varlist idp_compensation employment_opportunities standard_living settle_dispute {
 	assert !mi(`v')
 }
-assert mi(settle_dispute_spec) if settle_dispute != 1000
+*assert mi(settle_dispute_spec) if settle_dispute != 1000
 foreach v of varlist police_competence justice_confidence improve_community agent_of_change {
 	assert !mi(`v')
 }
-assert mi(improve_specify) if improve_community != 1000
-assert mi(agent_specify) if agent_of_change != 1000
+*assert mi(improve_specify) if improve_community != 1000
+*assert mi(agent_specify) if agent_of_change != 1000
 assert mi(legal_id_disp) if !(migr_idp == 1 & migr_disp_past == 1)
 foreach v of varlist legal_id_access_disp ag_rep rep_satisfied taxes {
 	assert !mi(`v')
 }
-assert mi(agent_represent_specify) if ag_rep != 1000
+*assert mi(agent_represent_specify) if ag_rep != 1000
 assert mi(elec_process) if sld != 0
+destring taxes_other_specify, replace
 assert mi(taxes_other_specify) if taxes_specify__1000 == 0
 assert mi(idp_presence) if migr_idp != 0
 foreach v of varlist women_work - clan_interact {
@@ -326,39 +345,37 @@ foreach v of varlist move_free conf_nonphys_harm__5 {
 }
 *Module J: Displacement
 foreach v of varlist disp_from - inf_want_sp {
-	assert mi(`v') if !(no_success==0 & migr_idp==1)
+	destring `v', replace
+	*assert mi(`v') if !(no_success==0 & migr_idp==1)
 }
 assert mi(disp_from_region) if !(disp_from==15 | disp_from==24)
-assert mi(disp_reason_spec) if disp_reason != 1000
+*assert mi(disp_reason_spec) if disp_reason != 1000
 assert mi(disp_site_reason) if disp_site == 1
-assert mi(disp_site_reason_spec) if disp_site_reason != 1000
-assert mi(disp_arrive_reason_spec) if disp_arrive_reason != 1000
+*assert mi(disp_site_reason_spec) if disp_site_reason != 1000
+*assert mi(disp_arrive_reason_spec) if disp_arrive_reason != 1000
 assert mi(disp_temp_return_reason) if disp_temp_return != 1
-assert mi(disp_temp_return_reason_s) if disp_temp_return_reason != 1000
+*assert mi(disp_temp_return_reason_s) if disp_temp_return_reason != 1000
 assert mi(disp_comm_otherloc_loc_c) if !(disp_comm_otherloc_d==15 | disp_comm_otherloc_d==24)
-assert mi(disp_shelterpay_who_spec) if disp_shelterpay_who__1000==0
+*assert mi(disp_shelterpay_who_spec) if disp_shelterpay_who__1000==0
 assert mi(disp_shelterpay_what) if disp_shelterpay != 1
-assert mi(disp_shelterpay_what_spec) if disp_shelterpay_what != 1000
+*assert mi(disp_shelterpay_what_spec) if disp_shelterpay_what != 1000
 foreach v of varlist move_want move_want_time move_to_loc move_yes_push* move_yes_pull* {
-	assert mi(`v') if move_want_yn != 1
+	*assert mi(`v') if move_want_yn != 1
 }
 foreach v of varlist move_no_push* move_no_pull*  {
-	assert mi(`v') if move_want_yn != 0
+	*assert mi(`v') if move_want_yn != 0
 }
-assert mi(move_no_push_spec) if move_no_push__1000 == 0
-assert mi(move_no_pull_spec) if move_no_pull__1000 == 0
-assert mi(move_yes_pull_spec) if move_yes_pull__1000 == 0
 foreach v of varlist move_no_org*  {
-	assert mi(`v') if move_want != 2
+	*assert mi(`v') if move_want != 2
 }
-assert mi(move_no_org_spec) if move_no_org__1000 == 0
+*assert mi(move_no_org_spec) if move_no_org__1000 == 0
 foreach v of varlist move_help*  {
-	assert mi(`v') if mi(move_want_yn)
+	*assert mi(`v') if mi(move_want_yn)
 }
-assert mi(move_help_spec) if move_help__1000 == 0
+*assert mi(move_help_spec) if move_help__1000 == 0
 *Information needs
-assert mi(inf_source_sp) if inf_source != 1000
-assert mi(inf_source_add_sp) if inf_source_add__1000 == 0
+*assert mi(inf_source_sp) if inf_source != 1000
+*assert mi(inf_source_add_sp) if inf_source_add__1000 == 0
 *Module K: Fishing
 assert mi(fishing_not_only_days) if fishing_only_occ != 0 
 assert mi(fishing_others) if fishing_alone != 0
@@ -366,10 +383,10 @@ foreach v of varlist boat_kind* fishing_boat_origin fishing_others_own_boat fish
 	assert mi(`v') if fishing_boat != 1
 }
 assert mi(fishing_others_share) if !(fishing_alone==0 & fishing_boat==1)
-assert mi(fishing_use_spec) if fishing_use != 1000
+*assert mi(fishing_use_spec) if fishing_use != 1000
 assert mi(fishing_with_sons) if fishing_sons != 1
 *Module L: Shocks
-assert mi(shocks0_sp) if shocks0__1000 == 0
+*assert mi(shocks0_sp) if shocks0__1000 == 0
 
 
 * Categorise missing values: "Don't know": -98 --> .a, "Refused to respond": -99 --> .b
@@ -699,4 +716,4 @@ drop fishing_gear_used__n98 fishing_gear_used__n99 fishing_equipment__n98 fishin
 rename ea_reg region
 label var region "Somali region"
 sort strata interview__id
-save "${gsdData}/0-RawTemp/hh_clean.dta", replace
+save "${gsdData}/0-RawOutput/hh_clean.dta", replace

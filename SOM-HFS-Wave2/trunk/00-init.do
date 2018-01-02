@@ -102,7 +102,6 @@ else {
 	mkdir "${gsdData}/0-RawTemp"
 	mkdir "${gsdData}/0-RawOutput"
 	mkdir "${gsdData}/1-CleanInput"
-	mkdir "${gsdData}/1-CleanInput/SLHS13"
 	mkdir "${gsdData}/1-CleanInput/SHFS2016"
 	mkdir "${gsdData}/1-CleanTemp"
 	mkdir "${gsdData}/1-CleanOutput"

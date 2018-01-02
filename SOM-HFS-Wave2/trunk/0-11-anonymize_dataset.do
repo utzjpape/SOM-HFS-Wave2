@@ -4,57 +4,64 @@ set more off
 set seed 23082380 
 set sortseed 11042355
 
-*load hh data 
 
-*********CHANGE WITH THE FINAL DTA
-*use "${gsdData}/0-RawOutput/hh.dta", clear
-
-use "${gsdData}/0-RawTemp/hh_clean.dta", clear
-
-
-*Keep only the necessary variables
-keep interview__id ea block_id team_id enum_id
-
+********************************************************************
 *Generate random ID for each household
+********************************************************************
+use "${gsdData}/0-RawTemp/hh_for_anon.dta", clear
+keep interview__id ea block_id team_id enum_id
 gen rand = runiform()
 sort ea interview__id
 by ea: egen hh_anon = rank(rand)
 save "${gsdTemp}/hh_anonkey.dta", replace
 
+
+********************************************************************
 *Generate random ID for each EA: take mean of random variable at the EA level
+********************************************************************
 collapse (mean) rand, by(ea)
 egen ea_anon = rank(rand)
 save "${gsdTemp}/ea_anonkey.dta", replace
 
+
+********************************************************************
 *Generate random ID for each block: take mean of random variable at the block level
+********************************************************************
 use "${gsdTemp}/hh_anonkey.dta", clear
 collapse (mean) rand, by(block_id)
 egen block_anon = rank(rand)
 save "${gsdTemp}/block_anonkey.dta", replace
 
+
+********************************************************************
 *Generate random ID for each enumerator: take mean of random variable at enumerator level
+********************************************************************
 use "${gsdTemp}/hh_anonkey.dta", clear
 collapse (mean) rand, by(enum_id)
 egen enum_anon = rank(rand)
 save "${gsdTemp}/enum_anonkey.dta", replace
 
+
+********************************************************************
 *Generate random ID for each team: take mean of random variable at the team level
+********************************************************************
 use "${gsdTemp}/hh_anonkey.dta", clear
 collapse (mean) rand, by(team_id)
 egen team_anon = rank(rand)
 save "${gsdTemp}/team_anonkey.dta", replace
 
+
+********************************************************************
 *Anonymize hh data
-*********CHANGE WITH THE FINAL DTA
-use "${gsdData}/0-RawTemp/hh_clean.dta", clear
+********************************************************************
+use "${gsdData}/0-RawTemp/hh_for_anon.dta", clear
 merge 1:1 interview__id using "${gsdTemp}/hh_anonkey.dta", assert(match) keep(match master) keepusing(hh_anon) nogenerate
 merge m:1 ea using "${gsdTemp}/ea_anonkey.dta", assert(match) keep(match master) keepusing(ea_anon) nogenerate
 merge m:1 block_id using "${gsdTemp}/block_anonkey.dta", assert(match) keep(match master) keepusing(block_anon) nogenerate
 merge m:1 enum_id using "${gsdTemp}/enum_anonkey.dta", assert(match) keep(match master) keepusing(enum_anon) nogenerate
 merge m:1 team_id using "${gsdTemp}/team_anonkey.dta", assert(match) keep(match master) keepusing(team_anon) nogenerate
-
-order ea_anon block_anon hh_anon  enum_anon team_anon
-drop interview__id team_id enum_id ea block_id
+order region strata ea_anon block_anon hh_anon  enum_anon team_anon
+drop team_id enum_id ea block_id
 rename (hh_anon ea_anon enum_anon block_anon team_anon) (hh ea enum block team)
 sort hh ea enum block
 label  var team "Data Collection Team"
@@ -64,83 +71,37 @@ label var hh "Household ID"
 label var enum "ID of enumerator"
 save "${gsdTemp}/hh_final.dta", replace
 
-/*
-gen astrata=11 if strata==101
-replace astrata=3 if strata==105 | strata==205 | strata==305
-replace astrata=12 if strata==201
-replace astrata=13 if strata==202 | strata==203
-replace astrata=21 if strata==204
-replace astrata=14 if strata==301
-replace astrata=15 if strata==302 | strata==303 | strata==1103  | strata==1203 | strata==1303
-replace astrata=22 if strata==304 | strata==1204 
-label def lastrata 11 "(u): Banadir"  3 "IDP" 12 "(u):Nugaal" 13 "(u):Bari+Mudug" 21 "(r):Bari+Mudug+Nugaal" 14 "(u):Woqooyi Galbeed" 15 "(u):Awdal+Sanaag+Sool+Togdheer" 22 "(r):Awdal+Sanaag+Sool+Togdheer+Woqooyi Galbeed", replace
-label values astrata lastrata
 
-
-*anonymize hhm data
-use "${gsdData}/0-RawOutput/hhm.dta", replace
-merge m:1 key using "${gsdTemp}/hh_final.dta",	assert(match) keepusing(zone team strata ea block hh enum) nogenerate
-order team strata ea block hh enum 
-drop key
+********************************************************************
+*Anonymize hhm data
+********************************************************************
+use "${gsdData}/0-RawOutput/hhm_clean.dta", replace
+merge m:1 interview__id using "${gsdTemp}/hh_final.dta", assert(match) keepusing(region strata ea block hh enum team) nogenerate
+order region strata ea block hh enum team
+drop interview__id
 save "${gsdData}/1-CleanInput/hhm.dta", replace
-use "${gsdData}/0-RawOutput/hhm_c_illnesses.dta", replace
-merge m:1 key using "${gsdTemp}/hh_final.dta",	keep(match master) keepusing(zone team strata ea block hh enum) nogenerate
-order team strata ea block hh enum 
-drop key
-save "${gsdData}/1-CleanInput/illnesses.dta", replace
+use "${gsdData}/0-RawOutput/hhm_separated_clean.dta", replace
+merge m:1 interview__id using "${gsdTemp}/hh_final.dta", keep(match master) keepusing(region strata ea block hh enum team) nogenerate
+order region strata ea block hh enum team
+drop interview__id
+save "${gsdData}/1-CleanInput/hhm_separated.dta", replace
 
-*anonymize other sections of the survey
-use "${gsdData}/0-RawOutput/hh_e_food.dta", replace
-merge m:1 key using "${gsdTemp}/hh_final.dta",	keep(match master) keepusing(zone team strata ea block hh enum astrata type) nogenerate
-order team strata ea block hh enum 
-drop key
-save "${gsdData}/1-CleanInput/food.dta", replace
-use "${gsdData}/0-RawOutput/hh_f_nfood.dta", replace
-merge m:1 key using "${gsdTemp}/hh_final.dta",	keep(match master) keepusing(zone team strata ea block hh enum astrata type) nogenerate
-order team strata ea block hh enum 
-drop key
-save "${gsdData}/1-CleanInput/nonfood.dta", replace
-use "${gsdData}/0-RawOutput/hh_g_livestock.dta", replace
-merge m:1 key using "${gsdTemp}/hh_final.dta",	keep(match master) keepusing(zone team strata ea block hh enum) nogenerate
-order team strata ea block hh enum 
-drop key
-save "${gsdData}/1-CleanInput/livestock.dta", replace
-use "${gsdData}/0-RawOutput/hh_h_assets.dta", replace
-merge m:1 key using "${gsdTemp}/hh_final.dta",	keep(match master) keepusing(zone team strata ea block hh enum astrata type) nogenerate
-order team strata ea block hh enum 
-drop key
-save "${gsdData}/1-CleanInput/assets.dta", replace
-use "${gsdData}/0-RawOutput/hh_k_fsecurity.dta", replace
-merge m:1 key using "${gsdTemp}/hh_final.dta",	keep(match master) keepusing(zone team strata ea block hh enum) nogenerate
-order team strata ea block hh enum 
-drop key
-save "${gsdData}/1-CleanInput/fsecurity.dta", replace
-use "${gsdData}/0-RawOutput/hh_l_incomesources.dta", replace
-merge m:1 key using "${gsdTemp}/hh_final.dta",	keep(match master) keepusing(zone team strata ea block hh enum) nogenerate
-order team strata ea block hh enum 
-drop key
-save "${gsdData}/1-CleanInput/incomesources.dta", replace
-use "${gsdData}/0-RawOutput/hh_m_enterprises.dta", replace
-merge m:1 key using "${gsdTemp}/hh_final.dta",	keep(match master) keepusing(zone team strata ea block hh enum) nogenerate
-order team strata ea block hh enum 
-drop key
-save "${gsdData}/1-CleanInput/enterprises.dta", replace
-use "${gsdData}/0-RawOutput/hh_n_shocks.dta", replace
-merge m:1 key using "${gsdTemp}/hh_final.dta",	keep(match master) keepusing(zone team strata ea block hh enum) nogenerate
-order team strata ea block hh enum 
-drop key
-save "${gsdData}/1-CleanInput/shocks.dta", replace
-*/
- 
-*Next, drop identifying information from hh
-use "${gsdTemp}/hh_final.dta", clear
-save "${gsdData}/1-CleanInput/hh.dta", replace
 
-/* 
-*Finally, include the files from SLHS 2013 into 1-CleanInput 
-foreach dataset in "hh" "hhm" "food_consumption_clean" "paasche_r" "paasche_u" {
-	use "${gsdDataRaw}/SLHS13/`dataset'.dta", clear
-	save "${gsdData}/1-CleanInput/SLHS13/`dataset'.dta", replace
+********************************************************************
+*Anonymize other sections of the survey
+********************************************************************
+foreach x in "nfood" "shocks" "food" "livestock" "livestock_pre" "motor" "assets" "assets_prev"  {
+	use "${gsdData}/0-RawOutput/hh_`x'_clean.dta", replace
+	merge m:1 interview__id using "${gsdTemp}/hh_final.dta", keep(match master) keepusing(region strata ea block hh enum team) nogenerate
+	order region strata ea block hh enum team
+	drop interview__id
+	save "${gsdData}/1-CleanInput/`x'.dta", replace
 }
-use "${gsdDataRaw}/Country_comparison.dta", clear
-save "${gsdData}/1-CleanInput/Country_comparison.dta", replace
+
+
+********************************************************************
+*Drop identifying information from hh
+********************************************************************
+use "${gsdTemp}/hh_final.dta", clear
+drop interview__id
+save "${gsdData}/1-CleanInput/hh.dta", replace
