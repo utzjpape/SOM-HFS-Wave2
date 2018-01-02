@@ -173,6 +173,7 @@ drop if interview__id=="38a4e9aef58840f8a344415df12b6ccd"
 drop if interview__id=="c2a6f03a61234ddd847fb0c8c61a9b17"
 drop if interview__id=="86e4611c536d4e3fa16d949a72f1a9d5"
 drop if interview__id=="09f70b5b4e6e4e30af881b1fbe944610"
+drop if interview__id=="eecea7f1818e432eae713fdbbd6d0318"
 save "${gsdTemp}/hh_without_empty_obs", replace
 
 * Rosters
@@ -188,6 +189,7 @@ foreach file in `files' {
 	drop if interview__id=="c2a6f03a61234ddd847fb0c8c61a9b17"
 	drop if interview__id=="86e4611c536d4e3fa16d949a72f1a9d5"
 	drop if interview__id=="09f70b5b4e6e4e30af881b1fbe944610"
+	drop if interview__id=="eecea7f1818e432eae713fdbbd6d0318"
 	save "${gsdData}/0-RawTemp/`file'_manual_cleaning.dta", replace
 }
 
@@ -207,6 +209,11 @@ drop if interview__id =="7a365578819d4d47b11ff60bbff02385" & rnf_nonfood__id==10
 drop if interview__id =="7a365578819d4d47b11ff60bbff02385" & rnf_nonfood__id==1089 & rnf_item_recall=="##N/A##"
 drop if interview__id =="7a365578819d4d47b11ff60bbff02385" & rnf_nonfood__id==1090 & rnf_item_recall=="##N/A##"
 drop if interview__id =="66d695dfd0be441e9f84af790596be89" & rnf_nonfood__id==1090 & rnf_item_recall=="##N/A##"
+drop if interview__id =="c9344caa731f45d3a63aaedffc2caa36" & rnf_nonfood__id==1088 & rnf_item_recall=="##N/A##"
+drop if interview__id =="c9344caa731f45d3a63aaedffc2caa36" & rnf_nonfood__id==1089 & rnf_item_recall=="##N/A##"
+drop if interview__id =="c9344caa731f45d3a63aaedffc2caa36" & rnf_nonfood__id==1090 & rnf_item_recall=="##N/A##"
+drop if interview__id =="47fc633273954f448ecf9f4419406caf" & rnf_nonfood__id==1090 & rnf_item_recall=="##N/A##"
+drop if interview__id =="d8d68289846346d9a3bf8519a605a88d" & rnf_nonfood__id==1090 & rnf_item_recall=="##N/A##"
 save "${gsdData}/0-RawTemp/rnf_nonfood_manual_cleaning.dta", replace
 
 *** Importing questionnaire
@@ -233,6 +240,7 @@ label define enum_id 3602 "Mohamed Isak Mohamed" ///
 	4002 "Ali Farah Adow" ///
 	4003 "Jama Ali Sheikh" ///
 	4004 "Hassan Muhumad Rashiid" ///
+	4101 "Abdiaziz Rage Ahmed" ///
 	4102 "Abdiaziz Rage Ahmed" ///
 	4103 "Amina Hilowle Isak" ///
 	4104 "Najmo Omar Kalinle" ///
@@ -263,16 +271,18 @@ replace ea_reg=11 if interview__id=="9dd0b0a2adeb41a1940795bb1c705e3b"
 replace ea_reg=3 if interview__id=="fb892e464ec546d39440f3a45bd6bfcc"
 *20/12/2017
 replace ea_reg=2 if interview__id=="d508f9bcc52b43ba89238a484efc519c"
-*tab ea_reg
-*tab ea_reg ea if substr(today,1,10)=="2017-12-30"
+tab ea_reg
+tab ea_reg ea if substr(today,1,10)=="2018-01-01"
 
 *** EA number cleaning
 *08/12/2017
 replace ea=6116000 if interview__id=="5c40caffe54044deb59ed86dc5610e85"
 *25/12/2017
 replace ea=198760 if interview__id=="89fd6810cc534326ac279a8fb63e5456"
+*01/01/2018
+replace ea=82297 if interview__id=="9a2230c16d0c498aa06def1704517029"
 *tab ea
-*tab ea team_id if substr(today,1,10)=="2017-12-30"
+*tab ea team_id if substr(today,1,10)=="2018-01-01"
 
 *** Team number cleaning
 *15/12/2017
@@ -467,6 +477,23 @@ replace today_end="2017-12-21T15:20:10-05:00" if interview__id=="3f691b0166c44a8
 *23/12/2017
 replace today="2017-12-23T09:35:00-05:00" if interview__id=="fe812af74e7a43e1a7a0d6c69efe0bb1"
 replace today_end="2017-12-23T11:38:00-05:00" if interview__id=="fe812af74e7a43e1a7a0d6c69efe0bb1"
+*01/01/2017
+replace today="2018-01-01T06:45:00-05:00" if interview__id=="4b1c3a66583e4b15a34861c0055d0320"
+replace today_end="2018-01-01T11:58:00-05:00" if interview__id=="4b1c3a66583e4b15a34861c0055d0320"
+replace today="2018-01-01T05:36:00-05:00" if interview__id=="b11eccc4400946fa894cc5b1399b2450"
+replace today_end="2018-01-01T15:12:00-05:00" if interview__id=="b11eccc4400946fa894cc5b1399b2450"
+replace today="2018-01-01T01:31:00-05:00" if interview__id=="6aef634b8f6e4cada636d40aa9913618"
+replace today_end="2018-01-01T08:00:00-05:00" if interview__id=="6aef634b8f6e4cada636d40aa9913618"
+replace today="2018-01-01T02:02:00-05:00" if interview__id=="6ade7c566cf74faebf0645e6f256c931"
+replace today_end="2018-01-01T11:24:00-05:00" if interview__id=="6ade7c566cf74faebf0645e6f256c931"
+replace today="2018-01-01T15:05:00-05:00" if interview__id=="55f95866bd9a4f0e92af41cfaf9df781"
+replace today_end="2018-01-01T23:01:00-05:00" if interview__id=="55f95866bd9a4f0e92af41cfaf9df781"
+replace today="2018-01-01T01:30:00-05:00" if interview__id=="b1b12de8427d4c17b8de80f9a2e893e5"
+replace today_end="2018-01-01T10:31:00-05:00" if interview__id=="b1b12de8427d4c17b8de80f9a2e893e5"
+replace today="2018-01-01T02:10:00-05:00" if interview__id=="cf7d796d2b254b7a95fa595350683f82"
+replace today_end="2018-01-01T05:58:00-05:00" if interview__id=="cf7d796d2b254b7a95fa595350683f82"
+replace today="2018-01-01T02:11:00-05:00" if interview__id=="2bb341a976c84a0e9ef1dc3d3b4e5a08"
+replace today_end="2018-01-01T06:48:00-05:00" if interview__id=="2bb341a976c84a0e9ef1dc3d3b4e5a08"
 
 *Identify observations with missing dates
 *br if today == "##N/A##"
@@ -518,6 +545,12 @@ replace today_end="2017-12-20T07:34:18-05:00" if interview__id=="35054f64a9a04b1
 *25/12/2017
 replace today="2017-12-25T07:06:44-05:00" if interview__id=="ef2484b1cdf84e01843d36f9ded1e360"
 replace today_end="2017-12-25T08:57:18-05:00" if interview__id=="ef2484b1cdf84e01843d36f9ded1e360"
+*31/12/2017
+replace today="2017-12-31T10:10:44-05:00" if interview__id=="6c3df683a9a245bd90d99fe26707cec6"
+replace today_end="2017-12-31T15:11:18-05:00" if interview__id=="6c3df683a9a245bd90d99fe26707cec6"
+*01/12/2018
+replace today="2018-01-01T06:30:00-05:00" if interview__id=="23324ca301c641688995b14acdb44e62"
+replace today_end="2018-01-01T08:34:00-05:00" if interview__id=="23324ca301c641688995b14acdb44e62"
 
 *Creating duration variable
 *Start time 
