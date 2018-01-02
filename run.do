@@ -31,3 +31,13 @@ run "${gsdDo}/0-6-completeness_submissions.do"
 *Clean the parent and child files 
 run "${gsdDo}/0-7-clean.do"
 
+*Prepare the master sample 
+run "${gsdDo}/0-8-prepare_master_sample.do"
+
+*Obtain the sampling weights
+run "${gsdDo}/0-9-estimate_sample_weights.do"
+
+*Anonymize the datasets
+run "${gsdDo}/0-11-anonymize_dataset.do"
+
+

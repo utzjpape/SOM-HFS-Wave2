@@ -61,7 +61,7 @@ rename (rl_give_n_kdk rl_give_n rl_give_reason rl_buy_n_kdk rl_buy_n rl_buy_val_
 label define livestockid 1 "Cattle" 2 "Sheep" 3 "Goats" 4 "Camels" 5 "Chickens" 6 "Donkeys" 7 "Horses" 1000 "Other"
 label values livestockid livestockid
 
-save "${gsdData}/0-RawTemp/hh_livestock_clean.dta", replace
+save "${gsdData}/0-RawOutput/hh_livestock_clean.dta", replace
 
 
 ********************************************************************
@@ -102,4 +102,4 @@ rename (rl_livestock_pre__id rl_own_pre_kdk rl_own_pre rl_own_pre_r_n_kdk rl_own
 label define livestockid 1 "Cattle" 2 "Sheep" 3 "Goats" 4 "Camels" 5 "Chickens" 6 "Donkeys" 7 "Horses" 1000 "Other"
 label values livestockid livestockid
 
-save "${gsdData}/0-RawTemp/hh_livestock_pre_clean.dta", replace
+save "${gsdData}/0-RawOutput/hh_livestock_pre_clean.dta", replace

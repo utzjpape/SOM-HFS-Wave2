@@ -37,5 +37,5 @@ foreach var in boat_motor_capacity_kdk boat_motor {
 	label define `var' .a "Don't know" .b "Refused to respond" .z "Not administered", modify
 }
 
-save "${gsdData}/0-RawTemp/hh_motor_clean.dta", replace
+save "${gsdData}/0-RawOutput/hh_motor_clean.dta", replace
 

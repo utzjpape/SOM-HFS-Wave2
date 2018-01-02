@@ -60,7 +60,7 @@ rename (ra_sellall_kdk ra_sellall ra_sellall_curr) (all_val_kdk all_val all_val_
 label define lassetid 1 "Bed with mattress" 2 "Mattress without bed" 3 "Chair" 4 "Upholstered chair, sofa set" 5 "Desk" 6 "Table" 7 "Coffee table (for sitting room)" 8 "Cupboard, drawers, bureau" 9 "Kitchen furniture" 10 "Mortar/pestle" 11 "Iron" 12 "Clock" 13 "Fan" 14 "Air conditioner" 15 "Sewing machine" 16 "Refrigerator" 17 "Washing machine" 18 "Stove for charcoal" 19 "Electric stove or hot plate" 20 "Gas stove" 21 "Kerosene/paraffin stove" 22 "Lantern (paraffin)" 23 "Small solar light" 24 "Cell phone" 25 "Photo camera" 26 "Radio ('wireless')" 27 "Tape or CD/DVD player; HiFi" 28 "Television" 29 "VCR" 30 "Computer equipment & accessories" 31 "Satellite dish" 32 "Solar panel" 33 "Generator" 34 "Motorcycle/scooter" 35 "Car" 36 "Mini-bus" 37 "Lorry"
 label values assetid lassetid
 
-save "${gsdData}/0-RawTemp/hh_assets_clean.dta", replace
+save "${gsdData}/0-RawOutput/hh_assets_clean.dta", replace
 
 
 
@@ -98,5 +98,5 @@ rename (ra_assets_prev__id ra_owntotal_prev ra_owntotal_prev_kdk) (assetid own_n
 label define lassetid 1 "Bed with mattress" 2 "Mattress without bed" 3 "Chair" 4 "Upholstered chair, sofa set" 5 "Desk" 6 "Table" 7 "Coffee table (for sitting room)" 8 "Cupboard, drawers, bureau" 9 "Kitchen furniture" 10 "Mortar/pestle" 11 "Iron" 12 "Clock" 13 "Fan" 14 "Air conditioner" 15 "Sewing machine" 16 "Refrigerator" 17 "Washing machine" 18 "Stove for charcoal" 19 "Electric stove or hot plate" 20 "Gas stove" 21 "Kerosene/paraffin stove" 22 "Lantern (paraffin)" 23 "Small solar light" 24 "Cell phone" 25 "Photo camera" 26 "Radio ('wireless')" 27 "Tape or CD/DVD player; HiFi" 28 "Television" 29 "VCR" 30 "Computer equipment & accessories" 31 "Satellite dish" 32 "Solar panel" 33 "Generator" 34 "Motorcycle/scooter" 35 "Car" 36 "Mini-bus" 37 "Lorry"
 label values assetid lassetid
 
-save "${gsdData}/0-RawTemp/hh_assets_prev_clean.dta", replace
+save "${gsdData}/0-RawOutput/hh_assets_prev_clean.dta", replace
 

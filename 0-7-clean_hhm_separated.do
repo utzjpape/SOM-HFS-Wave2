@@ -26,6 +26,6 @@ qui foreach var of varlist interview__id-hhm_contact {
 label var hh_roster_separated__id "Separated Member ID"
 rename (hh_roster_separated__id hhm_age_sep hhm_sep_sex hhm_relation_sep hhm_sep_reason hhm_contact) (hhm_separated__id hhm_sep_age hhm_sep_sex hhm_sep_relation hhm_sep_reason hhm_sep_contact)
 
-save "${gsdData}/0-RawTemp/hhm_separated_clean.dta", replace
+save "${gsdData}/0-RawOutput/hhm_separated_clean.dta", replace
 
 
