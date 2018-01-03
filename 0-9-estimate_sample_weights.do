@@ -1,4 +1,4 @@
-*Calculate sample weights considering all households and excluding the ones with missing values in consumption
+*Calculate sampling weights 
 
 set more off
 set seed 23061980 
@@ -104,10 +104,7 @@ merge m:1 psu_id using  "${gsdTemp}\master_sample_no_host.dta", nogen keep(maste
 order tot_hhs_psu, after(psu_id)
 rename (psu_id tot_hhs_psu) (ea_id_3 size_ea_3)
 *Obtain the final original size of the EA
-*=============****CHECK THIS CASE 
-*browse if psu_id==159914 replaced by 169427
-*=============****
-gen size_o_ea=size_ea if (ea_id_1==. & ea_id_2==. & ea_id_3==.) | ea_id==159914
+gen size_o_ea=size_ea if (ea_id_1==. & ea_id_2==. & ea_id_3==.) 
 replace size_o_ea=size_ea_1 if ea_id_1<. & size_o_ea>=.
 keep ea_id size_o_ea
 rename ea_id psu_id					
@@ -128,6 +125,28 @@ save "${gsdTemp}\sweights_1.3.dta", replace
 *2.1 Number of blocks selected in EA i (BSi)
 *2.2 Number of blocks in EA i (Bi)
 ********************************************************************
+*Host communities and low-rank replacement EAs 
+import excel "${gsdDataRaw}\Inputs EAs.xls", sheet("Master EBs") firstrow case(lower) clear
+drop if ea=="EA"
+drop if block_sel_dummy=="0"
+foreach var in block_sel_host block_sel_ur ea {
+	destring `var', replace
+}
+collapse (sum) block_sel_host block_sel_ur, by(ea)
+gen n_block_sel_ea=block_sel_host+block_sel_ur
+keep ea n_block_sel_ea
+rename ea psu_id
+drop if n_block_sel_ea==0
+save "${gsdTemp}\sweights_2.1_host.dta", replace
+import excel "${gsdDataRaw}\Inputs EAs.xls", sheet("Master EAs") firstrow case(lower) clear
+drop if ea=="EA"
+keep if type_pop=="Host Only" | (type_pop=="Urban/Rural" & status_psu_ur_idp=="Low-rank replacement not considered") | (type_pop=="Urban/Rural and Host" & status_psu_ur_idp=="Low-rank replacement not considered")
+keep ea nb_blocks_ea
+destring ea, replace
+destring nb_blocks_ea, replace
+rename (ea nb_blocks_ea) (psu_id n_block_ea)
+merge 1:1 psu_id using "${gsdTemp}\sweights_2.1_host.dta", nogen keep(match)
+save "${gsdTemp}\sweights_2_host.dta", replace
 *IDPs
 import excel "${gsdDataRaw}\IDPMasterStrata_v15.xlsx", sheet("Final_Sample") firstrow case(lower) clear
 drop if strata_id==.
@@ -147,6 +166,7 @@ keep psu_id tot_block nbblk2se
 duplicates drop
 rename (tot_block nbblk2se) (n_block_ea n_block_sel_ea)
 append using "${gsdTemp}\sweights_2_idp.dta"
+append using "${gsdTemp}\sweights_2_host.dta"
 save "${gsdTemp}\sweights_2.dta", replace
 
 
@@ -202,7 +222,6 @@ gen p1=(n_sel_ea_strata* size_o_ea)/ tot_hhs_strata
 ********************************************************************
 *Estimate P2
 ********************************************************************
-****CHECKS MISSING DETAILS ON BLOCKS FOR NEW EAS (low-rank + host) ******
 merge m:1 psu_id using "${gsdTemp}\sweights_2.dta", nogen keep(master match)
 gen p2=n_block_sel_ea/n_block_ea
 

@@ -40,4 +40,8 @@ run "${gsdDo}/0-9-estimate_sample_weights.do"
 *Anonymize the datasets
 run "${gsdDo}/0-11-anonymize_dataset.do"
 
+*Obtain the average exchange rate
+run "${gsdDo}/0-12-exchange_rate.do"
 
+*Prepare FSNAU prices with COICOP codes
+run "${gsdDo}/0-13-COICOP_FSNAU_prices.do"

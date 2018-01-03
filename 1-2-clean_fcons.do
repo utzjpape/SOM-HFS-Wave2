@@ -1,197 +1,336 @@
-*process to clean the food consumption dataset 
+*Process to clean the food consumption dataset 
 
 set more off
 set seed 23081960 
 set sortseed 11041965
 
-*first we create a temp file with the identifiers of the 52 households that responded NO to the consumption of every single food item and those that responded NO and a few Don't know/Refused to respond
+
+********************************************************************
+*Open the food dataset and prepare the file
+********************************************************************
 use "${gsdData}/1-CleanInput/food.dta", clear
-merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", assert(match) nogen keepusing(weight_cons)
-drop if cons==.z
-*keep only households with no records of consumption
-bys strata ea block hh: egen cons_hh=max(cons)
-keep if cons_hh==0
-bys strata ea block hh: egen include_hh=count(foodid) if cons==0 
-*finally keep only 53 households that will have missing values in consumption
-drop if include_hh<50 |  include_hh>=.
-collapse (first) mod_item, by (strata ea block hh)
-save "${gsdTemp}/food_hhs_nocons.dta", replace
-
-*identify 1 households with zero food consumption in the core module
-use "${gsdData}/1-CleanInput/food.dta", clear
-merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", assert(match) nogen keepusing(weight_cons)
-drop if cons==.z
-bys strata ea block hh: egen prelim_cons_hh=sum(cons) if cons==1
-bys strata ea block hh: egen cons_hh=max(prelim_cons_hh)
-keep if cons_hh==1 & cons==1 & foodid==65 & cons_q_kg==0.75
-keep strata ea block hh
-save "${gsdTemp}/food_hhs_cons_exclude.dta", replace
-
-*then we create a list with all the food items
-use "${gsdData}/1-CleanInput/food.dta", clear
-rename foodid itemid
-collapse (mean) mod_item, by(itemid)
-save "${gsdData}/1-CleanTemp/items_module_food.dta", replace
-
-*now we open the food consumption dataset, clean the data and include household weights
-use "${gsdData}/1-CleanInput/food.dta", clear
-merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", assert(match) nogen keepusing(weight_cons)
-order weight_cons, after(hh)
-drop cons_kdk purc_kdk pr_kdk free_other cons_q_kg_est  purc_q_kg_est
-
-*obtain the optional module for each household 
-bys strata ea block hh: egen x=max(mod_item) if cons<.
-bys strata ea block hh: egen opt_mod=max(x) 
-drop x
-order opt_mod, after(hh)
-label var opt_mod "Optional module allocated to the hh"
-
-*drop 1 households with zero food consumption in the core module
-merge m:1 strata ea block hh using "${gsdTemp}/food_hhs_cons_exclude.dta", nogen keep(master)
-
-*save the original structure to eventually include records with zero consumption, in order to get the mean consumption by item (with these observations ) that ultimately will be assign to records that answered "don't know" or "refused to respond"
+merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", assert(match) nogen keepusing(weight)
+order weight, after(hh)
+drop cons_q_kdk ownprod pr_kdk free free_q free_main
+rename mod_item opt_mod 
+*Include conversion factors to Kg
+qui foreach s in "cons" "purc" {
+	gen conv_`s'_kg=.
+	replace conv_`s'_kg=1 if `s'_u==1
+	replace conv_`s'_kg=0.3 if `s'_u==2
+	replace conv_`s'_kg=0.25 if `s'_u==3
+	replace conv_`s'_kg=0.25 if `s'_u==4
+	replace conv_`s'_kg=0.5 if `s'_u==5
+	replace conv_`s'_kg=0.5 if `s'_u==6
+	replace conv_`s'_kg=1.5 if `s'_u==7
+	replace conv_`s'_kg=2 if `s'_u==8
+	replace conv_`s'_kg=1 if `s'_u==9
+	replace conv_`s'_kg=1 if `s'_u==10
+	replace conv_`s'_kg=1.5 if `s'_u==11
+	replace conv_`s'_kg=1.5 if `s'_u==12
+	replace conv_`s'_kg=4 if `s'_u==13
+	replace conv_`s'_kg=1 if `s'_u==14
+	replace conv_`s'_kg=2.5 if `s'_u==15
+	replace conv_`s'_kg=0.35 if `s'_u==16
+	replace conv_`s'_kg=0.4 if `s'_u==17
+	replace conv_`s'_kg=0.5 if `s'_u==18
+	replace conv_`s'_kg=0.6 if `s'_u==19
+	replace conv_`s'_kg=0.75 if `s'_u==20
+	replace conv_`s'_kg=0.75 if `s'_u==21
+	replace conv_`s'_kg=0.8 if `s'_u==22
+	replace conv_`s'_kg=0.8 if `s'_u==23
+	replace conv_`s'_kg=0.13 if `s'_u==24
+	replace conv_`s'_kg=0.1 if `s'_u==25
+	replace conv_`s'_kg=0.125 if `s'_u==26
+	replace conv_`s'_kg=1 if `s'_u==27
+	replace conv_`s'_kg=0.25 if `s'_u==28
+	replace conv_`s'_kg=0.25 if `s'_u==29
+	replace conv_`s'_kg=0.4 if `s'_u==30
+	replace conv_`s'_kg=0.4 if `s'_u==31
+	replace conv_`s'_kg=0.5 if `s'_u==32
+	replace conv_`s'_kg=0.5 if `s'_u==33
+	replace conv_`s'_kg=0.75 if `s'_u==34
+	replace conv_`s'_kg=12 if `s'_u==35
+	replace conv_`s'_kg=0.001 if `s'_u==36
+	replace conv_`s'_kg=25 if `s'_u==37
+	replace conv_`s'_kg=0.125 if `s'_u==38
+	replace conv_`s'_kg=25 if `s'_u==39
+	replace conv_`s'_kg=2 if `s'_u==40
+	replace conv_`s'_kg=0.3 if `s'_u==41
+	replace conv_`s'_kg=0.35 if `s'_u==42
+	replace conv_`s'_kg=0.5 if `s'_u==43
+	replace conv_`s'_kg=5 if `s'_u==44
+	replace conv_`s'_kg=0.75 if `s'_u==45
+	replace conv_`s'_kg=1 if `s'_u==46
+	replace conv_`s'_kg=100 if `s'_u==47
+	replace conv_`s'_kg=10 if `s'_u==48
+	replace conv_`s'_kg=12 if `s'_u==49
+	replace conv_`s'_kg=15 if `s'_u==50
+	replace conv_`s'_kg=1 if `s'_u==51
+	replace conv_`s'_kg=25 if `s'_u==52
+	replace conv_`s'_kg=2 if `s'_u==53
+	replace conv_`s'_kg=30 if `s'_u==54
+	replace conv_`s'_kg=3 if `s'_u==55
+	replace conv_`s'_kg=4 if `s'_u==56
+	replace conv_`s'_kg=50 if `s'_u==57
+	replace conv_`s'_kg=5 if `s'_u==58
+	replace conv_`s'_kg=6 if `s'_u==59
+	replace conv_`s'_kg=7 if `s'_u==60
+	replace conv_`s'_kg=8 if `s'_u==61
+	replace conv_`s'_kg=0.25 if `s'_u==62
+	replace conv_`s'_kg=1 if `s'_u==63
+	replace conv_`s'_kg=0.2 if `s'_u==64
+	replace conv_`s'_kg=0.75 if `s'_u==65
+	replace conv_`s'_kg=1.5 if `s'_u==66
+	replace conv_`s'_kg=1 if `s'_u==67
+	replace conv_`s'_kg=3 if `s'_u==68
+	replace conv_`s'_kg=1.5 if `s'_u==69
+	replace conv_`s'_kg=10 if `s'_u==70
+	replace conv_`s'_kg=12.5 if `s'_u==71
+	replace conv_`s'_kg=0.12 if `s'_u==72
+	replace conv_`s'_kg=0.15 if `s'_u==73
+	replace conv_`s'_kg=15 if `s'_u==74
+	replace conv_`s'_kg=1 if `s'_u==75
+	replace conv_`s'_kg=20 if `s'_u==76
+	replace conv_`s'_kg=0.25 if `s'_u==77
+	replace conv_`s'_kg=2 if `s'_u==78
+	replace conv_`s'_kg=0.3 if `s'_u==79
+	replace conv_`s'_kg=0.35 if `s'_u==80
+	replace conv_`s'_kg=3 if `s'_u==81
+	replace conv_`s'_kg=0.5 if `s'_u==82
+	replace conv_`s'_kg=5 if `s'_u==83
+	replace conv_`s'_kg=6 if `s'_u==84
+	replace conv_`s'_kg=1.5 if `s'_u==85
+	replace conv_`s'_kg=0.1 if `s'_u==86
+	replace conv_`s'_kg=0.11 if `s'_u==87
+	replace conv_`s'_kg=0.12 if `s'_u==88
+	replace conv_`s'_kg=0.125 if `s'_u==89
+	replace conv_`s'_kg=0.15 if `s'_u==90
+	replace conv_`s'_kg=1 if `s'_u==91
+	replace conv_`s'_kg=0.2 if `s'_u==92
+	replace conv_`s'_kg=0.25 if `s'_u==93
+	replace conv_`s'_kg=2 if `s'_u==94
+	replace conv_`s'_kg=0.3 if `s'_u==95
+	replace conv_`s'_kg=0.03 if `s'_u==96
+	replace conv_`s'_kg=0.35 if `s'_u==97
+	replace conv_`s'_kg=0.4 if `s'_u==98
+	replace conv_`s'_kg=0.5 if `s'_u==99
+	replace conv_`s'_kg=0.05 if `s'_u==100
+	replace conv_`s'_kg=0.6 if `s'_u==101
+	replace conv_`s'_kg=0.06 if `s'_u==102
+	replace conv_`s'_kg=0.75 if `s'_u==103
+	replace conv_`s'_kg=0.075 if `s'_u==104
+	replace conv_`s'_kg=0.08 if `s'_u==105
+	replace conv_`s'_kg=12.5 if `s'_u==106
+	replace conv_`s'_kg=20 if `s'_u==107
+	replace conv_`s'_kg=0.15 if `s'_u==108
+	replace conv_`s'_kg=15 if `s'_u==109
+	replace conv_`s'_kg=1 if `s'_u==110
+	replace conv_`s'_kg=2.5 if `s'_u==111
+	replace conv_`s'_kg=0.25 if `s'_u==112
+	replace conv_`s'_kg=2 if `s'_u==113
+	replace conv_`s'_kg=3 if `s'_u==114
+	replace conv_`s'_kg=4 if `s'_u==115
+	replace conv_`s'_kg=0.5 if `s'_u==116
+	replace conv_`s'_kg=5 if `s'_u==117
+	replace conv_`s'_kg=6 if `s'_u==118
+	replace conv_`s'_kg=0.75 if `s'_u==119
+	replace conv_`s'_kg=0.125 if `s'_u==120
+	replace conv_`s'_kg=0.2 if `s'_u==121
+	replace conv_`s'_kg=0.04 if `s'_u==122
+	replace conv_`s'_kg=0.004 if `s'_u==123
+	replace conv_`s'_kg=1 if `s'_u==124
+	replace conv_`s'_kg=0.125 if `s'_u==125
+}
+*Convert consumption values to Kg
+gen cons_q_kg=cons_q*conv_cons_kg
+gen purc_q_kg=purc_q*conv_purc_kg
+order cons_q_kg, after(cons_u)
+order purc_q_kg, after(purc_u)
+drop conv_cons_kg conv_purc_kg
+*Save the original structure to eventually include records with zero consumption, in order to get the mean consumption by item that ultimately will be assign to records that answered "don't know" or "refused to respond"
 save "${gsdTemp}/food_hhs_fulldataset.dta", replace
 
-*remove non-administered, non-consumed items and records that answered "don't know" or "refused to respond"
-drop if cons==.z | cons==0 | cons==.a | cons==.b
 
-*tag items with same figure in quantity consumed, quantity purchased and price
-*exclude these records from the median estimation (for consumed quantity), and eventually replace their consumed quantity by the median
+********************************************************************
+*Introduce cleaning rules for units
+********************************************************************
+*Tag items with same figure in quantity consumed, quantity purchased and price
+*Exclude these records from the median estimation (for consumed quantity), and eventually replace their consumed quantity by the median
 gen cons_same_figures_tag=1 if (cons==1 & cons_q<.) & (cons_q == purc_q) & (purc_q == pr) 
 
-*tag items with same figure for quantity purchased and price
-*exclude these records from the median estimation (for purchase quantity and unit price), and eventually replace their unit price by the median
-gen purc_same_figures_tag=1 if (purc==1 & purc_q<.) & (purc_q == pr) 
+*Tag items with same figure for quantity purchased and price
+*Exclude these records from the median estimation (for purchase quantity and unit price), and eventually replace their unit price by the median
+gen purc_same_figures_tag=1 if (purc_q_kdk<. & purc_q<.) & (purc_q == pr) 
 
-*tag units where a record has the same figure in quantity consumed and purchased, and different units
+*Tag units where a record has the same figure in quantity consumed and purchased, and different units
 gen different_u_tag=1 if (cons_q==purc_q ) & (cons_u!=purc_u) & (cons==1 & cons_q<. & purc_q<.)
-*cleaning rule: the correct unit is the one that takes the variable (consumption or purchase) closer to the weighted median value in the distribution of that variable for the same item 
-*obtain the median quantity consumed/purchased
+
+*Cleaning rule: the correct unit is the one that takes the variable (consumption or purchase) closer to the weighted median value in the distribution of that variable for the same item 
+*Obtain the median quantity consumed/purchased
 local ls = "cons purc"
 levelsof foodid, local(items)
 foreach s of local ls {
- gen `s'_kg_median=.
- quietly foreach item of local items {
-	   sum `s'_q_kg [aw= weight_cons] if foodid==`item' & `s'_same_figures_tag!=1, detail
-	   replace `s'_kg_median=r(p50) if foodid==`item'  
+	gen `s'_kg_median=.
+	quietly foreach item of local items {
+		   sum `s'_q_kg [aw= weight] if foodid==`item' & `s'_same_figures_tag!=1, detail
+		   replace `s'_kg_median=r(p50) if foodid==`item'  
 }
 }
-*obtain the absolute difference between the quantity and the median for the respective item
+*Obtain the absolute difference between the quantity and the median for the respective item
 gen diff_cons_kg=abs(cons_q_kg - cons_kg_median) if different_u_tag==1
 gen diff_purc_kg=abs(purc_q_kg - purc_kg_median) if different_u_tag==1
-*introduce the replacements
+*Introduce the replacements
 replace cons_u=purc_u if diff_purc_kg<diff_cons_kg & different_u_tag==1
 replace cons_q_kg=purc_q_kg if diff_purc_kg<diff_cons_kg & different_u_tag==1
 replace purc_u=cons_u if diff_purc_kg>diff_cons_kg & different_u_tag==1
 replace purc_kg=cons_kg if diff_purc_kg>diff_cons_kg & different_u_tag==1
 drop cons_kg_median purc_kg_median diff_cons_kg diff_purc_kg
 
-*then we merge the dataset with the file containing the conversion for all the units and all the products
-merge m:1 cons_u foodid using "${gsdData}/1-CleanInput/units_all_items.dta", nogen keep(master match) keepusing(kg)
-rename kg kg_cons
-merge m:1 purc_u foodid using "${gsdData}/1-CleanInput/units_all_items.dta", nogen keep(master match) keepusing(kg)
-rename kg kg_purc
 
-*next we introduce these corrections for specific unit-items		
-gen cons_q_kg_correction=cons_q*kg_cons
-replace cons_q_kg=cons_q_kg_correction if cons_q_kg!=cons_q_kg_correction & cons_q_kg_correction<. 
-gen purc_q_kg_correction=purc_q*kg_purc
-replace purc_q_kg=purc_q_kg_correction if purc_q_kg!=purc_q_kg_correction & purc_q_kg_correction<. 
-drop kg_cons kg_purc cons_q_kg_correction purc_q_kg_correction
 
-*then we start corrections related to units
-*cleaning rule: manual corrections for consumption/purchase quantity in kg casued by an issue with units in following cases 1) when there is a difference between automatic conversion to kg and the enumerator estimate; 2) quantities consumed below 1 gram; and 3) other ad-hoc 
+
+
+*Then we start corrections related to units
+*Cleaning rule: manual corrections for consumption/purchase quantity in kg casued by an issue with units in following cases 1) quantities consumed below 1 gram; and 2) other ad-hoc 
 gen cons_u_tag=.
 gen purc_u_tag=.
 local ls = "cons purc"
 foreach s of local ls{
-	*250 ml tin (0.25kg): if quantity<=.03, multiply by 4 because the enumerator probably meant ml
-	replace `s'_u_tag=1            if (`s'_q_kg<=0.03 & `s'_u==3 & `s'==1 & `s'_q<.)
-	replace `s'_q_kg=`s'_q_kg*4    if (`s'_q_kg<=0.03 & `s'_u==3 & `s'==1 & `s'_q<.)
+	*250 ml/gr units: if quantity<=.03, multiply by 4 because the enumerator probably meant lt/Kg
+	replace `s'_u_tag=1            if (`s'_q_kg<=0.03 & inlist(`s'_u,3,4,28,29,62,77,93,112))
+	replace `s'_q_kg=`s'_q_kg*4    if (`s'_q_kg<=0.03 & inlist(`s'_u,3,4,28,29,62,77,93,112))	
+	
 	*animal back, ribs, shoulder, thigh, head or leg: if quantity>=7 kg, divide by 10 because the enumerator probably meant kg
-	replace `s'_u_tag=1            if (`s'_q_kg>=7 & `s'_u>=6 & `s'_u<=11 & `s'==1 & `s'_q<.)
-	replace `s'_q_kg=`s'_q_kg/10   if (`s'_q_kg>=7 & `s'_u>=6 & `s'_u<=11 & `s'==1 & `s'_q<.)
+	replace `s'_u_tag=1            if (`s'_q_kg>=7 & `s'_u>=7 & `s'_u<=12 )
+	replace `s'_q_kg=`s'_q_kg/10   if (`s'_q_kg>=7 & `s'_u>=7 & `s'_u<=12 )
+	
+	*basket or dengu (2 kg): if quantity>=10 divide by 10 because the enumerator probably meant kg
+	replace `s'_u_tag=1            if (`s'_q_kg>=10 & inlist(`s'_u,3,4,28,29,62,77,93,112))
+	replace `s'_q_kg=`s'_q_kg/10   if (`s'_q_kg>=10 & inlist(`s'_u,3,4,28,29,62,77,93,112))
+	
+	
+	
+	*/*
+	
+	
 	*basket or dengu (2 kg): if quantity>=10 divide by 10 because the enumerator probably meant kg
 	replace `s'_u_tag=1            if (`s'_q_kg>=10 & `s'_u==12 & `s'==1 & `s'_q<.)
 	replace `s'_q_kg=`s'_q_kg/10   if (`s'_q_kg>=10 & `s'_u==12 & `s'==1 & `s'_q<.)
+	
 	*bottle (1 kg): if quantity>=10 divide by 10 because the enumerator probably meant kg
 	replace `s'_u_tag=1            if (`s'_q_kg>=10 & `s'_u==13 & `s'==1 & `s'_q<.)
 	replace `s'_q_kg=`s'_q_kg/10   if (`s'_q_kg>=10 & `s'_u==13 & `s'==1 & `s'_q<.)
+	
 	*cup (200g): if quantity>200 by 2 because the enumerator probably meant grams
 	replace `s'_u_tag=1            if (`s'_q_kg>=0.21 & `s'_u==14 & `s'==1 & `s'_q<.)
 	replace `s'_q_kg=`s'_q_kg/2    if (`s'_q_kg>=0.21 & `s'_u==14 & `s'==1 & `s'_q<.)
+	
 	*faraasilad (12kg): if quantity>12 by 12 because the enumerator probably meant kg
 	replace `s'_u_tag=1             if (`s'_q_kg>12 & `s'_u==15 & `s'==1 & `s'_q<.)
 	replace `s'_q_kg=`s'_q_kg/12    if (`s'_q_kg>12 & `s'_u==15 & `s'==1 & `s'_q<.)
+	
 	*gram: if quantity<=0.001 (<1 gram) & item is a spice, then multiply by 100 because the enumerator probably meant grams
 	replace `s'_u_tag=1             if (`s'_q_kg<=0.0011 & `s'_u==16 & `s'==1 & `s'_q<.) & (foodid==32 | foodid==95 | foodid==96 | foodid==97 | foodid==98 | foodid==102 | foodid==106 | foodid==107 | foodid==108 | foodid==111 | foodid==100 | foodid==103)
 	replace `s'_q_kg=`s'_q_kg*100   if (`s'_q_kg<=0.0011 & `s'_u==16 & `s'==1 & `s'_q<.) & (foodid==32 | foodid==95 | foodid==96 | foodid==97 | foodid==98 | foodid==102 | foodid==106 | foodid==107 | foodid==108 | foodid==111 | foodid==100 | foodid==103)
+	
 	*gram: if quantity<=0.001 (<1 gram) & item is not a spice, then multiply by 1,000 because the enumerator probably meant kg
 	replace `s'_u_tag=1              if (`s'_q_kg<=0.0011 & `s'_u==16 & `s'==1 & `s'_q<.) & (foodid!=32 | foodid!=95 | foodid!=96 | foodid==97 | foodid==98 | foodid==102 | foodid==106 | foodid==107 | foodid==108 | foodid==111 | foodid==100 | foodid==103)
 	replace `s'_q_kg=`s'_q_kg*1000   if (`s'_q_kg<=0.0011 & `s'_u==16 & `s'==1 & `s'_q<.) & (foodid!=32 | foodid!=95 | foodid!=96 | foodid==97 | foodid==98 | foodid==102 | foodid==106 | foodid==107 | foodid==108 | foodid==111 | foodid==100 | foodid==103)	
+	
 	*haaf (25 kg): if quantity>=25, divide by 25 because the enumerator probably meant kg
 	replace `s'_u_tag=1             if (`s'_q_kg>=25 & `s'_u==17 & `s'==1 & `s'_q<.)
 	replace `s'_q_kg=`s'_q_kg/25    if (`s'_q_kg>=25 & `s'_u==17 & `s'==1 & `s'_q<.)
+	
 	*heap (700g): if quantity >=0.69 divide by 7 because the enumerator probably meant grams
 	replace `s'_u_tag=1             if (`s'_q_kg>=0.69 & `s'_u==18 & `s'==1 & `s'_q<.)
 	replace `s'_q_kg=`s'_q_kg/7     if (`s'_q_kg>=0.69 & `s'_u==18 & `s'==1 & `s'_q<.)
+	
 	*kilogram: if quantity >=100 divide by 1,000 because the enumerator probably meant grams
 	replace `s'_u_tag=1                if (`s'_q_kg>=100 & `s'_u==19 & `s'==1 & `s'_q<.)
 	replace `s'_q_kg=`s'_q_kg/1000     if (`s'_q_kg>=100 & `s'_u==19 & `s'==1 & `s'_q<.)
-    *large bag (50 kg): if quantity >=50 divide by 50 because the enumerator probably meant kg
+    
+	*large bag (50 kg): if quantity >=50 divide by 50 because the enumerator probably meant kg
 	replace `s'_u_tag=1                if (`s'_q_kg>=50 & `s'_u==20 & `s'==1 & `s'_q<.)
 	replace `s'_q_kg=`s'_q_kg/50       if (`s'_q_kg>=50 & `s'_u==20 & `s'==1 & `s'_q<.)
+	
 	*liter: if quantity >=10 divide by 10 because the enumerator probably meant liters
 	replace `s'_u_tag=1                if (`s'_q_kg>=10 & `s'_u==21 & `s'==1 & `s'_q<.)
 	replace `s'_q_kg=`s'_q_kg/10       if (`s'_q_kg>=10 & `s'_u==21 & `s'==1 & `s'_q<.)
+	
 	*Madal/Nus kilo ruba (0.75kg): if quantity >=7.5 divide by 10 because the enumerator probably meant grams
 	replace `s'_u_tag=1                if (`s'_q_kg>=7.5 & `s'_u==22 & `s'==1 & `s'_q<.)
 	replace `s'_q_kg=`s'_q_kg/10       if (`s'_q_kg>=7.5 & `s'_u==22 & `s'==1 & `s'_q<.)
+	
 	*meals (300g): if quantity >2.1 (one meal per day) divide by 10 because the enumerator probably meant grams	
 	replace `s'_u_tag=1                if (`s'_q_kg>2.1 & `s'_u==23 & `s'==1 & `s'_q<.)
 	replace `s'_q_kg=`s'_q_kg/10       if (`s'_q_kg>2.1 & `s'_u==23 & `s'==1 & `s'_q<.)
+	
 	*packet sealed box/container (500g): if quantity >=5 divide by 10 because the enumerator probably meant grams		
 	replace `s'_u_tag=1                if (`s'_q_kg>=5 & `s'_u==24 & `s'==1 & `s'_q<.)
 	replace `s'_q_kg=`s'_q_kg/10        if (`s'_q_kg>=5 & `s'_u==24 & `s'==1 & `s'_q<.)
+	
 	*piece (large - 300g): if quantity >=3 divide by 10 because the enumerator probably meant grams
 	replace `s'_u_tag=1                if (`s'_q_kg>=3 & `s'_u==25 & `s'==1 & `s'_q<.)
 	replace `s'_q_kg=`s'_q_kg/10       if (`s'_q_kg>=3 & `s'_u==25 & `s'==1 & `s'_q<.)
+	
 	*piece (small - 150g): if quantity >=1.5 divide by 10 because the enumerator probably meant grams
 	replace `s'_u_tag=1                if (`s'_q_kg>=1.5 & `s'_u==26 & `s'==1 & `s'_q<.)
 	replace `s'_q_kg=`s'_q_kg/10       if (`s'_q_kg>=1.5 & `s'_u==26 & `s'==1 & `s'_q<.)
+	
 	*rufuc/Jodha (12.5kg): if quantity >=12.5 divide by 10 because the enumerator probably meant kg
 	replace `s'_u_tag=1                if (`s'_q_kg>=12.5 & `s'_u==27 & `s'==1 & `s'_q<.)
 	replace `s'_q_kg=`s'_q_kg/10       if (`s'_q_kg>=12.5 & `s'_u==27 & `s'==1 & `s'_q<.)
+	
 	*saxarad (20kg): if quantity >=20 divide by 10 because the enumerator probably meant kg
 	replace `s'_u_tag=1                if (`s'_q_kg>=20 & `s'_u==28 & `s'==1 & `s'_q<.)
 	replace `s'_q_kg=`s'_q_kg/10       if (`s'_q_kg>=20 & `s'_u==28 & `s'==1 & `s'_q<.)
+	
 	*small bag (1 kg): if quantity>=10 divide by 10 because the enumerator probably meant grams		
 	replace `s'_u_tag=1                if (`s'_q_kg>=10 & `s'_u==29 & `s'==1 & `s'_q<.)
 	replace `s'_q_kg=`s'_q_kg/10       if (`s'_q_kg>=10 & `s'_u==29 & `s'==1 & `s'_q<.)
+	
 	*teaspoon (10 g): if quantity<0.009 multiply by 10 because the enumerator probably meant grams			
 	replace `s'_u_tag=1                if (`s'_q_kg<0.009 & `s'_u==30 & `s'==1 & `s'_q<.)
 	replace `s'_q_kg=`s'_q_kg*10       if (`s'_q_kg<0.009 & `s'_u==30 & `s'==1 & `s'_q<.)
+*/
 }
-*correct remaining cases where consumption or purchase was less than 1 gram
-*cleaning rule: multiply by 100 if consumption is less than 1 gram
+*Correct remaining cases where consumption or purchase was less than 1 gram
+*Cleaning rule: multiply by 100 if consumption is less than 1 gram
 replace cons_q_kg=cons_q_kg*100 if cons_q_kg<=.0011
 replace purc_q_kg=purc_q_kg*100 if purc_q_kg<=.0011
 
-*next we introduce corrections related to currency issues
-*cleaning rule: replace Somaliland shillings for Somali shillings, as they should not be used outside of Somaliland
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+********************************************************************
+*Introduce corrections related to currency issues
+********************************************************************
+*Cleaning rule: replace Somaliland shillings for Somali shillings, as they should not be used outside of Somaliland
 replace pr_c=1 if pr_c==3 & zone!=3
 assert pr_c==3 | pr_c==4 | pr_c==5 if (zone==3 & pr_c<.)
 assert pr_c==1 | pr_c==2 | pr_c==5 if (zone!=3 & pr_c<.)
-*cleaning rule: change USD to local currency (for each zone) when the price is equal or greater than 1,000
+*Cleaning rule: change USD to local currency (for each zone) when the price is equal or greater than 1,000
 replace pr_c=3 if pr >= 1000 & pr<. & pr_c==5 & zone==3
 replace pr_c=1 if pr >= 1000 & pr<. & pr_c==5 & zone!=3
-*cleaning rule: change local currency to thousands (for each zone) when the price is equal or smaller than 500
+*Cleaning rule: change local currency to thousands (for each zone) when the price is equal or smaller than 500
 replace pr_c=4 if pr <= 500 & pr_c==3
 replace pr_c=2 if pr <= 500 & pr_c==1
-*cleaning rule: change local currency larger than 500,000 (divide by 10)
+*Cleaning rule: change local currency larger than 500,000 (divide by 10)
 replace pr=pr/10 if pr>500000 & pr<.
 
-*tag records that reported to have consumed/purchased the item but do not report a quantity 
+*Tag records that reported to have consumed/purchased the item but do not report a quantity 
 gen cons_q_tag=1 if cons==1 & cons_q>=.
 gen purc_q_tag=1 if purc==1 & purc_q>=.
 *include previous tag for records with same figure in quantity consumed/purchased
@@ -232,6 +371,8 @@ replace `s'_q_kg=`s'_q_kg_item_median if (`s'_q_tag==1) & (`s'_q_kg_item_median<
 tab foodid if purc_q_tag==1 & purc_q_kg_item_count<5
 tab foodid if cons_q_tag==1 & cons_q_kg_item_count<5
 drop prelim_* xq_cons xq_purc purc_q_kg_ea_count purc_q_kg_strata_count purc_q_kg_item_count cons_q_kg_ea_count cons_q_kg_strata_count cons_q_kg_item_count cons_q_kg_ea_median purc_q_kg_ea_median cons_q_kg_strata_median purc_q_kg_strata_median cons_q_kg_item_median purc_q_kg_item_median
+
+
 
 *include the exchange rate for each zone
 merge m:1 zone using "${gsdData}/1-CleanInput/HFS Exchange Rate Survey.dta", nogen keepusing(average_er)
@@ -404,45 +545,4 @@ foreach var of varlist cons_f0-cons_f4  {
     replace `var'=.c if `var'==.
 }
 save "${gsdData}/1-CleanTemp/hh_fcons.dta", replace
-
-
-
-*save a version w/comparable items to Somaliland 2013
-
-*identify 3 additional hhs w/zero cons due to the dropped items 
-use "${gsdData}/1-CleanInput/hh.dta", clear
-keep if (strata==101 & ea==104 & block==25 & hh==10) | (strata==101 & ea==303 & block==23 & hh==6) | (strata==101 & ea==317 & block==10 & hh==6)
-keep strata ea block hh 
-save "${gsdTemp}/zero_comparable_2012.dta", replace
-
-use "${gsdData}/1-CleanTemp/food.dta", clear
-drop if itemid==46 | (itemid>=103 & itemid<=122)
-
-*now the data is collapsed at the household level and converted into wide format 
-collapse (sum) cons_usd, by(strata ea block hh opt_mod mod_item)
-reshape wide cons_usd, i(strata ea block hh opt_mod) j(mod_item)
-ren cons_usd* cons_f* 
-
-*then we includes zero values for optional modules without consumption and correct naming of missing values
-forvalues i=1/4 {
-	replace cons_f`i' = 0 if cons_f`i'>=. & opt_mod==`i'
-	label var cons_f`i' "Food consumption in current USD (Mod: `i'): 7d"
-}
-replace cons_f0=0 if cons_f0>=.
-label var cons_f0 "Food consumption in current USD (Mod: 0): 7d"
-forvalues i=1/4 {
-	replace cons_f`i'=.z if cons_f`i'>=. 
-}
-*next, we include missing values for households that 1) responded NO to the consumption of every single item in food consumption; and 2) hhs with only 1 record of consumption and non-credible item/quantity for food consumption
-append using "${gsdTemp}/food_hhs_nocons.dta"
-append using "${gsdTemp}/food_hhs_cons_exclude.dta"
-*exclude 3 additional hhs w/zero cons due to the dropped items 
-append using "${gsdTemp}/zero_comparable_2012.dta"
-drop mod_item
-
-*introduce correct nomenclature for these missing households
-foreach var of varlist cons_f0-cons_f4  {
-    replace `var'=.c if `var'==.
-}
-save "${gsdData}/1-CleanTemp/hh_fcons_comparable_2013.dta", replace
 
