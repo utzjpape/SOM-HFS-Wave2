@@ -123,7 +123,8 @@ label define ea_status_label 1 "Valid" ///
 	3 "Not enough interviews" ///
 	4 "Not balanced in terms of treatment" ///
 	5 "Not completed because of security reasons" ///
-	6 "Not completed because not enough interviews could be conducted"
+	6 "Not completed because military compound" ///
+	7 "Not completed because not enough interviews could be conducted"
 label values ea_status ea_status_label 
 
 replace ea_status=1 if _merge == 3
@@ -137,13 +138,11 @@ replace ea_status=2 if _merge == 3 & (sample_final_uri != 1 & sample_final_h != 
 replace ea_status=2 if _merge == 2
 replace ea_status=5 if id_ea == 160751
 replace ea_status=6 if id_ea == 198061
-*EAs in which less than 12 interviews could be conducted but that are considered valid
-replace ea_status=1 if id_ea == 134194 | id_ea == 64279 | id_ea == 166200 | id_ea == 66295
-
-
+*EAs with 12 blocks in which less than 12 interviews could be conducted (because not enough households in the EA) but that are considered valid
+replace ea_status=7 if id_ea == 134194 | id_ea == 64279 | id_ea == 166200 | id_ea == 66295 | id_ea == 67821
 
 *Dummy variable: whether EA is valid or not
-replace ea_valid=(ea_status==1) 
+replace ea_valid=(ea_status==1 | id_ea == 134194 | id_ea == 64279 | id_ea == 166200 | id_ea == 66295 | id_ea == 67821) 
 
 *Final cleaning
 drop _merge nb_valid_success_itws_ea nb_valid_success_treat1_ea nb_valid_success_treat2_ea nb_valid_success_treat3_ea nb_valid_success_treat4_ea
