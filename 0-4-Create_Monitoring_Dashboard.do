@@ -993,8 +993,9 @@ g target_itw_ea_uri = 12*final_main_uri
 g target_itw_ea_h = 12*final_main_h
 *Number of valid and successful interviews conducted in the EA for the host communities sample
 g successful_valid_h = min(successful_valid, target_itw_ea_h) if type_pop == "Urban/Rural and Host" | type_pop == "Host Only"
+replace successful_valid_h = successful_valid if type_pop == "Host Only" & target_itw_ea_h == 0
 *Number of valid and successful interviews conducted in the EA for the Urban/Rural/IDP sample
-g successful_valid_uri = max(0, successful_valid - target_itw_ea_h)
+g successful_valid_uri = max(0, successful_valid - target_itw_ea_h) if type_pop != "Host Only"
 
 
 *Final cleaning and labelling
