@@ -76,17 +76,11 @@ replace rf_pric_total_curr=.z if rf_pric_total>=.
 replace rf_free_quant=.z if rf_free_yn!=1 
 replace rf_free_main=.z if rf_free_yn!=1 
 
-*Clean variables 
-replace rf_food_cons_unit=rf_food_cons_unit/1000 if rf_food_cons_unit<.
-replace rf_food_purc_unit=rf_food_purc_unit/1000 if rf_food_purc_unit<.
-
 *Label and rename 
 foreach var in rf_cons_quant_kdk rf_cons_unit rf_maj_ownprod rf_purc_quant_kdk rf_purc_unit rf_pric_total_kdk rf_pric_total_curr rf_free_yn rf_free_main  {
 	label define `var' .a "Don't know" .b "Refused to respond" .z "Not administered", modify
 }
 label var rf_food__id "Food ID"
-label var rf_food_cons_unit "Quantity consumed in Kg"
-label var rf_food_purc_unit "Quantity purchased in Kg"
 rename (rf_food__id rf_cons_quant rf_cons_quant_kdk rf_cons_unit rf_food_cons_unit) (foodid cons_q cons_q_kdk cons_u cons_q_kg)
 rename (rf_maj_ownprod rf_purc_quant_kdk rf_purc_quant rf_purc_unit rf_food_purc_unit) (ownprod purc_q_kdk purc_q purc_u purc_q_kg)
 rename (rf_pric_total_kdk rf_pric_total rf_pric_total_curr rf_free_yn rf_free_quant rf_free_main) (pr_kdk pr pr_c free free_q free_main)
@@ -103,5 +97,6 @@ replace mod_item=3 if inlist(foodid,3,8,12,24,25,34,46,61,66,67,69,70,72,77,79,9
 replace mod_item=4 if inlist(foodid,15,21,23,30,37,38,39,49,58,60,68,73,87,88,89,99,102,113)
 label var mod_item "Assignment of item to core/optional module"
 order mod_item, after(foodid)
-
+drop cons_q_kg purc_q_kg
+drop if foodid==.
 save "${gsdData}/0-RawOutput/hh_food_clean.dta", replace
