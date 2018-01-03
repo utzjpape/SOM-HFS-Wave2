@@ -25,13 +25,22 @@ order strata strata_name type_pop, after(loc_check_barcode)
 drop type
 gen type=1 if (type_pop=="Urban/Rural" | type_pop=="Urban/Rural and Host") & inlist(strata,26,28,30,31,33,37,39,41,43,45,49,51,52,54,57)
 replace type=2 if (type_pop=="Urban/Rural" | type_pop=="Urban/Rural and Host") & inlist(strata,25,27,29,32,34,38,40,42,44,48,50,53,55,56)
-replace type=3 if (type_pop=="Urban/Rural" | type_pop=="Urban/Rural and Host") & inlist(strata,46,47)
-replace type=4 if type_pop=="IDP" 
-replace type=5 if type_pop=="Host Only"
-label define type_hh 1 "Urban" 2 "Rural" 3 "Urban & Rural" 4 "IDP" 5 "Host"
+replace type=3 if type_pop=="IDP" 
+replace type=4 if type_pop=="Host Only"
+label define type_hh 1 "Urban" 2 "Rural" 3 "IDP" 4 "Host"
 label values type type_hh
 label var type "Urban/Rural/IDP or Host"
 drop type_pop
+save "${gsdTemp}/hh_valid_successful_complete.dta", replace
+* Identify urban and rural households in combined urban and rural strata (using ArcMap created table)
+import delim "${gsdDataRaw}/sool_sanaag_urban_PSUs.txt", clear 
+ren psu_id ea 
+keep ea 
+la var ea "EA"
+merge 1:m ea using "${gsdTemp}/hh_valid_successful_complete.dta", keep(using match) gen(urban_ind)
+replace type=1 if urban_ind==3 & inlist(strata,46,47)
+replace type=2 if urban_ind==2 & inlist(strata,46,47)
+drop urban_ind 
 
 *Correctly identify host households for EAs with interviews for both urban/rural and host 
 *EA 198455 2 urban replacement and 1 main host (replaced by EA 198066)
