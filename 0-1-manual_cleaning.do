@@ -214,6 +214,7 @@ drop if interview__id =="c9344caa731f45d3a63aaedffc2caa36" & rnf_nonfood__id==10
 drop if interview__id =="c9344caa731f45d3a63aaedffc2caa36" & rnf_nonfood__id==1090 & rnf_item_recall=="##N/A##"
 drop if interview__id =="47fc633273954f448ecf9f4419406caf" & rnf_nonfood__id==1090 & rnf_item_recall=="##N/A##"
 drop if interview__id =="d8d68289846346d9a3bf8519a605a88d" & rnf_nonfood__id==1090 & rnf_item_recall=="##N/A##"
+drop if interview__id =="2d9388e30e6f4033a9cf11c76d90a112" & rnf_nonfood__id==1090 & rnf_item_recall=="##N/A##"
 save "${gsdData}/0-RawTemp/rnf_nonfood_manual_cleaning.dta", replace
 
 *** Importing questionnaire
@@ -224,6 +225,8 @@ replace enum_id = 3105 if interview__id=="ab0e6a8b5df34626b3f17a8ee5182ef0"
 replace enum_id = 3206 if interview__id=="568d421b53b1407ca17d51362e22c68c"
 replace enum_id = 2204 if interview__id=="aa65b9856f6c4437b9397f8b9444549e"
 replace enum_id = 203 if interview__id=="d5abc9e7adb24ff28d98998b4039e273"
+replace enum_id = 4102 if interview__id=="43ef97e987c544bd989605c7f63e3470"
+replace enum_id = 4102 if interview__id=="25ec98ab9da34bc49f0480f72683bbf3"
 
 label define enum_id 3602 "Mohamed Isak Mohamed" ///
 	3603 "Fadumo Mohamed Jilal" ///
@@ -272,7 +275,7 @@ replace ea_reg=3 if interview__id=="fb892e464ec546d39440f3a45bd6bfcc"
 *20/12/2017
 replace ea_reg=2 if interview__id=="d508f9bcc52b43ba89238a484efc519c"
 *tab ea_reg
-*tab ea_reg ea if substr(today,1,10)=="2018-01-02"
+*tab ea_reg ea if substr(today,1,10)=="2018-01-03"
 
 *** EA number cleaning
 *08/12/2017
@@ -282,7 +285,7 @@ replace ea=198760 if interview__id=="89fd6810cc534326ac279a8fb63e5456"
 *01/01/2018
 replace ea=82297 if interview__id=="9a2230c16d0c498aa06def1704517029"
 *tab ea
-*tab ea team_id if substr(today,1,10)=="2018-01-02"
+*tab ea team_id if substr(today,1,10)=="2018-01-03"
 
 *** Team number cleaning
 *15/12/2017
@@ -572,6 +575,25 @@ replace today="2018-01-02T01:40:00-05:00" if interview__id=="47664c2f16d0430aa9f
 replace today_end="2018-01-02T04:06:00-05:00" if interview__id=="47664c2f16d0430aa9f9099b46b4fc11"
 replace today="2018-01-02T01:38:00-05:00" if interview__id=="b5183bb96f9a401f90531d1d48fb6aa4"
 replace today_end="2018-01-02T04:08:00-05:00" if interview__id=="b5183bb96f9a401f90531d1d48fb6aa4"
+*03/01/2018
+replace today="2018-01-03T05:52:00-05:00" if interview__id=="d47baaf87f90474e8278253d9a04f478"
+replace today_end="2018-01-03T07:54:00-05:00" if interview__id=="d47baaf87f90474e8278253d9a04f478"
+replace today="2018-01-03T07:25:00-05:00" if interview__id=="73f1638c6c4e44bb87ac5f1731b4cb46"
+replace today_end="2018-01-03T10:20:00-05:00" if interview__id=="73f1638c6c4e44bb87ac5f1731b4cb46"
+replace today="2018-01-03T05:30:00-05:00" if interview__id=="adc3ebf4586f4a8a90fe88da858b5b83"
+replace today_end="2018-01-03T11:03:00-05:00" if interview__id=="adc3ebf4586f4a8a90fe88da858b5b83"
+replace today="2018-01-03T03:00:00-05:00" if interview__id=="a484de3859fb4d968892fe7e9a3eea32"
+replace today_end="2018-01-03T05:05:00-05:00" if interview__id=="a484de3859fb4d968892fe7e9a3eea32"
+replace today="2018-01-03T00:00:00-05:00" if interview__id=="8fbca5832f93480c93736bef22c5e1c5"
+replace today_end="2018-01-03T03:00:00-05:00" if interview__id=="8fbca5832f93480c93736bef22c5e1c5"
+replace today="2018-01-03T07:50:00-05:00" if interview__id=="b54c2182a0e34164a8cf6a6f757e2669"
+replace today_end="2018-01-03T10:31:00-05:00" if interview__id=="b54c2182a0e34164a8cf6a6f757e2669"
+replace today="2018-01-03T06:16:00-05:00" if interview__id=="8a47780306ae405185e1ac9d897b089b"
+replace today_end="2018-01-03T08:46:00-05:00" if interview__id=="8a47780306ae405185e1ac9d897b089b"
+replace today="2018-01-03T09:20:00-05:00" if interview__id=="719c42eec93947c7ab2e047c769b8909"
+replace today_end="2018-01-03T12:03:00-05:00" if interview__id=="719c42eec93947c7ab2e047c769b8909"
+replace today="2018-01-03T07:44:00-05:00" if interview__id=="ffedf5dc45b84afbb5bb8b2dc6e7d268"
+replace today_end="2018-01-03T09:46:00-05:00" if interview__id=="ffedf5dc45b84afbb5bb8b2dc6e7d268"
 
 *Creating duration variable
 *Start time 
