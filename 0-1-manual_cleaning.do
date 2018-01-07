@@ -227,6 +227,7 @@ replace enum_id = 2204 if interview__id=="aa65b9856f6c4437b9397f8b9444549e"
 replace enum_id = 203 if interview__id=="d5abc9e7adb24ff28d98998b4039e273"
 replace enum_id = 4102 if interview__id=="43ef97e987c544bd989605c7f63e3470"
 replace enum_id = 4102 if interview__id=="25ec98ab9da34bc49f0480f72683bbf3"
+replace enum_id = 4104 if interview__id=="16138275434f433cb1ab9adba989d71d"
 
 label define enum_id 3602 "Mohamed Isak Mohamed" ///
 	3603 "Fadumo Mohamed Jilal" ///
@@ -240,6 +241,7 @@ label define enum_id 3602 "Mohamed Isak Mohamed" ///
 	3902 "Fuad Aden Yussuf" ///
 	3903 "Fatuma Aden Issack" ///
 	3904 "Hussein Madey Mohamed" ///
+	4001 "Team Leader (Team 40)" ///
 	4002 "Ali Farah Adow" ///
 	4003 "Jama Ali Sheikh" ///
 	4004 "Hassan Muhumad Rashiid" ///
@@ -275,7 +277,7 @@ replace ea_reg=3 if interview__id=="fb892e464ec546d39440f3a45bd6bfcc"
 *20/12/2017
 replace ea_reg=2 if interview__id=="d508f9bcc52b43ba89238a484efc519c"
 *tab ea_reg
-*tab ea_reg ea if substr(today,1,10)=="2018-01-04"
+*tab ea_reg ea if substr(today,1,10)=="2018-01-06"
 
 *** Strata cleaning
 replace strata=32 if interview__id=="9a2230c16d0c498aa06def1704517029"
@@ -288,7 +290,7 @@ replace ea=198760 if interview__id=="89fd6810cc534326ac279a8fb63e5456"
 *01/01/2018
 replace ea=82297 if interview__id=="9a2230c16d0c498aa06def1704517029"
 *tab ea
-*tab ea team_id if substr(today,1,10)=="2018-01-04"
+*tab ea team_id if substr(today,1,10)=="2018-01-06"
 
 *** Team number cleaning
 *15/12/2017
@@ -500,6 +502,22 @@ replace today="2018-01-01T02:10:00-05:00" if interview__id=="cf7d796d2b254b7a95f
 replace today_end="2018-01-01T05:58:00-05:00" if interview__id=="cf7d796d2b254b7a95fa595350683f82"
 replace today="2018-01-01T02:11:00-05:00" if interview__id=="2bb341a976c84a0e9ef1dc3d3b4e5a08"
 replace today_end="2018-01-01T06:48:00-05:00" if interview__id=="2bb341a976c84a0e9ef1dc3d3b4e5a08"
+replace today="2018-01-01T08:52:00-05:00" if interview__id=="b4fa4bf2047140b7b76e9f3fc830ab7c"
+replace today_end="2018-01-01T11:00:00-05:00" if interview__id=="b4fa4bf2047140b7b76e9f3fc830ab7c"
+replace today="2018-01-01T05:32:00-05:00" if interview__id=="5797622920474f37b879a5ae982917c1"
+replace today_end="2018-01-01T08:01:00-05:00" if interview__id=="5797622920474f37b879a5ae982917c1"
+replace today="2018-01-01T05:43:00-05:00" if interview__id=="f696f715b4b341659a3e63d24160b0fa"
+replace today_end="2018-01-01T15:02:00-05:00" if interview__id=="f696f715b4b341659a3e63d24160b0fa"
+replace today="2018-01-01T02:04:00-05:00" if interview__id=="f96912013eb2486783ac32187fef1e2a"
+replace today_end="2018-01-01T04:21:00-05:00" if interview__id=="f96912013eb2486783ac32187fef1e2a"
+replace today="2018-01-01T02:56:00-05:00" if interview__id=="f6b4414fef5e4d6baae3762859f8c1a2"
+replace today_end="2018-01-01T07:45:00-05:00" if interview__id=="f6b4414fef5e4d6baae3762859f8c1a2"
+replace today="2018-01-01T10:04:00-05:00" if interview__id=="66abaeedc77740c5815043c8c2bfc525"
+replace today_end="2018-01-01T12:10:00-05:00" if interview__id=="66abaeedc77740c5815043c8c2bfc525"
+replace today="2018-01-01T07:25:00-05:00" if interview__id=="52fab39f840e49c29e98c7a7126286b1"
+replace today_end="2018-01-01T09:20:00-05:00" if interview__id=="52fab39f840e49c29e98c7a7126286b1"
+replace today="2018-01-01T08:52:00-05:00" if interview__id=="b4fa4bf2047140b7b76e9f3fc830ab7c"
+replace today_end="2018-01-01T10:50:00-05:00" if interview__id=="b4fa4bf2047140b7b76e9f3fc830ab7c"
 
 *Identify observations with missing dates
 *br if today == "##N/A##"
@@ -626,6 +644,44 @@ replace today="2018-01-04T14:06:00-05:00" if interview__id=="5ca56f36738b4d3b9a7
 replace today_end="2018-01-04T15:38:00-05:00" if interview__id=="5ca56f36738b4d3b9a7c21816a53a833"
 replace today="2018-01-04T09:14:00-05:00" if interview__id=="7e828b8f766e47559ff738e706d88190"
 replace today_end="2018-01-04T11:25:00-05:00" if interview__id=="7e828b8f766e47559ff738e706d88190"
+*05/01/2018
+replace today="2018-01-05T05:30:00-05:00" if interview__id=="8375fd01346142589fae3a34bc21607b"
+replace today_end="2018-01-05T08:06:00-05:00" if interview__id=="8375fd01346142589fae3a34bc21607b"
+replace today="2018-01-05T07:46:00-05:00" if interview__id=="24a1f952aa6f40f48035987385406179"
+replace today_end="2018-01-05T09:11:00-05:00" if interview__id=="24a1f952aa6f40f48035987385406179"
+replace today="2018-01-05T05:30:00-05:00" if interview__id=="9878cbc70ac144c8835d406799803846"
+replace today_end="2018-01-05T08:06:00-05:00" if interview__id=="9878cbc70ac144c8835d406799803846"
+replace today="2018-01-05T05:44:00-05:00" if interview__id=="ce0db1a30d3d41b18eb9986a6bedee1e"
+replace today_end="2018-01-05T08:07:00-05:00" if interview__id=="ce0db1a30d3d41b18eb9986a6bedee1e"
+replace today="2018-01-05T05:47:00-05:00" if interview__id=="7f573a27880847dabd22c6ce543a9427"
+replace today_end="2018-01-05T08:19:00-05:00" if interview__id=="7f573a27880847dabd22c6ce543a9427"
+replace today="2018-01-05T05:30:00-05:00" if interview__id=="698f5d6678db4a76a0010c3c9cd227ff"
+replace today_end="2018-01-05T14:20:00-05:00" if interview__id=="698f5d6678db4a76a0010c3c9cd227ff"
+replace today="2018-01-05T05:30:00-05:00" if interview__id=="9b5658dc2ea846f9997e98770930fdfe"
+replace today_end="2018-01-05T09:22:00-05:00" if interview__id=="9b5658dc2ea846f9997e98770930fdfe"
+replace today="2018-01-05T08:27:00-05:00" if interview__id=="85588fceefdf42a7b42bd3158d4446ad"
+replace today_end="2018-01-05T10:34:00-05:00" if interview__id=="85588fceefdf42a7b42bd3158d4446ad"
+replace today="2018-01-05T06:41:00-05:00" if interview__id=="c12e1940af7b45a9bb82cf67bdc68366"
+replace today_end="2018-01-05T11:09:00-05:00" if interview__id=="c12e1940af7b45a9bb82cf67bdc68366"
+*06/01/2018
+replace today="2018-01-06T05:45:00-05:00" if interview__id=="65cf420aac3a41a4bb1148dbac13e796"
+replace today_end="2018-01-06T08:18:00-05:00" if interview__id=="65cf420aac3a41a4bb1148dbac13e796"
+replace today="2018-01-06T05:42:00-05:00" if interview__id=="442b34d2030a4b77bcbd6aee97109b71"
+replace today_end="2018-01-06T07:48:00-05:00" if interview__id=="442b34d2030a4b77bcbd6aee97109b71"
+replace today="2018-01-06T06:15:00-05:00" if interview__id=="3b896cce9e4d4b088a097277ed9188bd"
+replace today_end="2018-01-06T08:19:00-05:00" if interview__id=="3b896cce9e4d4b088a097277ed9188bd"
+replace today="2018-01-06T05:49:00-05:00" if interview__id=="f86aac8ca70e4fbf917189e4259470b5"
+replace today_end="2018-01-06T12:06:00-05:00" if interview__id=="f86aac8ca70e4fbf917189e4259470b5"
+replace today="2018-01-06T06:22:00-05:00" if interview__id=="ecbbfb6063b74270a84b519bf813c26c"
+replace today_end="2018-01-06T09:05:00-05:00" if interview__id=="ecbbfb6063b74270a84b519bf813c26c"
+replace today="2018-01-06T01:00:00-05:00" if interview__id=="88704877071b42ef9083c14d3e38ee53"
+replace today_end="2018-01-06T03:10:00-05:00" if interview__id=="88704877071b42ef9083c14d3e38ee53"
+replace today="2018-01-06T08:05:00-05:00" if interview__id=="2025f2024c3e4f0fa08027a5190daddd"
+replace today_end="2018-01-06T10:10:00-05:00" if interview__id=="2025f2024c3e4f0fa08027a5190daddd"
+replace today="2018-01-06T05:24:00-05:00" if interview__id=="51f035f7afca4fd4bbbd1c1bb35a4896"
+replace today_end="2018-01-06T08:38:00-05:00" if interview__id=="51f035f7afca4fd4bbbd1c1bb35a4896"
+replace today="2018-01-06T05:34:00-05:00" if interview__id=="85a04f50a64e419a850efcc180535e58"
+replace today_end="2018-01-06T08:04:00-05:00" if interview__id=="85a04f50a64e419a850efcc180535e58"
 
 *Creating duration variable
 *Start time 
