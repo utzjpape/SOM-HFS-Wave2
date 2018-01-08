@@ -120,6 +120,11 @@ qui foreach file in `files' {
 	drop if _merge==3
 	drop _merge
 	
+    *Drop incomplete submissions with no consumption of core food items 
+	drop if interview__id=="72354cc7c1384764b0c5d992ecaa2b22"
+	drop if interview__id=="af65e76cef0d4dc1aceff859c43c7c7f"
+	drop if interview__id=="92950f08645d485a8261144204ab4e5c"
+	
 	*Drop incomplete submissions with missing values on food and household roster
 	drop if interview__id=="07d72a3e85fa4bae962a6b974d48cc5f"
 

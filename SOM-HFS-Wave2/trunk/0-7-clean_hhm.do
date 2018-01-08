@@ -12,6 +12,10 @@ use "${gsdData}/0-RawTemp/hhroster_age_valid_successful_complete.dta", clear
 drop hh_list hhm_relation_other birthplace_specify legal_id_type__1000 legal_id_type__n98 legal_id_type__n99 legal_id_spec hhm_edu_level_other absent_specify emp_7d_inac_sp hhm_job_search_no_spec emp_inac_sub_spec hhm_job_obs_spec hhm_job_support_spec emp_12m_additional__n98 emp_12m_additional__n99 resum_empl_reason_spec delivery_spec deliveryassist_spec interview__key hhm_away_m_int hhm_edu_reason_sp
 drop emp_7d_p emp_7d_a emp_7d_f emp_7d_b emp_7d_h emp_7d_a_yn emp_7d_p_yn emp_7d_f_yn emp_7d_b_yn emp_7d_h_yn emp_7d_count emp_7d_prim_int
 
+*Drop incomplete household member responses
+drop if hhm_age<0 & hhm_gender<0 & hhm_relation<0
+
+
 *Categorise missing values: "Don't know": -98 --> .a, "Refused to respond": -99 --> .b
 labmv, mv(-99 .b  -98 .a) all
 qui foreach var of varlist hhroster_age__id-interview__id {
@@ -27,7 +31,10 @@ order emp_prev_hours_kdk, before (emp_prev_hours)
 
 *Clean some variables
 merge m:1 interview__id  using "${gsdData}/0-RawOutput/hh_clean.dta", assert(match) nogen keepusing(hhh_id0 migr_idp hhr_id)
-replace hhm_relation=1 if hhm_relation>=. & hhroster_age__id==hhh_id0
+replace hhm_relation=1 if hhroster_age__id==hhh_id0 & hhh_id0<.
+*Assing household head 
+replace hhm_gender=1 if hhroster_age__id==1 & interview__id=="a285a77c94db45c79aec91e4fd401b53"
+replace hhm_relation=1 if hhroster_age__id==1 & interview__id=="a285a77c94db45c79aec91e4fd401b53"
 label define hhm_relation 1 "Household Head" .a "Don't know" .b "Refused to respond" .z "Not administered", modify
 drop hhh_id0
 

@@ -32,6 +32,7 @@ order purc, after(rnf_item_recall_int)
 *Clean variables 
 label define lrecall 1 "7 days" 2 "1 month" 3 "3 months" 4 "12 months"
 label values rnf_item_recall_int lrecall
+replace rnf_item_recall_int=4 if inlist(rnf_nonfood__id,1088,1089,1090)
 
 *Include skip patterns 
 replace rnf_pric_total=.z if rnf_pric_total_kdk>=.
@@ -54,5 +55,7 @@ replace mod_item=3 if inlist(nfoodid,1003,1011,1025,1029,1030,1031,1037,1041,104
 replace mod_item=4 if inlist(nfoodid,1004,1012,1021,1034,1044,1052,1056,1057,1058,1063,1065,1066,1072,1081,1090)
 label var mod_item "Assignment of item to core/optional module"
 order mod_item, after(nfoodid)
-
+*Exclude items that were not supposed to be administered to the household
+merge m:1 interview__id using "${gsdData}/0-RawTemp/hh_valid_successful_complete.dta", nogen keep(master match) keepusing(mod_opt)
+drop if !inlist(mod_item,0,mod_opt)
 save "${gsdData}/0-RawOutput/hh_nfood_clean.dta", replace

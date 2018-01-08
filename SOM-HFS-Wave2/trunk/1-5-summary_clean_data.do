@@ -4,18 +4,12 @@ set more off
 set seed 23181960 
 set sortseed 13041965
 
-*Obtain household size and type for each household 
-use "${gsdData}/1-CleanInput/hhm.dta", clear
-gen type=1 if strata==101 | strata==201	 | strata==202 | strata==203 | strata==301 | strata==302 | strata==303 | strata==1103 | strata==1203 | strata==1303
-replace type=2 if strata==204 | strata==304 | strata==1104 | strata==1204 | strata==1304 
-replace type=3 if strata==105 | strata==205 | strata==305
-bys team strata ea block hh: gen no_hhm=_n
-collapse (max) hhsize=no_hhm, by(strata ea block hh type)
-save "${gsdTemp}/hh_hhsize.dta", replace
 
+********************************************************************
 *Create tables to report for food 
+********************************************************************
 use "${gsdData}/1-CleanTemp/food.dta" , clear
-merge m:1 strata ea block hh using "${gsdTemp}/hh_hhsize.dta", keep(match) nogen keepusing(hhsize type)
+merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", assert(match) nogen keepusing(hhsize type)
 replace cons_usd = cons_usd/hhsize 
 replace cons_usd=. if cons_usd==0
 rename (unit_price cons_usd) (unit_price_cleaned cons_usd_cleaned)
@@ -23,7 +17,6 @@ label var unit_price_cleaned "Price cleaned"
 label var cons_usd_cleaned "Cons cleaned"
 save "${gsdData}/1-CleanTemp/food_checking_tables.dta", replace
 local va  "unit_price_cleaned cons_usd_cleaned" 
-
 *Overall for food items
 foreach v of local va {
 	use  "${gsdData}/1-CleanTemp/food_checking_tables.dta" , clear
@@ -55,16 +48,17 @@ foreach v of local va {
 }
 
 
+********************************************************************
 *Create tables to report for non-food 
+********************************************************************
 use "${gsdData}/1-CleanTemp/nonfood.dta" , clear
-merge m:1 strata ea block hh using "${gsdTemp}/hh_hhsize.dta", keep(match) nogen keepusing(hhsize type)
+merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", assert(match) nogen keepusing(hhsize type)
 replace pr_usd= pr_usd/hhsize 
 replace pr_usd=. if pr_usd==0
 rename (pr_usd) (pr_usd_cleaned)
 label var pr_usd_cleaned "Purchase value cleaned"
 save "${gsdData}/1-CleanTemp/nonfood_checking_tables.dta", replace
 local va  "pr_usd" 
-
 *Overall for non-food items
 foreach v of local va {
 	use  "${gsdData}/1-CleanTemp/nonfood_checking_tables.dta" , clear

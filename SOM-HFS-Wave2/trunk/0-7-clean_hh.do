@@ -47,16 +47,16 @@ drop urban_ind
 //PENDING INTERVIEWS FROM THIS EA
 
 *EA 199580 1 replacement urband and 2 replacement host
-replace type=5 if ea==199580
+replace type=4 if ea==199580
 
 *EA 199572 1 replacement urband and 1 main host
-replace type=5 if ea==199572
+replace type=4 if ea==199572
 
 *EA 199578 1 replacement urband and 1 main host
-replace type=5 if ea==199578
+replace type=4 if ea==199578
 
 *EA 199582 1 replacement urband and 1 main host
-replace type=5 if ea==199582
+replace type=4 if ea==199582
 
 *EA 198804 3 main urband and 1 main host
 gen rand_198804=uniform() if ea==198804
@@ -127,12 +127,23 @@ drop rand_198038 n_198038
 ********************************************************************
 label var interview__id "Unique Household ID" 
 label var block_id "Block" 
-rename nhhm hhsize 
-label var hhsize "Household size"
 label var nadults "No. Adults in household"
 label var water_home "Household has water at home"
 label var electricity "Household has electricity"
 label var migr_idp "IDP or displaced household"
+
+*Include correct figure for household size
+drop nhhm 
+preserve 
+use "${gsdData}/0-RawTemp/hhroster_age_valid_successful_complete.dta", clear
+*Drop incomplete household member responses
+drop if hhm_age<0 & hhm_gender<0 & hhm_relation<0
+bys interview__id: gen no_hhm=_n
+collapse (max) hhsize=no_hhm, by(interview__id)
+save "${gsdTemp}/hhsize.dta", replace
+restore
+merge 1:1 interview__id using "${gsdTemp}/hhsize.dta", nogen assert(match)
+label var hhsize "Household size"
 
 *Order variables
 order interview__id team_id enum_id ea_reg strata type ea block_id
@@ -722,6 +733,7 @@ drop fishing_gear_used__n98 fishing_gear_used__n99 fishing_equipment__n98 fishin
 ********************************************************************
 *Further tidy and save
 ********************************************************************
+replace hhh_id0=1 if hhh_id0==.
 rename ea_reg region
 label var region "Somali region"
 sort strata interview__id

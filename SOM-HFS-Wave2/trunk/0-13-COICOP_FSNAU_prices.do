@@ -195,7 +195,6 @@ export excel name id using "${gsdData}/1-CleanInput/Item_List.xls" if year==1995
 *Date variable
 gen date=substr(month,1,3)+ string(year)
 order date, before(year)
-drop year month
 replace region = proper(region)
 replace district = proper(district)
 *Assign codes to pre-war regions
@@ -268,4 +267,88 @@ lab var price "Item Price"
 lab var exchrate "Exchange Rate"
 lab var name "Item Name"
 lab var coicop "COICOP"
-save "${gsdData}/1-CleanInput/Commodity_Prices.dta", replace 
+rename id itemid
+save "${gsdData}/0-RawTemp/Commodity_Prices.dta", replace 
+
+
+********************************************************************
+*Obtain prices per COICOP code for relevant months
+********************************************************************
+use "${gsdData}/0-RawTemp/Commodity_Prices.dta", clear
+gen pr_usd=price/exchrate
+*Prepare month variable
+replace month="1" if month=="January"
+replace month="2" if month=="February"
+replace month="3" if month=="March"
+replace month="4" if month=="April"
+replace month="5" if month=="May"
+replace month="6" if month=="June"
+replace month="7" if month=="July"
+replace month="8" if month=="August"
+replace month="9" if month=="September"
+replace month="10" if month=="October"
+replace month="11" if month=="November"
+replace month="12" if month=="December"
+destring month, replace
+*Correct the names without spaces for the loop below 
+replace region="Lower_Juba" if region=="Lower Juba"
+replace region="Lower_Shabelle" if region=="Lower Shabelle" 
+replace region="Middle_Juba" if region=="Middle Juba"
+replace region="Middle_Shabelle" if region=="Middle Shabelle"
+replace region="Woqooyi_Galbeed" if region=="Woqooyi Galbeed"
+drop if region=="" | region=="0"
+collapse (mean) pr_usd, by( region coicop date year month)
+foreach region in Awdal Bakool Banaadir Bari Bay Galgaduud Gedo Hiraan Lower_Juba Lower_Shabelle Middle_Juba Middle_Shabelle Mudug Nugaal Sanaag Sool Togdheer Woqooyi_Galbeed  {
+	*Obtain the 2011 average
+	preserve
+	keep if region=="`region'"
+	keep if year==2011
+	drop date year region
+	collapse (mean) av_2011=pr_usd, by(coicop) 
+	la var av_2011 "2011 price average, USD"
+	save "${gsdTemp}/`region'_av2011.dta", replace
+	restore
+	*Obtain the 2012 average
+	preserve
+	keep if region=="`region'"
+	keep if year==2012
+	drop date year region
+	collapse (mean) av_2012=pr_usd, by(coicop) 
+	la var av_2012 "2012 price average, USD"
+	save "${gsdTemp}/`region'_av2012.dta", replace
+	restore
+	*Obtain months during data collection (December 2017 and January 2018)
+	preserve
+	keep if region=="`region'"
+	keep if (month==12 & year==2017) | (month==1 & year==2018)
+	drop region date year
+	reshape wide pr_usd, i(coicop) j(month) 
+	ren (pr_usd1 pr_usd12) (jan18 dec17)
+	la var coicop "Product"
+	la var jan18 "Price Jan 18, USD"
+	la var dec17 "Price Dec 17, USD"
+	gen str region="`region'"
+	la var region "Somali region"
+	*Merge back with 2011 and 2012 averages 
+	merge m:1 coicop using "${gsdTemp}/`region'_av2011.dta", keep(master match) nogen 
+	merge m:1 coicop using "${gsdTemp}/`region'_av2012.dta", keep(master match) nogen 
+	save "${gsdTemp}/market_prices_`region'.dta", replace
+	restore
+	
+}
+*Append all regions 
+use "${gsdTemp}/market_prices_Awdal.dta", clear
+foreach region in Bakool Banaadir Bari Bay Galgaduud Gedo Hiraan Lower_Juba Lower_Shabelle Middle_Juba Middle_Shabelle Mudug Nugaal Sanaag Sool Togdheer Woqooyi_Galbeed {
+	append using "${gsdTemp}/market_prices_`region'.dta"
+}
+order region coicop av_2011 av_2012 dec17 jan18
+save "${gsdData}/1-CleanInput/Prices_FSNAU.dta", replace 
+
+
+********************************************************************
+*Save a file matching itemid and COICOP codes
+********************************************************************
+use "${gsdData}/0-RawTemp/Commodity_Prices.dta", clear
+keep itemid coicop
+duplicates drop 
+save "${gsdData}/1-CleanInput/COICOP_Codes.dta", replace 
