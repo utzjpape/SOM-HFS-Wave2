@@ -69,20 +69,20 @@ drop rand_198804 n_198804
 gen rand_205188=uniform() if ea==205188
 sort rand_205188
 gen n_205188=_n if ea==205188
-replace type=5 if ea==205188 & n_205188<=12
+replace type=4 if ea==205188 & n_205188<=12
 drop rand_205188 n_205188
 
 *EA 198980 1 replacement urband and 1 main host
-replace type=5 if ea==198980
+replace type=4 if ea==198980
 
 *EA 198902 1 replacement urband and 1 replacement host
-replace type=5 if ea==198902
+replace type=4 if ea==198902
 
 *EA 199371 1 main urban and 1 main host
 gen rand_199371=uniform() if ea==199371
 sort rand_199371
 gen n_199371=_n if ea==199371
-replace type=5 if ea==199371 & n_199371<=12
+replace type=4 if ea==199371 & n_199371<=12
 drop rand_199371 n_199371
 
 *EA 202154 1 replacement urband and 1 main host
