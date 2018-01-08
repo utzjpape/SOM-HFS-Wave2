@@ -37,6 +37,9 @@ run "${gsdDo}/0-8-prepare_master_sample.do"
 *Obtain the sampling weights
 run "${gsdDo}/0-9-estimate_sample_weights.do"
 
+*Include regional breakdown and files needed 
+run "${gsdDo}/0-10-PESS_regions.do"
+
 *Anonymize the datasets
 run "${gsdDo}/0-11-anonymize_dataset.do"
 
@@ -45,3 +48,26 @@ run "${gsdDo}/0-12-exchange_rate.do"
 
 *Prepare FSNAU prices with COICOP codes
 run "${gsdDo}/0-13-COICOP_FSNAU_prices.do"
+
+*Clean the consumption datasets
+run "${gsdDo}/1-2-clean_fcons.do"
+run "${gsdDo}/1-3-clean_nonfcons.do"
+run "${gsdDo}/1-4-clean_assets.do"
+
+*Report the cleaned consumption values
+run "${gsdDo}/1-5-summary_clean_data.do"
+
+*Clean household member dataset
+run "${gsdDo}/1-6-clean_hhm_educ_labor.do"
+
+*Clean remittances
+run "${gsdDo}/1-7-clean_remittances.do"
+
+*Consumption Aggregates Deflator and Imputation 
+run "${gsdDo}/1-8-1-consaggr_deflator.do"
+run "${gsdDo}/1-8-2-consaggr_imputation.do"
+run "${gsdDo}/1-8-3-include_imputed_shares.do"
+run "${gsdDo}/1-8-4-consaggr_test.do"
+
+*Clean household level dataset, integrate aggregates from previous cleaning files
+run "${gsdDo}/1-9-clean_hh.do" 

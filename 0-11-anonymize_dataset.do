@@ -92,7 +92,7 @@ save "${gsdData}/1-CleanInput/hhm_separated.dta", replace
 ********************************************************************
 foreach x in "nfood" "shocks" "food" "livestock" "livestock_pre" "motor" "assets" "assets_prev"  {
 	use "${gsdData}/0-RawOutput/hh_`x'_clean.dta", replace
-	merge m:1 interview__id using "${gsdTemp}/hh_final.dta", keep(match master) keepusing(region strata ea block hh enum team) nogenerate
+	merge m:1 interview__id using "${gsdTemp}/hh_final.dta", keep(match) keepusing(region strata ea block hh enum team) nogenerate
 	order region strata ea block hh enum team
 	drop interview__id
 	save "${gsdData}/1-CleanInput/`x'.dta", replace

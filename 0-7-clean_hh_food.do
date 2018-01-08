@@ -99,4 +99,7 @@ label var mod_item "Assignment of item to core/optional module"
 order mod_item, after(foodid)
 drop cons_q_kg purc_q_kg
 drop if foodid==.
+*Exclude items that were not supposed to be administered to the household
+merge m:1 interview__id using "${gsdData}/0-RawTemp/hh_valid_successful_complete.dta", nogen keep(master match) keepusing(mod_opt)
+drop if !inlist(mod_item,0,mod_opt)
 save "${gsdData}/0-RawOutput/hh_food_clean.dta", replace
