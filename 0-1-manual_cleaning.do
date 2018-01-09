@@ -277,7 +277,7 @@ replace ea_reg=3 if interview__id=="fb892e464ec546d39440f3a45bd6bfcc"
 *20/12/2017
 replace ea_reg=2 if interview__id=="d508f9bcc52b43ba89238a484efc519c"
 *tab ea_reg
-*tab ea_reg ea if substr(today,1,10)=="2018-01-07"
+*tab ea_reg ea if substr(today,1,10)=="2018-01-08"
 
 *** Strata cleaning
 replace strata=32 if interview__id=="9a2230c16d0c498aa06def1704517029"
@@ -290,7 +290,7 @@ replace ea=198760 if interview__id=="89fd6810cc534326ac279a8fb63e5456"
 *01/01/2018
 replace ea=82297 if interview__id=="9a2230c16d0c498aa06def1704517029"
 *tab ea
-*tab ea team_id if substr(today,1,10)=="2018-01-07"
+*tab ea team_id if substr(today,1,10)=="2018-01-08"
 
 *** Team number cleaning
 *15/12/2017
@@ -715,6 +715,17 @@ replace today="2018-01-07T05:30:00-05:00" if interview__id=="4220853f0457418bb4d
 replace today_end="2018-01-07T07:45:00-05:00" if interview__id=="4220853f0457418bb4d934b3ef6d798b"
 replace today="2018-01-07T13:23:00-05:00" if interview__id=="7c3471d05d2b41f587844a8a57720203"
 replace today_end="2018-01-07T16:19:00-05:00" if interview__id=="7c3471d05d2b41f587844a8a57720203"
+*08/01/2018
+replace today="2018-01-08T14:20:00-05:00" if interview__id=="8de29082cc934b339a6feb7f74ebd44f"
+replace today_end="2018-01-08T16:19:00-05:00" if interview__id=="8de29082cc934b339a6feb7f74ebd44f"
+replace today="2018-01-08T02:00:00-05:00" if interview__id=="7227c62e2512444bbc18449fe634a15e"
+replace today_end="2018-01-08T04:30:00-05:00" if interview__id=="7227c62e2512444bbc18449fe634a15e"
+replace today="2018-01-08T10:30:00-05:00" if interview__id=="33e126701e154a7e840177304d35fabb"
+replace today_end="2018-01-08T12:30:00-05:00" if interview__id=="33e126701e154a7e840177304d35fabb"
+replace today="2018-01-08T02:13:00-05:00" if interview__id=="eaa06e99b0b9495190f1a563d2e3e54f"
+replace today_end="2018-01-08T04:31:00-05:00" if interview__id=="eaa06e99b0b9495190f1a563d2e3e54f"
+replace today="2018-01-08T09:49:00-05:00" if interview__id=="3d756a8798164acfbb0faf08d61ff3f2"
+replace today_end="2018-01-08T11:51:00-05:00" if interview__id=="3d756a8798164acfbb0faf08d61ff3f2"
 
 *Creating duration variable
 *Start time 
