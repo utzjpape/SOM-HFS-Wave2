@@ -228,13 +228,20 @@ replace enum_id = 203 if interview__id=="d5abc9e7adb24ff28d98998b4039e273"
 replace enum_id = 4102 if interview__id=="43ef97e987c544bd989605c7f63e3470"
 replace enum_id = 4102 if interview__id=="25ec98ab9da34bc49f0480f72683bbf3"
 replace enum_id = 4104 if interview__id=="16138275434f433cb1ab9adba989d71d"
+replace enum_id = 3801 if interview__id=="4b7adf58ea5140488f667bf97fb4e8a9"
 
-label define enum_id 3602 "Mohamed Isak Mohamed" ///
+*** Team cleaning
+replace team_id = 38 if interview__id=="4b7adf58ea5140488f667bf97fb4e8a9"
+
+label define enum_id ///
+	3602 "Mohamed Isak Mohamed" ///
 	3603 "Fadumo Mohamed Jilal" ///
 	3604 "Farhiya Abass Mohamed" ///
+	3701 "Team Leader (Team 37)" ///
 	3702 "Abdirahman Khalif Abdi" ///
 	3703 "Hashim Abdi Weheliye" ///
 	3704 "Abshir Abdule Noor" ///
+	3801 "Team Leader (Team 38)" ///
 	3802 "Abdullahi Ibrahim Abdi" ///
 	3803 "Hassan Mohamed Abdi" ///
 	3804 "Jeylani Mohamed Dhere" ///
@@ -277,7 +284,7 @@ replace ea_reg=3 if interview__id=="fb892e464ec546d39440f3a45bd6bfcc"
 *20/12/2017
 replace ea_reg=2 if interview__id=="d508f9bcc52b43ba89238a484efc519c"
 *tab ea_reg
-*tab ea_reg ea if substr(today,1,10)=="2018-01-08"
+*tab ea_reg ea if substr(today,1,10)=="2018-01-09"
 
 *** Strata cleaning
 replace strata=32 if interview__id=="9a2230c16d0c498aa06def1704517029"
@@ -290,7 +297,7 @@ replace ea=198760 if interview__id=="89fd6810cc534326ac279a8fb63e5456"
 *01/01/2018
 replace ea=82297 if interview__id=="9a2230c16d0c498aa06def1704517029"
 *tab ea
-*tab ea team_id if substr(today,1,10)=="2018-01-08"
+*tab ea team_id if substr(today,1,10)=="2018-01-09"
 
 *** Team number cleaning
 *15/12/2017
@@ -726,6 +733,29 @@ replace today="2018-01-08T02:13:00-05:00" if interview__id=="eaa06e99b0b9495190f
 replace today_end="2018-01-08T04:31:00-05:00" if interview__id=="eaa06e99b0b9495190f1a563d2e3e54f"
 replace today="2018-01-08T09:49:00-05:00" if interview__id=="3d756a8798164acfbb0faf08d61ff3f2"
 replace today_end="2018-01-08T11:51:00-05:00" if interview__id=="3d756a8798164acfbb0faf08d61ff3f2"
+*09/01/2018
+replace today="2018-01-09T05:31:00-05:00" if interview__id=="1962e1b730344a97acf2c4e975577c92"
+replace today_end="2018-01-09T12:33:00-05:00" if interview__id=="1962e1b730344a97acf2c4e975577c92"
+replace today="2018-01-09T07:01:00-05:00" if interview__id=="7f308aca79a24534ab6305a8397ac835"
+replace today_end="2018-01-09T08:22:00-05:00" if interview__id=="7f308aca79a24534ab6305a8397ac835"
+replace today="2018-01-09T20:08:00-05:00" if interview__id=="4d8019e436394ad8a6bb68bec7136616"
+replace today_end="2018-01-09T22:16:00-05:00" if interview__id=="4d8019e436394ad8a6bb68bec7136616"
+replace today="2018-01-09T01:00:00-05:00" if interview__id=="bb0aeb256bcb46aa928f8fc8619973b9"
+replace today_end="2018-01-09T04:00:00-05:00" if interview__id=="bb0aeb256bcb46aa928f8fc8619973b9"
+replace today="2018-01-09T06:48:00-05:00" if interview__id=="1946e34f4075457e8276a1f2461d98ed"
+replace today_end="2018-01-09T08:09:00-05:00" if interview__id=="1946e34f4075457e8276a1f2461d98ed"
+replace today="2018-01-09T06:45:00-05:00" if interview__id=="281e7a1891d043618f78778f527a4417"
+replace today_end="2018-01-09T08:00:00-05:00" if interview__id=="281e7a1891d043618f78778f527a4417"
+replace today="2018-01-09T16:01:00-05:00" if interview__id=="9eb99b0ad5554299b71b55337ff91caa"
+replace today_end="2018-01-09T17:08:00-05:00" if interview__id=="9eb99b0ad5554299b71b55337ff91caa"
+replace today="2018-01-09T07:17:00-05:00" if interview__id=="41d3491546cd430c8d29519d1a5b5e11"
+replace today_end="2018-01-09T09:00:00-05:00" if interview__id=="41d3491546cd430c8d29519d1a5b5e11"
+replace today="2018-01-09T16:14:00-05:00" if interview__id=="435fd0e0c2f3437f9b06a7d78c0d2681"
+replace today_end="2018-01-09T17:49:00-05:00" if interview__id=="435fd0e0c2f3437f9b06a7d78c0d2681"
+replace today="2018-01-09T10:30:00-05:00" if interview__id=="a6fed9266e7e4230be6e51075866baf0"
+replace today_end="2018-01-09T12:19:00-05:00" if interview__id=="a6fed9266e7e4230be6e51075866baf0"
+replace today="2018-01-09T02:10:00-05:00" if interview__id=="8747b09031444363ad92ed80c2773417"
+replace today_end="2018-01-09T04:25:00-05:00" if interview__id=="8747b09031444363ad92ed80c2773417"
 
 *Creating duration variable
 *Start time 
