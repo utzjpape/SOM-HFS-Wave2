@@ -12,9 +12,9 @@ set sortseed 11041985
 if (inlist("${suser}","wb390290","WB390290")) {
 	*Utz
 	*Local directory of your checked out copy of the code
-	local swdLocal = "C:\Users\wb390290\OneDrive - WBG\Home\Countries\Somalia\Projects\HFS\Code\Wave2"
+	local swdLocal = "C:\Users\WB390290\OneDrive - WBG\Home\Countries\Somalia\Projects\HFS\SV-Analysis\Wave2"
 	*Box directory where the Data folder can be located
-	local swdBox = "C:\Users\wb390290\OneDrive - WBG\Home\Countries\Somalia\Projects\HFS\Shared\Wave2\Analysis\DataBox"
+	local swdBox = "C:\Users\WB390290\OneDrive - WBG\Home\Countries\Somalia\Projects\HFS\Sh-SOM-HFS\Wave2\Analysis\DataBox"
 }
 else if (inlist("${suser}","wb484006","WB484006")) {
 	*Gonzalo
