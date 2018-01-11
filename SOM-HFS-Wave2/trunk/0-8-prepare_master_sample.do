@@ -122,7 +122,7 @@ keep strata_id strata_name psu_id prob
 gen host_ea=1
 *Include population count 
 merge 1:1 psu_id using "${gsdTemp}\master_urban_rural.dta", nogen keep(match) keepusing(tot_hhs_psu)
-egen tot_hhs_strata=sum(tot_hhs_psu)
+bys strata_id: egen tot_hhs_strata=sum(tot_hhs_psu)
 order strata_id strata_name psu_id tot_hhs_strata tot_hhs_psu prob
 save "${gsdTemp}\master_host.dta", replace
 
