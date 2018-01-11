@@ -288,6 +288,7 @@ replace ea_reg=2 if interview__id=="d508f9bcc52b43ba89238a484efc519c"
 
 *** Strata cleaning
 replace strata=32 if interview__id=="9a2230c16d0c498aa06def1704517029"
+*tab strata
 
 *** EA number cleaning
 *08/12/2017
@@ -297,7 +298,7 @@ replace ea=198760 if interview__id=="89fd6810cc534326ac279a8fb63e5456"
 *01/01/2018
 replace ea=82297 if interview__id=="9a2230c16d0c498aa06def1704517029"
 *tab ea
-*tab ea team_id if substr(today,1,10)=="2018-01-09"
+*tab ea team_id if substr(today,1,10)=="2018-01-10"
 
 *** Team number cleaning
 *15/12/2017
@@ -355,6 +356,7 @@ replace team_id=26 if interview__id=="dc8dd3385c634e7686fbcb95ff23557f"
 replace team_id=27 if interview__id=="2d686225ca144dffb33c9d4b7737fdb9"
 replace team_id=27 if interview__id=="88894f72e874474586b937cb36def923"
 replace team_id=27 if interview__id=="d42a0bdf2e8e41489c9aa4200153c6e6"
+*tab team_id
 
 *** Missing date cleaning at the beginning and at the end of the interview
 *Correcting when missing date using dates and times in metadata
@@ -756,6 +758,7 @@ replace today="2018-01-09T10:30:00-05:00" if interview__id=="a6fed9266e7e4230be6
 replace today_end="2018-01-09T12:19:00-05:00" if interview__id=="a6fed9266e7e4230be6e51075866baf0"
 replace today="2018-01-09T02:10:00-05:00" if interview__id=="8747b09031444363ad92ed80c2773417"
 replace today_end="2018-01-09T04:25:00-05:00" if interview__id=="8747b09031444363ad92ed80c2773417"
+
 
 *Creating duration variable
 *Start time 
