@@ -411,7 +411,7 @@ save "${gsdTemp}/hh_monitoring_dashboard_temp8", replace
 use "${gsdData}/0-RawTemp/hhroster_age_manual_cleaning.dta", clear
 replace emp_7d_active = . if emp_7d_active == -999999999 | emp_7d_active == -1000000000
 collapse (sum) emp_7d_active, by(interview__id)
-merge 1:1 interview__id using "${gsdTemp}/hh_monitoring_dashboard_temp8"
+merge 1:1 interview__id using "${gsdTemp}/hh_monitoring_dashboard_temp8", nogenerate
 
 save "${gsdTemp}/hh_monitoring_dashboard_temp9", replace
 
@@ -904,72 +904,6 @@ restore
 
 
 /*----------------------------------------------------------------------------*/
-/*                 MONITORING DASHBOARD: STRATA OUTPUT                        */
-/*----------------------------------------------------------------------------*/
-
-*** Target number of interviews per strata
-preserve
-import excel "${gsdDataRaw}/Inputs EAs.xls", sheet("Summary")clear
-rename (A B C) (strata_name target_itw_strata_uri target_itw_strata_host)
-drop if _n <= 4
-destring target_itw_strata_uri target_itw_strata_host, replace
-g target_itw_strata = target_itw_strata_uri + target_itw_strata_host
-drop target_itw_strata_uri target_itw_strata_host
-save "${gsdTemp}/strata_target_itw.dta", replace
-restore
-
-preserve
-
-*** Number of EAs originally sampled or active replacements used per strata
-*Originally sampled or active replacements
-bysort strata_id id_ea: g nb_eas_sampled = 1 if _n == 1 & (sample_final_uri == 1 | sample_final_h == 1)
-*Neither originally sampled nor active replacements
-bysort strata_id id_ea: g nb_eas_not_sampled = 1 if _n == 1 & (sample_final_uri == 0 & sample_final_h == 0)
-
-*Collapse by strata
-collapse (sum) nb_eas_sampled nb_eas_not_sampled ///
-	nb_itw=index itw_valid successful successful_valid val_succ1-val_succ4 ///
-	(mean) no_response nobody_home no_adult no_consent, by(strata_id strata_name)
-	
-*Target number of interviews per strata	
-merge 1:1 strata_name using  "${gsdTemp}/strata_target_itw.dta", keep(match master) nogenerate
-*Percentage of target reached in termes of number of valid and successful interviews
-g perc_target = successful_valid/target_itw_strata
-*Proportion of valid interviews (on all interviews)
-g valid_prop = itw_valid/nb_itw
-
-*Final cleaning and labelling
-label var strata_id "Strata ID"
-label var strata_name "Strata name"
-label var nb_eas_sampled "Number of EAs originally sampled or active replacements and used"
-label var nb_eas_not_sampled "Number of EAs neither sampled nor active replacements but used"
-label var nb_itw "Total number of interviews"
-label var itw_valid "Number of valid interviews"
-label var successful "Number of successful interviews"
-label var successful_valid "Number of valid and successful interviews"
-label var target_itw_strata "Target number of valid and successful interviews per strata"
-label var perc_target "Percentage of target reached"
-label var val_succ1 "Number of valid and successful interviews with Treat=1"
-label var val_succ2 "Number of valid and successful interviews with Treat=2"
-label var val_succ3 "Number of valid and successful interviews with Treat=3"
-label var val_succ4 "Number of valid and successful interviews with Treat=4"
-label var valid_prop "Proportion of valid interviews"
-label var no_response "Non-response rate"
-label var nobody_home "Proportion of non-response due to the fact that there was no one at home"
-label var no_adult "Proportion of non-response due to the absence of a knowlegeable adult at home"
-label var no_consent "Proportion of non-response due to the the fact that no consent was given"
-
-order strata_id strata_name nb_eas_sampled nb_eas_not_sampled ///
-	nb_itw itw_valid successful successful_valid target_itw_strata perc_target ///
-	val_succ1-val_succ4 valid_prop no_response nobody_home no_adult no_consent
-
-sort strata_id
-
-*Export
-export excel using "${gsdShared}/2-Output/SHFS2_Monitoring_Dashboard_Master.xlsm", sheet("Output - Strata") cell(B6) sheetmodify
-restore
-
-/*----------------------------------------------------------------------------*/
 /*                  MONITORING DASHBOARD: EA OUTPUT                           */
 /*----------------------------------------------------------------------------*/
 
@@ -997,6 +931,7 @@ replace successful_valid_h = successful_valid if type_pop == "Host Only" & targe
 *Number of valid and successful interviews conducted in the EA for the Urban/Rural/IDP sample
 g successful_valid_uri = max(0, successful_valid - target_itw_ea_h) if type_pop != "Host Only"
 
+save "${gsdTemp}/output_EA.dta", replace
 
 *Final cleaning and labelling
 label values ea_status ea_status_label
@@ -1032,6 +967,81 @@ sort strata_id id_ea
 
 *Export
 export excel using "${gsdShared}/2-Output/SHFS2_Monitoring_Dashboard_Master.xlsm", sheet("Output - EA") cell(B6) sheetmodify
+restore
+
+
+/*----------------------------------------------------------------------------*/
+/*                 MONITORING DASHBOARD: STRATA OUTPUT                        */
+/*----------------------------------------------------------------------------*/
+
+*** Target number of interviews per strata
+preserve
+import excel "${gsdDataRaw}/Inputs EAs.xls", sheet("Summary")clear
+rename (A B C) (strata_name target_itw_strata_uri target_itw_strata_host)
+drop target_itw_strata_host
+drop if _n <= 4
+destring target_itw_strata_uri, replace
+save "${gsdTemp}/strata_target_itw.dta", replace
+restore
+
+preserve
+
+*** Number of interviews urban/rural/IDP versus host communities per EA
+merge m:1 id_ea using "${gsdTemp}/output_EA.dta", keepusing(successful_valid_uri successful_valid_h) nogenerate
+*Keep the number of interviews per EA for the first observation of each EA only
+bysort strata_id id_ea: g tokeep = (_n==1)
+replace successful_valid_uri = tokeep*successful_valid_uri
+replace successful_valid_h = tokeep*successful_valid_h
+
+*** Number of EAs originally sampled or active replacements used per strata
+*Originally sampled or active replacements
+bysort strata_id id_ea: g nb_eas_sampled = 1 if _n == 1 & (sample_final_uri == 1 | sample_final_h == 1)
+*Neither originally sampled nor active replacements
+bysort strata_id id_ea: g nb_eas_not_sampled = 1 if _n == 1 & (sample_final_uri == 0 & sample_final_h == 0)
+
+*Collapse by strata
+collapse (sum) nb_eas_sampled nb_eas_not_sampled ///
+	nb_itw=index itw_valid successful successful_valid successful_valid_uri successful_valid_h val_succ1-val_succ4 ///
+	(mean) no_response nobody_home no_adult no_consent, by(strata_id strata_name)
+	
+*Target number of interviews per strata	
+merge 1:1 strata_name using  "${gsdTemp}/strata_target_itw.dta", keep(match master) nogenerate
+*Percentage of target reached in termes of number of valid and successful interviews
+g perc_target = successful_valid_uri/target_itw_strata_uri
+*Proportion of valid interviews (on all interviews)
+g valid_prop = itw_valid/nb_itw
+
+*Final cleaning and labelling
+label var strata_id "Strata ID"
+label var strata_name "Strata name"
+label var nb_eas_sampled "Number of EAs originally sampled or active replacements and used"
+label var nb_eas_not_sampled "Number of EAs neither sampled nor active replacements but used"
+label var nb_itw "Total number of interviews"
+label var itw_valid "Number of valid interviews"
+label var successful "Number of successful interviews"
+label var successful_valid "Number of valid and successful interviews"
+label var successful_valid_uri "Number of valid and successful interviews: urban/rural/IDPs"
+label var successful_valid_h "Number of valid and successful interviews: host communitites"
+label var target_itw_strata "Target number of valid and successful interviews: urban/rural/IDPs"
+label var perc_target "Percentage of target reached: urban/rural/IDPs"
+label var val_succ1 "Number of valid and successful interviews with Treat=1"
+label var val_succ2 "Number of valid and successful interviews with Treat=2"
+label var val_succ3 "Number of valid and successful interviews with Treat=3"
+label var val_succ4 "Number of valid and successful interviews with Treat=4"
+label var valid_prop "Proportion of valid interviews"
+label var no_response "Non-response rate"
+label var nobody_home "Proportion of non-response due to the fact that there was no one at home"
+label var no_adult "Proportion of non-response due to the absence of a knowlegeable adult at home"
+label var no_consent "Proportion of non-response due to the the fact that no consent was given"
+
+order strata_id strata_name nb_eas_sampled nb_eas_not_sampled ///
+	nb_itw itw_valid successful successful_valid successful_valid_uri successful_valid_h target_itw_strata perc_target ///
+	val_succ1-val_succ4 valid_prop no_response nobody_home no_adult no_consent
+
+sort strata_id
+
+*Export
+export excel using "${gsdShared}/2-Output/SHFS2_Monitoring_Dashboard_Master.xlsm", sheet("Output - Strata") cell(B6) sheetmodify
 restore
 
 /*----------------------------------------------------------------------------*/
