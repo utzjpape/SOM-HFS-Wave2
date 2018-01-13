@@ -135,10 +135,9 @@ replace itw_invalid_reason=2 if gps_coord_y_n == 0
 save "${gsdTemp}/hh_valid_keys_temp1.dta", replace
 
 *Importing min and max coordinates of each EA
-import excel "${gsdDataRaw}/Inputs EAs.xls", sheet("Master EAs") clear
-keep A G H I J
-rename (A G H I J) (ea lon_min lon_max lat_min lat_max)
-drop if _n <= 3
+import excel "${gsdDataRaw}/Inputs EAs.xls", sheet("Master EAs") firstrow clear
+rename (x_min x_max y_min y_max) (lon_min lon_max lat_min lat_max)
+drop if _n==1
 label var lat_min "Minimum latitude of the EA"
 label var lat_max "Maximum latitude of the EA"
 label var lon_min "Minimum longitude of the EA"
@@ -169,10 +168,10 @@ save "${gsdTemp}/hh_valid_keys_temp2.dta", replace
 
 **Flag EAs with 1 block and replace block number = 1 for those EAs
 *Add total number of blocks per EA
-import excel "${gsdDataRaw}/Inputs EAs.xls", sheet("Master EAs") clear
-keep A M
-rename (A M) (id_ea tot_block)
-drop if _n <= 3
+import excel "${gsdDataRaw}/Inputs EAs.xls", sheet("Master EAs") firstrow clear
+ren (ea Nb_blocks_EA) (id_ea tot_block)
+keep id_ea tot_block
+drop if _n ==1
 destring *, replace
 merge 1:m id_ea using "${gsdTemp}/hh_valid_keys_temp2.dta", keep(match using) nogenerate
 
