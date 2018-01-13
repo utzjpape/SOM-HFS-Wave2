@@ -379,13 +379,9 @@ restore
 
 *** ADDING THE 2 PARTS OF THE EB REPLACEMENT TABLE TO THE EB REPLACEMENT TABLE TEMPLATE
 
-import excel "${gsdDataRaw}/Inputs EAs.xls", sheet("Master EBs") clear
-drop if _n == 1 | _n == 3
-foreach var of varlist * {
-	rename `var' `=`var'[1]'
-}
+import excel "${gsdDataRaw}/Inputs EAs.xls", sheet("Master EBs") firstrow clear
+drop if _n == 1
 rename (ea block_sel_dummy) (id_ea sample_initial_block)
-drop if _n ==1
 destring *, replace
 
 keep strata_id strata_name id_ea block_number sample_initial_block
