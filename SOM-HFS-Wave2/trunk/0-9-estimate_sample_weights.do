@@ -29,6 +29,11 @@ set sortseed 11021955
 	2.2 Number of blocks in EA i (Bi)
 	3.1 Number of households selected in EA i (HSi)
 	3.2 Number of households in EA i (Hi)
+	
+	Note: For households from Host Communities P1=P1a + P1b to reflect two separate sampling 
+		  processes (for urban/rural households and host communities), such that: 
+		  P1a=Probability of selecting the EA from the sampling process for urban and rural areas
+	      P1b=Probability of selecting the EA from the sampling process for host communities
 		
 */
 
@@ -36,6 +41,13 @@ set sortseed 11021955
 ********************************************************************
 *1.1 Number of EAs selected in strata j (EAj)
 ********************************************************************
+*Urban and rural areas
+use "${gsdDataRaw}\ListPSU_all_status_v7.dta", clear
+drop if n_main_strata>=.
+keep strata_id n_main_final_strata
+rename n_main_final_strata n_sel_ea_strata
+duplicates drop 
+save "${gsdTemp}\sweights_1.1_urban_rural.dta", replace
 *IDPs
 import excel "${gsdDataRaw}\IDPMasterStrata_v15.xlsx", sheet("Final_Sample") firstrow case(lower) clear
 drop if strata_id==.
@@ -53,24 +65,20 @@ use "${gsdDataRaw}\ListPSU_all_status_v7.dta", clear
 drop n_main_final_strata
 bys strata_id: egen n_main_final_strata=sum(selected_host_final)
 keep strata_id n_main_final_strata
-rename n_main_final_strata n_sel_ea_strata
+rename n_main_final_strata n_sel_ea_strata_a
 duplicates drop 
-save "${gsdTemp}\sweights_1.1_host.dta", replace
-*Urban and rural areas
-use "${gsdDataRaw}\ListPSU_all_status_v7.dta", clear
-drop if n_main_strata>=.
-keep strata_id n_main_final_strata
-rename n_main_final_strata n_sel_ea_strata
-duplicates drop 
+save "${gsdTemp}\sweights_1.1_host_b.dta", replace
+merge 1:1 strata_id using "${gsdTemp}\sweights_1.1_urban_rural.dta", nogen keep(match)
 append using "${gsdTemp}\sweights_1.1_idp.dta"
-append using "${gsdTemp}\sweights_1.1_host.dta"
-collapse (sum) n_sel_ea_strata, by(strata_id)
+append using "${gsdTemp}\sweights_1.1_urban_rural.dta"
+collapse (max) n_sel_ea_strata n_sel_ea_strata_a, by(strata_id)
 save "${gsdTemp}\sweights_1.1.dta", replace
 
 
 ********************************************************************
 *1.2 Number of households estimated in the sample frame for the original EA i (HOi)
 ********************************************************************
+*Urban/Rural and IDPs
 *List of EAs from data collection 
 use "${gsdData}\0-RawOutput\hh_clean.dta", clear
 keep ea
@@ -108,16 +116,70 @@ gen size_o_ea=size_ea if (ea_id_1==. & ea_id_2==. & ea_id_3==.)
 replace size_o_ea=size_ea_1 if ea_id_1<. & size_o_ea>=.
 keep ea_id size_o_ea
 rename ea_id psu_id					
+save "${gsdTemp}\sweights_1.2_urban_rural.dta", replace
+*Host Communities (similar process)
+*List of EAs from data collection 
+use "${gsdData}\0-RawOutput\hh_clean.dta", clear
+keep if type_idp_host==2
+keep ea
+rename ea id_ea
+duplicates drop 
+*Include id of replacement EA
+merge 1:1 id_ea using "${gsdData}\0-RawTemp\EA_Replacement_Table_Complete.dta", nogen keep(match master) keepusing(o_ea_h o_ea_2_h o_ea_3_h)
+rename id_ea psu_id
+*Obtain the number of households from master sample
+preserve 
+use "${gsdData}\0-RawTemp\master_sample.dta", clear
+keep if host_ea==1
+save "${gsdTemp}\master_sample_host.dta", replace
+restore
+merge 1:1 psu_id using  "${gsdTemp}\master_sample_no_host.dta", nogen keep(master match) keepusing(tot_hhs_psu)
+order psu_id tot_hhs_psu
+rename (psu_id tot_hhs_psu) (ea_id size_ea)
+*Obtain the number of households from 1st replacement
+rename o_ea_h psu_id
+merge m:1 psu_id using  "${gsdTemp}\master_sample_no_host.dta", nogen keep(master match) keepusing(tot_hhs_psu)
+order tot_hhs_psu, after(psu_id)
+rename (psu_id tot_hhs_psu) (ea_id_1 size_ea_1)
+*Obtain the number of households from 2nd replacement
+rename o_ea_2_h psu_id
+merge m:1 psu_id using  "${gsdTemp}\master_sample_no_host.dta", nogen keep(master match) keepusing(tot_hhs_psu)
+order tot_hhs_psu, after(psu_id)
+rename (psu_id tot_hhs_psu) (ea_id_2 size_ea_2)
+*Obtain the number of households from 3rd replacement
+rename o_ea_3_h psu_id
+merge m:1 psu_id using  "${gsdTemp}\master_sample_no_host.dta", nogen keep(master match) keepusing(tot_hhs_psu)
+order tot_hhs_psu, after(psu_id)
+rename (psu_id tot_hhs_psu) (ea_id_3 size_ea_3)
+*Obtain the final original size of the EA
+gen size_o_ea_a=size_ea if (ea_id_1==. & ea_id_2==. & ea_id_3==.) 
+replace size_o_ea_a=size_ea_1 if ea_id_1<. & size_o_ea>=.
+keep ea_id size_o_ea
+rename ea_id psu_id					
+append using "${gsdTemp}\sweights_1.2_urban_rural.dta"
+order psu_id size_o_ea size_o_ea_a
+collapse (max) size_o_ea size_o_ea_a, by(psu_id)
 save "${gsdTemp}\sweights_1.2.dta", replace
 
 
 ********************************************************************
 *1.3 Number of households estimated in the sample frame in strata j (Hj)
 ********************************************************************
+*Urban/Rural and IDPs
 use "${gsdData}\0-RawTemp\master_sample.dta", clear
 drop if host_ea==1
 keep strata_id tot_hhs_strata
 duplicates drop
+save "${gsdTemp}\sweights_1.3_urban_rural.dta", replace
+*Host Communities
+use "${gsdData}\0-RawTemp\master_sample.dta", clear
+keep if host_ea==1
+keep strata_id tot_hhs_strata
+duplicates drop
+rename tot_hhs_strata tot_hhs_strata_a
+append using "${gsdTemp}\sweights_1.3_urban_rural.dta"
+order strata_id tot_hhs_strata tot_hhs_strata_a
+collapse (max) tot_hhs_strata tot_hhs_strata_a, by(strata_id)
 save "${gsdTemp}\sweights_1.3.dta", replace
 
 
@@ -216,7 +278,11 @@ restore
 merge 1:1 interview__id using "${gsdTemp}\sweights_correction_p1.dta", nogen keep(match master)
 replace size_o_ea=size_o_ea_correct if psu_id==165725 
 drop size_o_ea_correct
-gen p1=(n_sel_ea_strata* size_o_ea)/ tot_hhs_strata
+*Differentiate P1 for host communities
+merge 1:1 interview__id using "${gsdData}/0-RawOutput/hh_clean.dta", nogen assert(match) keepusing(type type_idp_host)
+gen pre_p1=((n_sel_ea_strata* size_o_ea)/ tot_hhs_strata) 
+gen p1a=((n_sel_ea_strata_a* size_o_ea_a)/ tot_hhs_strata_a) if type_idp_host==2
+egen p1=rowtotal(pre_p1 p1a)
 
 
 ********************************************************************
