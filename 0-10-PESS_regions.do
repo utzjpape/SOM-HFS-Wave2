@@ -12,10 +12,11 @@ use "${gsdData}/0-RawTemp/hh_sweights.dta", clear
 ********************************************************************
 gen ind_profile=1 if strata==37
 replace ind_profile=2 if strata==39 | strata==41 | strata==43
-****CHECK WHERE TO CLASSIFY URBAN AND RURAL STRATA
-replace ind_profile=3 if strata==45 | strata==46 | strata==47 | strata==49 | strata==51
+replace ind_profile=3 if strata==45 | strata==49 | strata==51
+replace ind_profile=3 if type==1 & (strata==46 | strata==47)
 replace ind_profile=4 if strata==38 | strata==40 | strata==42 
 replace ind_profile=5 if strata==44 | strata==48 |  strata==50
+replace ind_profile=5 if type==2 & (strata==46 | strata==47)
 replace ind_profile=6 if inlist(strata,1,3,4,5,6,7)
 replace ind_profile=7 if strata==26 | strata==28 |  strata==30
 replace ind_profile=8 if strata==25 | strata==27 |  strata==29

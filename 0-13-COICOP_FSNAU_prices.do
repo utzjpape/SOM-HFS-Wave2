@@ -8,7 +8,7 @@ set sortseed 11021955
 ********************************************************************
 *Import and clean FSNAU prices
 ********************************************************************
-import delimited "${gsdDataRaw}/FSNAU-Market-Data-04-12-2017-1046pm.csv", clear
+import delimited "${gsdDataRaw}/FSNAU-Market-Data-2010-2017.csv", clear
 
 drop dailylaborrate somalilandshtodjiboutifranc somalilandshtoethiopianbir somalishillingtoksh laborrateagricultural laborratenonagricultural numberofpeoplereceivingremittanc ///
      numberofpeoplereceivingcredit numberhhinmigrated numberhhoutmigrated levelofcivilinsecurity areaofsorghumharvested sorghumharvested arearofmaizeharvested maizeharvested ///
@@ -186,7 +186,7 @@ replace name="Cooking Pot Aluminium 7l" if id==39
 replace name="Woven Dry Raised Blanket 150cm x 200cm" if id==40
 replace name="Imported Red Rice 1kg" if id==41
 *Export the item list to Excel
-export excel name id using "${gsdData}/1-CleanInput/Item_List.xls" if year==1995 & region=="" & !(inlist(id,27,28,32) | inrange(id,33,46)), replace firstrow(variables)
+export excel name id using "${gsdData}/1-CleanInput/Item_List.xls" if year==2012 & region=="" & !(inlist(id,27,28,32) | inrange(id,33,46)), replace firstrow(variables)
 
 
 ********************************************************************
@@ -323,10 +323,9 @@ foreach region in Awdal Bakool Banaadir Bari Bay Galgaduud Gedo Hiraan Lower_Jub
 	keep if (month==12 & year==2017) | (month==1 & year==2018)
 	drop region date year
 	reshape wide pr_usd, i(coicop) j(month) 
-	ren (pr_usd1 pr_usd12) (jan18 dec17)
+	ren pr_usd12 dec17
 	la var coicop "Product"
-	la var jan18 "Price Jan 18, USD"
-	la var dec17 "Price Dec 17, USD"
+    la var dec17 "Price Dec 17, USD"
 	gen str region="`region'"
 	la var region "Somali region"
 	*Merge back with 2011 and 2012 averages 
@@ -341,7 +340,7 @@ use "${gsdTemp}/market_prices_Awdal.dta", clear
 foreach region in Bakool Banaadir Bari Bay Galgaduud Gedo Hiraan Lower_Juba Lower_Shabelle Middle_Juba Middle_Shabelle Mudug Nugaal Sanaag Sool Togdheer Woqooyi_Galbeed {
 	append using "${gsdTemp}/market_prices_`region'.dta"
 }
-order region coicop av_2011 av_2012 dec17 jan18
+order region coicop av_2011 av_2012 dec17 
 save "${gsdData}/1-CleanInput/Prices_FSNAU.dta", replace 
 
 

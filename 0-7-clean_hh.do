@@ -23,13 +23,18 @@ order strata strata_name type_pop, after(loc_check_barcode)
 *Include the correct type of population 
 ********************************************************************
 drop type
-gen type=1 if (type_pop=="Urban/Rural" | type_pop=="Urban/Rural and Host") & inlist(strata,26,28,30,31,33,37,39,41,43,45,49,51,52,54,57)
+gen type=1 if (type_pop=="Urban/Rural" | type_pop=="Urban/Rural and Host" | type_pop=="Host Only") & inlist(strata,26,28,30,31,33,37,39,41,43,45,49,51,52,54,57)
 replace type=2 if (type_pop=="Urban/Rural" | type_pop=="Urban/Rural and Host") & inlist(strata,25,27,29,32,34,38,40,42,44,48,50,53,55,56)
-replace type=3 if type_pop=="IDP" 
-replace type=4 if type_pop=="Host Only"
-label define type_hh 1 "Urban" 2 "Rural" 3 "IDP" 4 "Host"
+replace type=3 if type_pop=="IDP" & inlist(strata,1,2,3,4,5,6,7)
+label define type_hh 1 "Urban" 2 "Rural" 3 "IDP" 4 "Nomads"
 label values type type_hh
-label var type "Urban/Rural/IDP or Host"
+label var type "Urban/Rural/IDP or Nomad"
+*Generate a separate indicators for host and IDPs
+gen type_idp_host=1 if type==3
+replace type_idp_host=2 if type_pop=="Host Only"
+label define type_idp 1 "IDP" 2 "Host Community"
+label values type_idp_host type_idp
+label var type_idp_host "IDP or Host Community"
 drop type_pop
 save "${gsdTemp}/hh_valid_successful_complete.dta", replace
 * Identify urban and rural households in combined urban and rural strata (using ArcMap created table)
@@ -41,75 +46,74 @@ merge 1:m ea using "${gsdTemp}/hh_valid_successful_complete.dta", keep(using mat
 replace type=1 if urban_ind==3 & inlist(strata,46,47)
 replace type=2 if urban_ind==2 & inlist(strata,46,47)
 drop urban_ind 
-
 *Correctly identify host households for EAs with interviews for both urban/rural and host 
 *EA 198455 2 urban replacement and 1 main host (replaced by EA 198066)
 //PENDING INTERVIEWS FROM THIS EA
 
 *EA 199580 1 replacement urband and 2 replacement host
-replace type=4 if ea==199580
+replace type_idp_host=2 if ea==199580
 
 *EA 199572 1 replacement urband and 1 main host
-replace type=4 if ea==199572
+replace type_idp_host=2 if ea==199572
 
 *EA 199578 1 replacement urband and 1 main host
-replace type=4 if ea==199578
+replace type_idp_host=2 if ea==199578
 
 *EA 199582 1 replacement urband and 1 main host
-replace type=4 if ea==199582
+replace type_idp_host=2 if ea==199582
 
 *EA 198804 3 main urband and 1 main host
 gen rand_198804=uniform() if ea==198804
 sort rand_198804
 gen n_198804=_n if ea==198804
-replace type=5 if ea==198804 & n_198804<=12
+replace type_idp_host=2 if ea==198804 & n_198804<=12
 drop rand_198804 n_198804
 
 *EA 205188 1 replacement urband and 1 main host
 gen rand_205188=uniform() if ea==205188
 sort rand_205188
 gen n_205188=_n if ea==205188
-replace type=4 if ea==205188 & n_205188<=12
+replace type_idp_host=2 if ea==205188 & n_205188<=12
 drop rand_205188 n_205188
 
 *EA 198980 1 replacement urband and 1 main host
-replace type=4 if ea==198980
+replace type_idp_host=2 if ea==198980
 
 *EA 198902 1 replacement urband and 1 replacement host
-replace type=4 if ea==198902
+replace type_idp_host=2 if ea==198902
 
 *EA 199371 1 main urban and 1 main host
 gen rand_199371=uniform() if ea==199371
 sort rand_199371
 gen n_199371=_n if ea==199371
-replace type=4 if ea==199371 & n_199371<=12
+replace type_idp_host=2 if ea==199371 & n_199371<=12
 drop rand_199371 n_199371
 
 *EA 202154 1 replacement urband and 1 main host
-replace type=5 if ea==202154
+replace type_idp_host=2 if ea==202154
 
 *EA 202160 1 replacement urband and 1 main host
-replace type=5 if ea==202160
+replace type_idp_host=2 if ea==202160
 
 *EA 198058 3 replacement urband and 1 main host
-replace type=5 if ea==198058
+replace type_idp_host=2 if ea==198058
 
 *EA 198082 3 main urband and 1 main host
 gen rand_198082=uniform() if ea==198082
 sort rand_198082
 gen n_198082=_n if ea==198082
-replace type=5 if ea==198082 & n_198082<=12
+replace type_idp_host=2 if ea==198082 & n_198082<=12
 drop rand_198082 n_198082
 
 *EA 198009 3 main urband and 1 main host
 gen rand_198009=uniform() if ea==198009
 sort rand_198009
 gen n_198009=_n if ea==198009
-replace type=5 if ea==198009 & n_198009<=12
+replace type_idp_host=2 if ea==198009 & n_198009<=12
 drop rand_198009 n_198009
 
 *EA 198004 3 main urband (replaced with EA 198057) and 1 main host (replaced with
-replace type=5 if ea==204882
+replace type_idp_host=2 if ea==204882
 
 *EA 198121 3 replacement urband and 1 replacement host
 //PENDING INTERVIEWS FROM THIS EA
@@ -118,7 +122,7 @@ replace type=5 if ea==204882
 gen rand_198038=uniform() if ea==198038
 sort rand_198038
 gen n_198038=_n if ea==198038
-replace type=5 if ea==198038 & n_198038<=24
+replace type_idp_host=2 if ea==198038 & n_198038<=24
 drop rand_198038 n_198038
 
 
@@ -146,7 +150,7 @@ merge 1:1 interview__id using "${gsdTemp}/hhsize.dta", nogen assert(match)
 label var hhsize "Household size"
 
 *Order variables
-order interview__id team_id enum_id ea_reg strata type ea block_id
+order interview__id team_id enum_id ea_reg strata type type_idp_host ea block_id
 order mod_opt hhsize nadults , after(n_ints)
 
 *Rename variables 
