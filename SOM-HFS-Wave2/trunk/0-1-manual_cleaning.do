@@ -28,7 +28,7 @@ tostring *_specify, replace
 tostring loc_retry__Timestamp, replace
 tostring loc_barcode__Timestamp, replace
 tostring loc_hhid_seg1ret1__Timestamp, replace
-tostring  housingtype_disp_s, replace
+tostring housingtype_disp_s, replace
 tostring ea_barcode, replace
 tostring hh_list_separated__*, replace
 tostring housingtype_s, replace
@@ -81,12 +81,57 @@ tostring land_unit_spec_disp, replace
 tostring rl_other, replace
 save "${gsdTemp}/hh_append_v6", replace
 
+*Version 9
+use "${gsdDownloads}/v9/Somali High Frequency Survey - Wave 2 - Fieldwork", clear
+tostring ea_barcode, replace
+tostring loc_barcode__Timestamp, replace
+tostring loc_hhid_seg1ret1__Timestamp, replace
+tostring hh_list_separated__*, replace
+tostring housingtype_s, replace
+tostring *_spec, replace
+tostring *_sp, replace
+tostring toilet_ot, replace
+tostring  housingtype_disp_s, replace
+tostring land_use_disp_s, replace
+tostring land_unit_spec_disp, replace
+tostring rl_other, replace
+tostring *_specify, replace
+tostring phone_number, g(phone_number2)
+drop phone_number
+rename phone_number2 phone_number
+tostring loc_retry__Timestamp, replace
+save "${gsdTemp}/hh_append_v9", replace
+
+*Version 10
+use "${gsdDownloads}/v10/Somali High Frequency Survey - Wave 2 - Fieldwork", clear
+tostring ea_barcode, replace
+tostring loc_barcode__Timestamp, replace
+tostring loc_hhid_seg1ret1__Timestamp, replace
+tostring hh_list_separated__*, replace
+tostring housingtype_s, replace
+tostring *_spec, replace
+tostring *_sp, replace
+tostring toilet_ot, replace
+tostring  housingtype_disp_s, replace
+tostring land_use_disp_s, replace
+tostring land_unit_spec_disp, replace
+tostring rl_other, replace
+tostring *_specify, replace
+tostring phone_number, g(phone_number2)
+drop phone_number
+rename phone_number2 phone_number
+tostring loc_retry__Timestamp, replace
+save "${gsdTemp}/hh_append_v10", replace
+
+
 ** Append all versions
 * Main dataset
 use "${gsdTemp}/hh_append_v1", clear
 append using "${gsdTemp}/hh_append_v2"
 append using "${gsdTemp}/hh_append_v4"
 append using "${gsdTemp}/hh_append_v6"
+append using "${gsdTemp}/hh_append_v9"
+append using "${gsdTemp}/hh_append_v10"
 save "${gsdTemp}/hh_append", replace
 
 *Rosters
@@ -155,10 +200,42 @@ foreach file in `files' {
 	capture: tostring rnf_free_other, replace
 	save "${gsdTemp}/`file'_append_v6", replace
 	
+	use "${gsdDownloads}/v9/`file'", clear
+	tostring interview__id, replace
+	tostring interview__key, replace
+	capture: tostring hh_list_separated, replace
+	capture: tostring hhm_relation_sep_s, replace
+	capture: tostring *_spec, replace
+	capture: tostring *_sp, replace
+	capture: tostring *_specify, replace
+	capture: tostring hhm_relation_other, replace
+	capture: tostring hhm_edu_level_other, replace
+	capture: tostring rl_give_reason_o, replace
+	capture: tostring rl_lose_reason_o, replace
+	capture: tostring rnf_free_other, replace
+	save "${gsdTemp}/`file'_append_v9", replace
+	
+	use "${gsdDownloads}/v10/`file'", clear
+	tostring interview__id, replace
+	tostring interview__key, replace
+	capture: tostring hh_list_separated, replace
+	capture: tostring hhm_relation_sep_s, replace
+	capture: tostring *_spec, replace
+	capture: tostring *_sp, replace
+	capture: tostring *_specify, replace
+	capture: tostring hhm_relation_other, replace
+	capture: tostring hhm_edu_level_other, replace
+	capture: tostring rl_give_reason_o, replace
+	capture: tostring rl_lose_reason_o, replace
+	capture: tostring rnf_free_other, replace
+	save "${gsdTemp}/`file'_append_v10", replace
+	
 	use "${gsdTemp}/`file'_append_v1", clear
 	append using "${gsdTemp}/`file'_append_v2"
 	append using "${gsdTemp}/`file'_append_v4"
 	append using "${gsdTemp}/`file'_append_v6"
+	append using "${gsdTemp}/`file'_append_v9"
+	append using "${gsdTemp}/`file'_append_v10"
 	save "${gsdTemp}/`file'_append", replace
 }
 
@@ -174,6 +251,8 @@ drop if interview__id=="c2a6f03a61234ddd847fb0c8c61a9b17"
 drop if interview__id=="86e4611c536d4e3fa16d949a72f1a9d5"
 drop if interview__id=="09f70b5b4e6e4e30af881b1fbe944610"
 drop if interview__id=="eecea7f1818e432eae713fdbbd6d0318"
+drop if interview__id=="8f2c20d012a4411c8fbe4d1eb550b222"
+drop if interview__id=="d3532e5005f7482d81f0b8f0614abf59"
 save "${gsdTemp}/hh_without_empty_obs", replace
 
 * Rosters
@@ -190,6 +269,8 @@ foreach file in `files' {
 	drop if interview__id=="86e4611c536d4e3fa16d949a72f1a9d5"
 	drop if interview__id=="09f70b5b4e6e4e30af881b1fbe944610"
 	drop if interview__id=="eecea7f1818e432eae713fdbbd6d0318"
+	drop if interview__id=="8f2c20d012a4411c8fbe4d1eb550b222"
+	drop if interview__id=="d3532e5005f7482d81f0b8f0614abf59"
 	save "${gsdData}/0-RawTemp/`file'_manual_cleaning.dta", replace
 }
 
@@ -229,6 +310,9 @@ replace enum_id = 4102 if interview__id=="43ef97e987c544bd989605c7f63e3470"
 replace enum_id = 4102 if interview__id=="25ec98ab9da34bc49f0480f72683bbf3"
 replace enum_id = 4104 if interview__id=="16138275434f433cb1ab9adba989d71d"
 replace enum_id = 3801 if interview__id=="4b7adf58ea5140488f667bf97fb4e8a9"
+replace enum_id = 4301 if interview__id=="91eb31696b394d6d999000caf6821804"
+replace enum_id = 4301 if interview__id=="6e56a88db03a44f9ba55030541500b8c"
+replace enum_id = 4301 if interview__id=="fd9806fc89574d1b854250ffeb3e800e"
 
 *** Team cleaning
 replace team_id = 38 if interview__id=="4b7adf58ea5140488f667bf97fb4e8a9"
@@ -259,6 +343,7 @@ label define enum_id ///
 	4202 "Arab Mohamed Jamac" ///
 	4203 "Ahmed Hashi Ahmed" ///
 	4204 "Osman Hire Sabtow" ///
+	4301 "Ahmed Shacban Hassan" ///
 	4302 "Mohamed Adan Mohamed" ///
 	4303 "Mohamed Adan Hassan" ///
 	4304 "Mohamed Sheik Abdullahi", modify	
@@ -284,7 +369,7 @@ replace ea_reg=3 if interview__id=="fb892e464ec546d39440f3a45bd6bfcc"
 *20/12/2017
 replace ea_reg=2 if interview__id=="d508f9bcc52b43ba89238a484efc519c"
 *tab ea_reg
-*tab ea_reg ea if substr(today,1,10)=="2018-01-12"
+*tab ea_reg ea if substr(today,1,10)=="2018-01-14"
 
 *** Strata cleaning
 replace strata=32 if interview__id=="9a2230c16d0c498aa06def1704517029"
@@ -298,7 +383,7 @@ replace ea=198760 if interview__id=="89fd6810cc534326ac279a8fb63e5456"
 *01/01/2018
 replace ea=82297 if interview__id=="9a2230c16d0c498aa06def1704517029"
 *tab ea
-*tab ea team_id if substr(today,1,10)=="2018-01-12"
+*tab ea team_id if substr(today,1,10)=="2018-01-14"
 
 *** Team number cleaning
 *15/12/2017
