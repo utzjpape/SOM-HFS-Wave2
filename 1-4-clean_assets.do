@@ -79,10 +79,10 @@ replace val_usd=. if val_usd==0
 ********************************************************************
 *Calculate and clean the vintages of each item 
 ********************************************************************
-*Items purchased in 2017 (year of the survey) are consider to be one year old (as soon they leave the store they lose value)
+*Items purchased in 2017 or 2018 (year of the survey) are consider to be one year old (as soon they leave the store they lose value)
 gen vintage=.
-assert year!=2018
-replace vintage =(2017-year)+1
+replace vintage =(2017-year)+1 if year!=2018
+replace vintage =(2018-year)+1 if year==2018
 *Cleaning rule: tag vintages with 1) missing values; and 2) vintage >10, and replace them with the weighted median for each item if there are more than 3 observations or the overall median vintage considering all items 
 gen tag_vintage=1 if vintage==. 
 replace tag_vintage=1 if vintage>10

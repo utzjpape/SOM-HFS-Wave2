@@ -20,6 +20,11 @@ merge 1:1 strata ea block hh nfoodid using "${gsdData}/1-CleanInput/nfood.dta", 
 keep strata ea block hh nfoodid purc
 rename purc purc_original
 save "${gsdTemp}/nfood_hhs_fulldataset.dta", replace
+*Then we create a list with all the non-food items
+use "${gsdData}/1-CleanInput/nfood.dta", clear
+rename nfoodid itemid
+collapse (mean) mod_item, by(itemid)
+save "${gsdData}/1-CleanTemp/items_module_nonfood.dta", replace
 *Open the dataset
 use "${gsdData}/1-CleanInput/nfood.dta", clear
 merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", keep(match master) nogen keepusing(weight mod_opt)
