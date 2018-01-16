@@ -427,12 +427,12 @@ merge 1:1 strata_id strata_name id_ea id_block using "${gsdTemp}/eb_collapse.dta
 replace sample_initial_block = 0 if _merge == 2
 drop _merge
 
-*Final sample 1 (theoretical): blocks from sampled EAs and including replacements recorded by the questionnaire
+*Final sample 1 (theoretical): sampled blocks from sampled EAs and including replacements recorded by the questionnaire
 g sample_final_block_th = sample_initial_block
 *Adding to the final sample the blocks which have been selected through the questionnaire 
 replace sample_final_block_th = 1 if sample_final_block_temp == 1
 *Removing from the final sample the blocks which have been replaced through the questionnaire
-replace sample_final_block_th = 1 if sample_final_block_temp == 0
+replace sample_final_block_th = 0 if sample_final_block_temp == 0
 drop sample_final_block_temp
 
 *Final sample 2 (based on the interviews conducted): blocks in which at least one interview was conducted
