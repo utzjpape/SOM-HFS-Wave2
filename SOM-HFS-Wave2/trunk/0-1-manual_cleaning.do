@@ -369,7 +369,7 @@ replace ea_reg=3 if interview__id=="fb892e464ec546d39440f3a45bd6bfcc"
 *20/12/2017
 replace ea_reg=2 if interview__id=="d508f9bcc52b43ba89238a484efc519c"
 *tab ea_reg
-*tab ea_reg ea if substr(today,1,10)=="2018-01-14"
+*tab ea_reg ea if substr(today,1,10)=="2018-01-15"
 
 *** Strata cleaning
 replace strata=32 if interview__id=="9a2230c16d0c498aa06def1704517029"
@@ -383,7 +383,7 @@ replace ea=198760 if interview__id=="89fd6810cc534326ac279a8fb63e5456"
 *01/01/2018
 replace ea=82297 if interview__id=="9a2230c16d0c498aa06def1704517029"
 *tab ea
-*tab ea team_id if substr(today,1,10)=="2018-01-14"
+*tab ea team_id if substr(today,1,10)=="2018-01-15"
 
 *** Team number cleaning
 *15/12/2017
