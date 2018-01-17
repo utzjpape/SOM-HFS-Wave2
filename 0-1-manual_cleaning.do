@@ -123,6 +123,29 @@ rename phone_number2 phone_number
 tostring loc_retry__Timestamp, replace
 save "${gsdTemp}/hh_append_v10", replace
 
+*Version 11
+use "${gsdDownloads}/v11/Somali High Frequency Survey - Wave 2 - Fieldwork", clear
+tostring ea_barcode, replace
+tostring loc_barcode__Timestamp, replace
+tostring loc_hhid_seg1ret1__Timestamp, replace
+tostring hh_list_separated__*, replace
+tostring housingtype_s, replace
+tostring *_spec, replace
+tostring *_sp, replace
+tostring toilet_ot, replace
+tostring  housingtype_disp_s, replace
+tostring land_use_disp_s, replace
+tostring land_unit_spec_disp, replace
+tostring rl_other, replace
+tostring *_specify, replace
+tostring disp_date, replace
+tostring disp_arrive_date, replace
+tostring phone_number, g(phone_number2)
+drop phone_number
+rename phone_number2 phone_number
+tostring loc_retry__Timestamp, replace
+save "${gsdTemp}/hh_append_v11", replace
+
 
 ** Append all versions
 * Main dataset
@@ -132,6 +155,7 @@ append using "${gsdTemp}/hh_append_v4"
 append using "${gsdTemp}/hh_append_v6"
 append using "${gsdTemp}/hh_append_v9"
 append using "${gsdTemp}/hh_append_v10"
+append using "${gsdTemp}/hh_append_v11"
 save "${gsdTemp}/hh_append", replace
 
 *Rosters
@@ -230,12 +254,29 @@ foreach file in `files' {
 	capture: tostring rnf_free_other, replace
 	save "${gsdTemp}/`file'_append_v10", replace
 	
+	use "${gsdDownloads}/v11/`file'", clear
+	tostring interview__id, replace
+	tostring interview__key, replace
+	capture: tostring hh_list_separated, replace
+	capture: tostring hhm_relation_sep_s, replace
+	capture: tostring *_spec, replace
+	capture: tostring *_sp, replace
+	capture: tostring *_specify, replace
+	capture: tostring hhm_relation_other, replace
+	capture: tostring hhm_edu_level_other, replace
+	capture: tostring rl_give_reason_o, replace
+	capture: tostring rl_lose_reason_o, replace
+	capture: tostring rnf_free_other, replace
+	capture: tostring ra_namelp_prev, replace
+	save "${gsdTemp}/`file'_append_v11", replace
+	
 	use "${gsdTemp}/`file'_append_v1", clear
 	append using "${gsdTemp}/`file'_append_v2"
 	append using "${gsdTemp}/`file'_append_v4"
 	append using "${gsdTemp}/`file'_append_v6"
 	append using "${gsdTemp}/`file'_append_v9"
 	append using "${gsdTemp}/`file'_append_v10"
+	append using "${gsdTemp}/`file'_append_v11"
 	save "${gsdTemp}/`file'_append", replace
 }
 
@@ -301,6 +342,9 @@ save "${gsdData}/0-RawTemp/rnf_nonfood_manual_cleaning.dta", replace
 *** Importing questionnaire
 use "${gsdTemp}/hh_without_empty_obs", clear
 
+*** Team cleaning
+replace team_id = 38 if interview__id=="4b7adf58ea5140488f667bf97fb4e8a9"
+
 *** Enumerator name cleaning
 replace enum_id = 3105 if interview__id=="ab0e6a8b5df34626b3f17a8ee5182ef0"
 replace enum_id = 3206 if interview__id=="568d421b53b1407ca17d51362e22c68c"
@@ -313,9 +357,6 @@ replace enum_id = 3801 if interview__id=="4b7adf58ea5140488f667bf97fb4e8a9"
 replace enum_id = 4301 if interview__id=="91eb31696b394d6d999000caf6821804"
 replace enum_id = 4301 if interview__id=="6e56a88db03a44f9ba55030541500b8c"
 replace enum_id = 4301 if interview__id=="fd9806fc89574d1b854250ffeb3e800e"
-
-*** Team cleaning
-replace team_id = 38 if interview__id=="4b7adf58ea5140488f667bf97fb4e8a9"
 
 label define enum_id ///
 	3602 "Mohamed Isak Mohamed" ///
@@ -369,7 +410,7 @@ replace ea_reg=3 if interview__id=="fb892e464ec546d39440f3a45bd6bfcc"
 *20/12/2017
 replace ea_reg=2 if interview__id=="d508f9bcc52b43ba89238a484efc519c"
 *tab ea_reg
-*tab ea_reg ea if substr(today,1,10)=="2018-01-15"
+*tab ea_reg ea if substr(today,1,10)=="2018-01-16"
 
 *** Strata cleaning
 replace strata=32 if interview__id=="9a2230c16d0c498aa06def1704517029"
@@ -383,7 +424,7 @@ replace ea=198760 if interview__id=="89fd6810cc534326ac279a8fb63e5456"
 *01/01/2018
 replace ea=82297 if interview__id=="9a2230c16d0c498aa06def1704517029"
 *tab ea
-*tab ea team_id if substr(today,1,10)=="2018-01-15"
+*tab ea team_id if substr(today,1,10)=="2018-01-16"
 
 *** Team number cleaning
 *15/12/2017
@@ -870,6 +911,9 @@ replace today="2018-01-12T08:40:00-05:00" if interview__id=="5dac6d7dfb6a40d591b
 replace today_end="2018-01-12T10:55:00-05:00" if interview__id=="5dac6d7dfb6a40d591ba8926a1b05301"
 replace today="2018-01-12T08:10:00-05:00" if interview__id=="6a8a63fddd0f4209bc67f151a2589438"
 replace today_end="2018-01-12T10:25:00-05:00" if interview__id=="6a8a63fddd0f4209bc67f151a2589438"
+*16/01/2018
+replace today="2018-01-16T08:35:08-05:00" if interview__id=="ba41d1ba40c942ccbfff8f4c5af35c14"
+replace today_end="2018-01-16T10:35:00-05:00" if interview__id=="ba41d1ba40c942ccbfff8f4c5af35c14"
 
 
 *Creating duration variable
