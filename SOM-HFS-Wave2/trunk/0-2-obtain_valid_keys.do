@@ -256,7 +256,7 @@ gen replaced_visit_valid=1 if replacement_hh==1
 label var replaced_visit_valid "If replacement, whether the last record for the original household is valid"
 
 *For the visits to replacement households, we check that the visits to the original household are valid
-replace replaced_visit_valid=0 if (replacement_hh==1 & ea_reg==ea_reg[_n - 1] & id_ea==id_ea[_n - 1] & block_number_original==block_number_original[_n - 1] & str_number_original==str_number_original[_n - 1] & hh_number_original==hh_number_original[_n - 1] & (id_block!=id_block[_n-1] | id_structure!=id_structure[_n-1] | id_household!=id_household[_n-1] | int_no!=int_no[_n-1]) & itw_valid[_n-1]==0) 
+replace replaced_visit_valid=0 if (replacement_hh==1 & ea_reg==ea_reg[_n - 1] & id_ea==id_ea[_n - 1] & block_number_original==block_number_original[_n - 1] & str_number_original==str_number_original[_n - 1] & hh_number_original==hh_number_original[_n - 1] & int_no==int_no[_n-1] & (id_block!=id_block[_n-1] | id_structure!=id_structure[_n-1] | id_household!=id_household[_n-1]) & itw_valid[_n-1]==0) 
 replace itw_valid=0 if replacement_hh==1 & replaced_visit_valid==0
 replace itw_invalid_reason=5 if replacement_hh==1 & replaced_visit_valid==0
 
@@ -293,11 +293,11 @@ replace itw_invalid_reason=7 if return1==1 & previous_visit_valid==0
 *We also have to check that the GPS coordinates between the two visits to the same household match 
 *Both records must have GPS coordinates
 gen GPS_pair=1 if return1==1
-replace GPS_pair=0 if (latitude_str==. | longitude_str==. | latitude_str==-1000000000 | longitude_str==-1000000000 | latitude_str==--999999999 | longitude_str==-999999999 | (return1==1 & ea_reg==ea_reg[_n - 1] & id_ea==id_ea[_n - 1] & id_block==id_block[_n - 1] & id_structure==id_structure[_n-1] & id_household==id_household[_n-1] & int_no==int_no[_n-1] & (latitude_str[_n-1]==. | longitude_str[_n-1]==.)))
+replace GPS_pair=0 if (latitude_str==. | longitude_str==. | latitude_str==-1000000000 | longitude_str==-1000000000 | latitude_str==-999999999 | longitude_str==-999999999 | (return1==1 & ea_reg==ea_reg[_n - 1] & id_ea==id_ea[_n - 1] & id_block==id_block[_n - 1] & id_structure==id_structure[_n-1] & id_household==id_household[_n-1] & int_no==int_no[_n-1] & (latitude_str[_n-1]==. | longitude_str[_n-1]==. | latitude_str[_n-1]==-1000000000 | longitude_str[_n-1]==-1000000000 | latitude_str[_n-1]==-999999999 | longitude_str[_n-1]==-999999999)))
 replace GPS_pair=0 if (return1==1 & (ea_reg!=ea_reg[_n - 1] | id_ea!=id_ea[_n - 1] | id_block!=id_block[_n - 1] | id_structure!= id_structure[_n-1] | id_household!=id_household[_n-1] | int_no!=int_no[_n-1]))
 label var GPS_pair "Whether the visit to the household and the previous one both have GPS coordinates"
 
-*Using Vincenty package to calculate distances on the Earth's surface
+*Using geodist package to calculate distances on the Earth's surface
 g double latitude_pr=latitude_str[_n-1] if (return1==1 & ea_reg==ea_reg[_n - 1] & id_ea==id_ea[_n - 1] & id_block==id_block[_n - 1] & id_structure==id_structure[_n-1] & id_household==id_household[_n-1] & int_no==int_no[_n-1])
 g double longitude_pr=longitude_str[_n-1] if (return1==1 & ea_reg==ea_reg[_n - 1] & id_ea==id_ea[_n - 1] & id_block==id_block[_n - 1] & id_structure==id_structure[_n-1] & id_household==id_household[_n-1] & int_no==int_no[_n-1])
 g accuracy_pr=accuracy_str[_n-1] if (return1==1 & ea_reg==ea_reg[_n - 1] & id_ea==id_ea[_n - 1] & id_block==id_block[_n - 1] & id_structure==id_structure[_n-1] & id_household==id_household[_n-1] & int_no==int_no[_n-1])
@@ -306,7 +306,7 @@ label var longitude_pr "Longitude of previous visit to the household"
 label var accuracy_pr "Accuracy of GPS coordinates of previous visit to the household"
 save "${gsdTemp}/hh_valid_keys_temp3.dta", replace
 
-keep if GPS_pair==1 & return1==1 & latitude_pr!=. & longitude_pr!=.
+keep if GPS_pair==1 & return1==1 & latitude_pr!=. & longitude_pr!=. & latitude_pr!=-1000000000 & longitude_pr!=-1000000000 & latitude_pr!=-999999999 & longitude_pr!=-999999999
 geodist latitude_str longitude_str latitude_pr longitude_pr, gen(distance)
 label var distance "Distance with previous visit to the same household - kilometers"
 g distance_meters=distance*1000
@@ -331,7 +331,7 @@ replace itw_invalid_reason=8 if return1==1 & dist_previous_visit_check==0
 *Sorting interviews to have all visits at the replaced household and then all visits at the replacement household after one another
 sort ea_reg id_ea block_number_original str_number_original hh_number_original int_no start_time
 *For the visits to replacement households, we check that the visits to the original household are valid
-replace replaced_visit_valid=0 if (replacement_hh==1 & ea_reg==ea_reg[_n - 1] & id_ea==id_ea[_n - 1] & block_number_original==block_number_original[_n - 1] & str_number_original==str_number_original[_n - 1] & hh_number_original==hh_number_original[_n - 1] & (id_block!=id_block[_n-1] | id_structure!=id_structure[_n-1] | id_household!=id_household[_n-1] | int_no!=int_no[_n-1]) & itw_valid[_n-1]==0) 
+replace replaced_visit_valid=0 if (replacement_hh==1 & ea_reg==ea_reg[_n - 1] & id_ea==id_ea[_n - 1] & block_number_original==block_number_original[_n - 1] & str_number_original==str_number_original[_n - 1] & hh_number_original==hh_number_original[_n - 1] & int_no==int_no[_n-1] &(id_block!=id_block[_n-1] | id_structure!=id_structure[_n-1] | id_household!=id_household[_n-1]) & itw_valid[_n-1]==0) 
 replace itw_valid=0 if replacement_hh==1 & replaced_visit_valid==0
 replace itw_invalid_reason=5 if replacement_hh==1 & replaced_visit_valid==0
 
