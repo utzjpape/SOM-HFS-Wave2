@@ -423,7 +423,7 @@ save "${gsdTemp}/eb_collapse.dta", replace
 *Adding summary elements in the EB replacement table
 use "${gsdTemp}/EB_Replacement_Table_temp2.dta", clear
 merge 1:1 strata_id strata_name id_ea id_block using "${gsdTemp}/eb_collapse.dta"
-*Blocks which did not match are not included in the intial sample (due to mistakes from enumerators who forgot to select the block number and was thus displayed as -100000000)
+*Blocks which did not match are not included in the initial sample (due to mistakes from enumerators who forgot to select the block number and was thus displayed as -100000000)
 replace sample_initial_block = 0 if _merge == 2
 drop _merge
 
