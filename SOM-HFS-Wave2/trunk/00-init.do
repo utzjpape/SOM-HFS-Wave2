@@ -14,14 +14,14 @@ if (inlist("${suser}","wb390290","WB390290")) {
 	*Local directory of your checked out copy of the code
 	local swdLocal = "C:\Users\WB390290\OneDrive - WBG\Home\Countries\Somalia\Projects\HFS\SV-Analysis\Wave2"
 	*Box directory where the Data folder can be located
-	local swdBox = "C:\Users\WB390290\OneDrive - WBG\Home\Countries\Somalia\Projects\HFS\Sh-SOM-HFS\Wave2\Analysis\DataBox"
+	local swdBox = "C:\Users\WB390290\OneDrive - WBG\Home\Countries\Somalia\Projects\HFS\Sh-SOM-HFS\Wave2\DataBox"
 }
 else if (inlist("${suser}","wb484006","WB484006")) {
 	*Gonzalo
 	*Local directory of your checked out copy of the code
 	local swdLocal = "C:\Users\WB484006\OneDrive - WBG\Code\SOM\Wave 2"
 	*Box directory where the Data folder can be located
-	local swdBox = "C:\Users\WB484006\WBG\Utz Johann Pape - Shared\Wave2\Analysis\DataBox"
+	local swdBox = "C:\Users\WB484006\WBG\Utz Johann Pape - Shared\Wave2\DataBox"
 	* cURL directory
 	local curl = "C:\Users\WB484006\Documents"             
 }
@@ -31,7 +31,7 @@ else if (inlist("${suser}","WB499706", "wb499706")) {
 	*Local directory of your checked out copy of the code
 	local swdLocal = "C:\Users\WB499706\OneDrive - WBG\WBG Data PW\Code\SOM\Wave 2"
 	*Box directory where the Data folder can be located
-	local swdBox = "C:\Users\WB499706\WBG\Utz Johann Pape - Sh-SOM-HFS\Wave2\Analysis\DataBox"
+	local swdBox = "C:\Users\WB499706\WBG\Utz Johann Pape - Sh-SOM-HFS\Wave2\DataBox"
 	* cURL directory
 	local curl = "C:\Users\WB499706\Documents"
 }
