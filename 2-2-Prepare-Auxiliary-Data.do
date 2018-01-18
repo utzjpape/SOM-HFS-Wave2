@@ -6,98 +6,6 @@ set maxvar 10000
 set seed 23081980 
 set sortseed 11041985
 
-*Import ACLED data
-* 2017 file
-import excel "${gsdShared}\0-Auxiliary\Conflict\ACLED-All-Africa-File_20170101-to-20171014.xlsx", firstrow case(lower) clear
-keep if year==2017 
-keep if country=="Somalia"
-drop admin3
-destring longitude, replace 
-save "${gsdTemp}\ACLED-2017.dta", replace
-* Previous years
-import excel "${gsdShared}\0-Auxiliary\Conflict\ACLED-SOM_1997to2016.xlsx", firstrow case(lower) clear
-keep if inlist(year, 2015, 2016)
-drop admin3
-append using "${gsdTemp}\ACLED-2017.dta"
-save "${gsdData}/1-CleanInput/ACLED.dta", replace
-export delim "${gsdOutput}/ACLED.csv", replace
-
-
-* Import and format rainfall data
-* All SOM
-import delim using "${gsdShared}\0-Auxiliary\Climate Data\combined_rainfall_som0.txt", clear
-replace value = value / 3
-ren value rainfall_deviation
-la var rainfall_deviation "Deviation % in rainfall from long-term average"
-save "${gsdData}/1-CleanTemp/Rainfall_SOM0.dta", replace
-* Wave 1
-local lrain = "2016deyr 2017gu 2016gu 2016deyr2017gu combined"
-foreach c in `lrain' {
-	shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\Wave1_precipitation_`c'.shp", data("${gsdTemp}/Wave1_precipitation_`c'.dta") coor("${gsdTemp}/Wave1_precipitation_`c'_coordinates.dta") replace
-	use "${gsdTemp}/Wave1_precipitation_`c'.dta", clear
-	cap ren grid_code GRID_CODE
-	drop if GRID_CODE==0
-	collapse (mean) precip_`c'=GRID_CODE, by(team strata ea block hh)
-	la var precip_`c' "Precipitation difference from long-term average, `c' season"
-	save "${gsdTemp}/Wave1_precipitation_`c'_corrected.dta", replace
-}
-
-use "${gsdTemp}/Wave1_precipitation_2016deyr_corrected.dta", clear
-local lrain2 = "2017gu 2016gu 2016deyr2017gu combined"
-foreach c in `lrain2' {
-merge 1:1 team strata ea block hh using "${gsdTemp}/Wave1_precipitation_`c'_corrected.dta", assert(match) nogen
-}
-destring block, replace
-replace precip_combined=precip_combined/3
-gen drought1 = (precip_combined<-29)
-la var drought1 "More than 29% less rain than long term average in three seasons combined"
-gen drought2 = (precip_2016deyr<-50) 
-la var drought2 "More than 50% less rain than long term average in 2016 Deyr season"
-gen drought3 = (precip_2016deyr2017gu<-30)
-la var drought3 "More than 30% less rain than long term average in 2016 Deyr and 2017 Gu seasons"
-la def ldrought 0 "Non-affected" 1 "Affected"
-la val drought3 ldrought
-la val drought2 ldrought
-la val drought1 ldrought
-save "${gsdData}/1-CleanTemp/rainfall.dta", replace
-* Create map of drought-affected HHs
-use "${gsdData}/1-CleanInput/SHFS2016/hh_gps_identifiers.dta", clear
-merge 1:1 team strata ea block hh using "${gsdData}/1-CleanTemp/rainfall.dta", assert(match) nogen
-export delim using "${gsdData}/0-RawOutput/rainfall_gps_identifiers.csv", replace nolab
-
-* Wave 2
-local lrain = "2016deyr 2016deyr2017gu 2016gu 2017gu combined"
-foreach c in `lrain' {
-	shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\Wave2_precipitation_`c'.shp", data("${gsdTemp}/Wave2_precipitation_`c'.dta") coor("${gsdTemp}/Wave2_precipitation_`c'_coordinates.dta") replace
-	use "${gsdTemp}/Wave2_precipitation_`c'.dta", clear
-	cap ren grid_code GRID_CODE
-	drop if GRID_CODE==0
-	replace Sel_MainFi = FID_ if Sel_MainFi==0
-	collapse (mean) precip_`c'=GRID_CODE X=INSIDE_X Y=INSIDE_Y, by(Strata_ID Strata_Na PSU_ID Sel_MainFi)
-	la var precip_`c' "Precipitation difference from long-term average, `c' season"
-	save "${gsdTemp}/Wave2_precipitation_`c'_corrected.dta", replace
-}
-
-use "${gsdTemp}/Wave2_precipitation_2016deyr_corrected.dta", clear
-merge 1:1 PSU_ID using "${gsdTemp}/Wave2_precipitation_2016deyr2017gu_corrected.dta", assert(match) nogen
-merge 1:1 PSU_ID using "${gsdTemp}/Wave2_precipitation_2017gu_corrected.dta", assert(match) nogen
-merge 1:1 PSU_ID using "${gsdTemp}/Wave2_precipitation_2016gu_corrected.dta", assert(match) nogen
-merge 1:1 PSU_ID using "${gsdTemp}/Wave2_precipitation_combined_corrected.dta", assert(match) nogen
-replace precip_combined=precip_combined/3
-gen drought1 = (precip_combined<-29)
-la var drought1 "More than 29% less rain than long term average in three seasons combined"
-gen drought2 = (precip_2016deyr<-50) 
-la var drought2 "More than 50% less rain than long term average in 2016 Deyr season"
-gen drought3 = (precip_2016deyr2017gu<-30)
-la var drought3 "More than 30% less rain than long term average in 2016 Deyr and 2017 Gu seasons"
-la def ldrought 0 "Non-affected" 1 "Affected"
-la val drought3 ldrought
-la val drought2 ldrought
-la val drought1 ldrought
-save "${gsdData}/1-CleanTemp/rainfall_w2.dta", replace
-* Create map of drought-affected HHs
-export delim using "${gsdData}/0-RawOutput/rainfall_gps_identifiers_w2.csv", replace nolab
-
 * SPI data 
 * Wave 1 HHs
 shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\SPI\spi_combined_HHs.shp", data("${gsdTemp}/spi_combined_HHs.dta") coor("${gsdTemp}/spi_combined_HHs_coordinates.dta") replace
@@ -194,3 +102,41 @@ gen date = ym(year, month)
 order date
 format date %tm
 save "${gsdData}/1-CleanTemp/rainfall_timeseries.dta", replace
+
+* Standardized Vegetation Index, based on NDVI data
+use "${gsdShared}\0-Auxiliary\Climate Data\NDVI\NDVI_series.dta", clear
+* Start building z-score using 2012-2015 as baseline average and standard deviation
+rename grid_code_* NDVI_*
+egen NDVI_mean = rowmean(NDVI_Jan_2012-NDVI_Dec_2015)
+egen NDVI_SD = rowsd(NDVI_Jan_2012-NDVI_Dec_2015)
+egen NDVI_rs = rowmean(NDVI_April_June_2016 NDVI_April_June_2017 NDVI_Oct_Dec_2016)
+gen z_NDVI90 = (NDVI_90_days - NDVI_mean) / NDVI_SD
+gen z_NDVI30 = (NDVI_30_days - NDVI_mean) / NDVI_SD
+gen z_NDVI_rs = (NDVI_rs - NDVI_mean) / NDVI_SD
+gen SVI30 = normal(z_NDVI30)
+la var SVI30 "Standard Vegetation Index, last 30 days"
+gen SVI90 = normal(z_NDVI90)
+la var SVI90 "Standard Vegetation Index, last 90 days"
+gen SVIrs = normal(z_NDVI_rs)
+la var SVIrs "Standard Vegetation Index, combined rainy seasons"
+keep SVI* pointid z*
+export delim using "${gsdData}/1-CleanTemp/SVI.csv", replace
+save "${gsdData}/1-CleanTemp/SVI.dta", replace
+
+* Merge with household data and generate household-level SVI data
+import delim "${gsdShared}\0-Auxiliary\Climate Data\NDVI\Wave1_SVI_key.txt", clear
+merge m:1 pointid using "${gsdData}/1-CleanTemp/SVI.dta", assert(match using) keep(match) nogen
+drop if SVI30==. & SVI90==. & SVIrs==.
+collapse (mean) z* SVI*, by(team strata ea block hh)
+* categorise
+label define lSVI 1 "Very poor" 2 "Poor" 3 "Average" 4 "Good" 5 "Very good", replace
+foreach v in 30 90 rs {
+	gen SVI`v'_cat = 1 if inrange(SVI`v', 0, 0.05)
+	replace SVI`v'_cat = 2 if SVI`v'>0.05 & SVI`v'<=0.25
+	replace SVI`v'_cat = 3 if SVI`v'>0.25 & SVI`v'<=0.75 
+	replace SVI`v'_cat = 4 if SVI`v'>0.75 & SVI`v'<=0.95 
+	replace SVI`v'_cat = 5 if SVI`v'>0.95 & SVI`v'<=1
+	la var SVI`v'_cat "SVI`v' category" 
+	la val SVI`v'_cat lSVI
+}
+save 
