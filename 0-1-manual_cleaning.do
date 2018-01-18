@@ -96,6 +96,9 @@ tostring land_use_disp_s, replace
 tostring land_unit_spec_disp, replace
 tostring rl_other, replace
 tostring *_specify, replace
+tostring phone_number, g(phone_number2)
+drop phone_number
+rename phone_number2 phone_number
 tostring loc_retry__Timestamp, replace
 save "${gsdTemp}/hh_append_v9", replace
 
@@ -114,6 +117,9 @@ tostring land_use_disp_s, replace
 tostring land_unit_spec_disp, replace
 tostring rl_other, replace
 tostring *_specify, replace
+tostring phone_number, g(phone_number2)
+drop phone_number
+rename phone_number2 phone_number
 tostring loc_retry__Timestamp, replace
 save "${gsdTemp}/hh_append_v10", replace
 
@@ -134,6 +140,9 @@ tostring rl_other, replace
 tostring *_specify, replace
 tostring disp_date, replace
 tostring disp_arrive_date, replace
+tostring phone_number, g(phone_number2)
+drop phone_number
+rename phone_number2 phone_number
 tostring loc_retry__Timestamp, replace
 save "${gsdTemp}/hh_append_v11", replace
 
