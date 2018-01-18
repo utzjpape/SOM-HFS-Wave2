@@ -70,7 +70,7 @@ save "${gsdTemp}/hh_valid_keys_and_EAs_temp.dta", replace
 *Collapse to make a dataset of summary elements for each EA
 collapse (sum) nb_interviews_ea=index nb_treat1_ea=treat1 nb_treat2_ea=treat2 nb_treat3_ea=treat3 nb_treat4_ea=treat4 ///
 	nb_valid_interviews_ea=itw_valid nb_valid_treat1_ea=val1 nb_valid_treat2_ea=val2 nb_valid_treat3_ea=val3 nb_valid_treat4_ea=val4 ///
-	nb_success_interviews_ea=successful nb_success_treat1_ea=succ1 nb_success_treat2_ea=succ2 nb_success_treat3_ea=succ2 nb_success_treat4_ea=succ4 ///
+	nb_success_interviews_ea=successful nb_success_treat1_ea=succ1 nb_success_treat2_ea=succ2 nb_success_treat3_ea=succ3 nb_success_treat4_ea=succ4 ///
 	nb_valid_success_itws_ea=successful_valid nb_valid_success_treat1_ea=val_succ1 nb_valid_success_treat2_ea=val_succ2 nb_valid_success_treat3_ea=val_succ3 nb_valid_success_treat4_ea=val_succ4, by(id_ea)
 order id_ea, first
 save "${gsdTemp}/ea_collapse.dta", replace
