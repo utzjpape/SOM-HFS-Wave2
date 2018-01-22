@@ -1,13 +1,18 @@
 *-------------------------------------------------------------------
 *
-*     VALID EAS & EA AND EB REPLACEMENTS
+*     VALID EAS AND WATERPOINTS 
+*     & EA, EB AND WATERPOINT REPLACEMENTS
 *     
 *     This do-file allows to:
 *     - finalize the replacement table at the EA level 
 *     - create the replacement table at the EB level
 *     - flag the invalid EAs 
+*     - finalize the waterpoint replacement table
+*     - flag invalid waterpoints
 *                         
 *-------------------------------------------------------------------
+
+***** PART 1: URBAN/RURAL/IDPs
 
 /*----------------------------------------------------------------------------*/
 /*             EA REPLACEMENT TABLE AND EA VALIDITY                           */
@@ -463,3 +468,195 @@ sort strata_id strata_name id_ea id_block
 *Exporting EB replacement table
 save "${gsdData}/0-RawTemp/EB_Replacement_Table_Complete.dta", replace
 export excel "${gsdData}/0-RawTemp/EB_Replacement_Table_Complete.xlsx", firstrow(variables) replace
+
+***** PART 2: NOMADS
+
+/*----------------------------------------------------------------------------*/
+/*         WATERPOINT REPLACEMENT TABLE AND WATERPOINT VALIDITY               */
+/*----------------------------------------------------------------------------*/
+
+/*
+A waterpoint is valid if: 
+- the WP was either sampled or was an active replacement (only became valid once another WP was substituted)
+*/
+
+** GENERATING NUMBER OF VALID AND SUCCESSFUL INTERVIEWS PER WATERPOINT, WITH BREAKDOWN PER TREATMENT **
+
+*Importing questionnaire
+use "${gsdData}/0-RawTemp/hh_valid_keys_nomads.dta", clear
+
+*Generating dummy variables at the interview level (validity, success, and validity and success, with breakdown per treatment)
+gen index=1
+gen treat1 = (mod_opt==1)
+gen treat2 = (mod_opt==2)
+gen treat3 = (mod_opt==3)
+gen treat4 = (mod_opt==4)
+label var index "Variable equal to 1"
+forvalues i = 1/4{
+	label var treat`i' "Whether interview was assigned optional module `i'"
+}
+
+gen val1 = (treat1==1 & itw_valid==1)
+gen val2 = (treat2==1 & itw_valid==1)
+gen val3 = (treat3==1 & itw_valid==1)
+gen val4 = (treat4==1 & itw_valid==1)
+forvalues i = 1/4{
+	label var val`i' "Whether interview was assigned optional module `i' and is valid"
+}
+
+gen succ1 = (treat1==1 & successful==1)
+gen succ2 = (treat2==1 & successful==1)
+gen succ3 = (treat3==1 & successful==1)
+gen succ4 = (treat4==1 & successful==1)
+forvalues i = 1/4{
+	label var succ`i' "Whether interview was assigned optional module `i' and is successful"
+}
+
+gen val_succ1 = (treat1==1 & itw_valid==1 & successful==1)
+gen val_succ2 = (treat2==1 & itw_valid==1 & successful==1)
+gen val_succ3 = (treat3==1 & itw_valid==1 & successful==1)
+gen val_succ4 = (treat4==1 & itw_valid==1 & successful==1)
+forvalues i = 1/4{
+	label var val_succ`i' "Whether interview was assigned optional module `i' and is valid and successful"
+}
+
+save "${gsdTemp}/hh_valid_keys_and_WPs_temp.dta", replace 
+	 
+*Collapse to make a dataset of summary elements for each water point
+collapse (sum) nb_interviews_wp=index nb_treat1_wp=treat1 nb_treat2_wp=treat2 nb_treat3_wp=treat3 nb_treat4_wp=treat4 ///
+	nb_valid_interviews_wp=itw_valid nb_valid_treat1_wp=val1 nb_valid_treat2_wp=val2 nb_valid_treat3_wp=val3 nb_valid_treat4_wp=val4 ///
+	nb_success_interviews_wp=successful nb_success_treat1_wp=succ1 nb_success_treat2_wp=succ2 nb_success_treat3_wp=succ3 nb_success_treat4_wp=succ4 ///
+	nb_valid_success_itws_wp=successful_valid nb_valid_success_treat1_wp=val_succ1 nb_valid_success_treat2_wp=val_succ2 nb_valid_success_treat3_wp=val_succ3 nb_valid_success_treat4_wp=val_succ4, by(id_wp)
+order id_wp, first
+save "${gsdTemp}/wp_collapse.dta", replace
+
+** 	FINALIZING WATERPOINT REPLACEMENT TABLE **
+
+*Part 1: Importing administrative information and initial sample
+import excel "${gsdDataRaw}/Waterpoints Replacement Table.xls", sheet("Step 1_Pre-survey rep WPs") clear
+drop if _n == 2
+foreach var of varlist * {
+	rename `var' `=`var'[1]'
+}
+rename water_point id_wp
+drop if _n ==1
+destring *, replace
+keep id_wp-y_max main_wp-sample_initial_wp
+drop state
+save "${gsdTemp}/WP_Replacement_Table_Part1.dta", replace
+
+*Part 2: Replacement table, final sample
+*The replacement table was originally constructed for the pre-survey replacements 
+*During the survey, replacements are added to the replacement table manually
+import excel "${gsdDataRaw}/Waterpoints Replacement Table.xls", sheet("Step 2_Final sample and rep WPs") clear
+drop if _n == 2
+foreach var of varlist * {
+	rename `var' `=`var'[1]'
+}
+rename water_point id_wp
+drop if _n ==1
+destring *, replace
+keep id_wp sample_final_wp-final_rank_rep_wp target_itw_wp-wp_valid
+save "${gsdTemp}/WP_Replacement_Table_Part2.dta", replace
+
+*Merging Part1 and Part2 of WP replacement table
+merge 1:1 id_wp using "${gsdTemp}/WP_Replacement_Table_Part1.dta", nogenerate
+
+*Part 3: Generating target number of interviews for all WPs included in the final sample
+*The following finalizes the replacement table, notably by adding the final number of interviews per WP
+replace target_itw_wp = 12*final_main_wp
+
+*Adding number of valid and successful interviews per WP and validity status of WPs to the replacement table
+*Merging WP replacement table with collapsed dataset containing number of valid and successful interviews per WP
+merge 1:1 id_wp using "${gsdTemp}/wp_collapse.dta", keepusing(nb_valid_success_itws_wp nb_valid_success_treat1_wp nb_valid_success_treat2_wp nb_valid_success_treat3_wp nb_valid_success_treat4_wp)
+replace nb_val_succ_itw_wp = nb_valid_success_itws_wp
+
+*Defining WP validity status
+label define wp_status_label 1 "Valid" ///
+	2 "Not sampled nor active replacement" ///
+	3 "Not enough interviews" ///
+	4 "Not balanced in terms of treatment" ///
+	5 "Not completed because not enough interviews could be conducted after 12 days"
+label values wp_status wp_status_label 
+
+replace wp_status=1 if _merge == 3
+replace wp_status=4 if _merge == 3 & ((nb_valid_success_treat1_wp<2) | (nb_valid_success_treat2_wp<2) | (nb_valid_success_treat3_wp<2) | (nb_valid_success_treat4_wp<2))
+replace wp_status=3 if _merge == 3 & (nb_valid_success_itws_wp<target_itw_wp)
+replace wp_status=2 if _merge == 3 & (sample_final_wp != 1)
+replace wp_status=2 if _merge == 2
+
+*Dummy variable: whether WP is valid or not
+replace wp_valid=(wp_status==1 | wp_status==4 | wp_status==5) 
+
+*Final cleaning
+drop _merge nb_valid_success_itws_wp nb_valid_success_treat1_wp nb_valid_success_treat2_wp nb_valid_success_treat3_wp nb_valid_success_treat4_wp
+order strata_id-sample_initial_wp, after(id_wp)
+
+*Labelling of WP replacement table
+label var id_wp "Waterpoint"
+label var strata_id "Number of the strata"
+label var strata_name "Name of the strata"
+label var type_pop "Type of population"
+label var status_wp "Status of WP"
+label var x_min "Minimum longitude around the WP"
+label var x_max "Maximum longitude around the WP"
+label var y_min "Minimum latitude around the WP"
+label var y_max "Maximum latitude around the WP"
+label var main_wp "Number of times main WP was originally sampled"
+label var rep_wp "Number of times replacement WP was originally sampled"
+label var rank_rep_wp "Replacement rank of replacement WP"
+label var sample_initial_wp "WP was included in the original sample"
+label var sample_final_wp "WP is included in the final sample"
+label var o_wp "Original WP"
+label var r_seq "Number of replacements between original WP and the WP"
+label var r_date "Date of replacement"
+label var r_wp "Replacement WP"
+label var r_reason "Reason for replacement"
+label var test_rep "Replacement WP has been tested for replacement"
+label var rep_nb "Number of times the replacement WP can still be used"
+label var final_main_wp "Number of times WP is sampled as a main WP in the final sample"
+label var final_rep_wp "Number of times WP is sampled as a replacement WP in the final sample"
+label var final_rank_rep_wp "Replacement rank of replacement WP in the final sample"
+label var target_itw_wp "Target number of valid and succesful interviews in the WP only when in final sample"
+label var nb_val_succ_itw_wp "Number of valid and succesful interviews conducted at the WP"
+label var wp_status "Validity status of the WP"
+label var wp_valid "Whether the WP is valid"
+
+*Exporting WP replacement table in Excel and Stata format
+save "${gsdData}/0-RawTemp/Waterpoints_Replacement_Table_Complete.dta", replace
+export excel using "${gsdData}/0-RawTemp/Waterpoints_Replacement_Table_Complete.xls", cell(A3) sheetmodify
+
+** ADDING INFORMATION FROM WATERPOINT REPLACEMENT TABLE TO THE MAIN DATASET **
+
+*Importing questionnaire
+use "${gsdTemp}/hh_valid_keys_and_WPs_temp.dta", clear
+
+*Merging with replacement table
+merge m:1 id_wp using "${gsdData}/0-RawTemp/Waterpoints_Replacement_Table_Complete.dta", nogenerate keep(match master)
+merge m:1 id_wp using "${gsdTemp}/wp_collapse", nogenerate keep(match master)
+
+*Final cleaning and labelling
+order id_wp, first
+label var nb_interviews_wp "Number of interviews per WP"
+label var nb_treat1_wp "Number of interviews of Treat=1 per WP"
+label var nb_treat2_wp "Number of interviews of Treat=2 per WP"
+label var nb_treat3_wp "Number of interviews of Treat=3 per WP"
+label var nb_treat4_wp "Number of interviews of Treat=4 per WP"
+label var nb_valid_interviews_wp "Number of valid interviews per WP"
+label var nb_valid_treat1_wp "Number of valid interviews of Treat=1 per WP"
+label var nb_valid_treat2_wp "Number of valid interviews of Treat=2 per WP"
+label var nb_valid_treat3_wp "Number of valid interviews of Treat=3 per WP"
+label var nb_valid_treat4_wp "Number of valid interviews of Treat=4 per WP"
+label var nb_success_interviews_wp "Number of successful interviews per WP"
+label var nb_success_treat1_wp "Number of successful interviews of Treat=1 per WP"
+label var nb_success_treat2_wp "Number of successful interviews of Treat=2 per WP"
+label var nb_success_treat3_wp "Number of successful interviews of Treat=3 per WP"
+label var nb_success_treat4_wp "Number of successful interviews of Treat=4 per WP"
+label var nb_valid_success_itws_wp "Number of valid and successful interviews per WP"
+label var nb_valid_success_treat1_wp "Number of valid and successful interviews of Treat=1 per WP"
+label var nb_valid_success_treat2_wp "Number of valid and successful interviews of Treat=2 per WP"
+label var nb_valid_success_treat3_wp "Number of valid and successful interviews of Treat=3 per WP"
+label var nb_valid_success_treat4_wp "Number of valid and successful interviews of Treat=4 per WP"
+
+save "${gsdData}/0-RawTemp/hh_valid_keys_and_WPs.dta", replace
+
