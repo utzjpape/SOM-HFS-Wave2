@@ -1027,7 +1027,7 @@ use "${gsdTemp}/hh_append_nomads", clear
 
 **** Dropping empty observations in all datasets (main + rosters)
 * Main dataset
-drop if interview__id==""
+drop if interview__id=="f14c77213f0642ff825041f4923143f2"
 save "${gsdTemp}/hh_without_empty_obs_nomads", replace
 
 * Rosters
@@ -1037,7 +1037,7 @@ local files hh_roster_separated hhroster_age motor ra_assets ra_assets_prev rf_f
 foreach file in `files' {
 	use "${gsdTemp}/`file'_append_nomads", clear
 	tostring interview__id, replace
-	drop if interview__id==""
+	drop if interview__id=="f14c77213f0642ff825041f4923143f2"
 	save "${gsdData}/0-RawTemp/`file'_manual_cleaning_nomads.dta", replace
 }
 
@@ -1051,7 +1051,6 @@ use "${gsdTemp}/hh_without_empty_obs_nomads", clear
 *tab team_id
 
 *** Pre-war region cleaning
-replace ea_reg = 4 if interview__id=="f14c77213f0642ff825041f4923143f2"
 *tab ea_reg
 *tab ea_reg water_point if substr(today,1,10)=="2018-01-21"
 
@@ -1059,7 +1058,6 @@ replace ea_reg = 4 if interview__id=="f14c77213f0642ff825041f4923143f2"
 g strata = .
 
 *** Water point number cleaning
-replace water_point = 461 if interview__id=="f14c77213f0642ff825041f4923143f2"
 *tab water_point
 *tab water_point team_id if substr(today,1,10)=="2018-01-21"
 
