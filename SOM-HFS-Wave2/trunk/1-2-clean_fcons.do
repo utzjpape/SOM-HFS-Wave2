@@ -18,6 +18,12 @@ merge 1:1 strata ea block hh foodid using "${gsdData}/1-CleanInput/food.dta", no
 keep strata ea block hh foodid cons
 rename cons cons_original
 save "${gsdTemp}/food_hhs_fulldataset.dta", replace
+*Then we create a list with all the food items
+use "${gsdData}/1-CleanInput/food.dta", clear
+rename foodid itemid
+collapse (mean) mod_item, by(itemid)
+save "${gsdData}/1-CleanTemp/items_module_food.dta", replace
+*Now we begin cleaning the food module
 use "${gsdData}/1-CleanInput/food.dta", clear
 merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", assert(match) nogen keepusing(weight mod_opt)
 order weight, after(hh)

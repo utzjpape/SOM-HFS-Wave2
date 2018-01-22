@@ -46,9 +46,10 @@ merge 1:m ea using "${gsdTemp}/hh_valid_successful_complete.dta", keep(using mat
 replace type=1 if urban_ind==3 & inlist(strata,46,47)
 replace type=2 if urban_ind==2 & inlist(strata,46,47)
 drop urban_ind 
+
 *Correctly identify host households for EAs with interviews for both urban/rural and host 
-*EA 198455 2 urban replacement and 1 main host (replaced by EA 198066)
-//PENDING INTERVIEWS FROM THIS EA
+*EA 198455 1 urban replacement and 1 replacement host 
+*EA not used (not part of the final sample)
 
 *EA 199580 1 replacement urband and 2 replacement host
 replace type_idp_host=2 if ea==199580
@@ -116,7 +117,7 @@ drop rand_198009 n_198009
 replace type_idp_host=2 if ea==204882
 
 *EA 198121 3 replacement urband and 1 replacement host
-//PENDING INTERVIEWS FROM THIS EA
+*EA not used (not part of the final sample)
 
 *EA 198038 3 main urband and 2 main host
 gen rand_198038=uniform() if ea==198038

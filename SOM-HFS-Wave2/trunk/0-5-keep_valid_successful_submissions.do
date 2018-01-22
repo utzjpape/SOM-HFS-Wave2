@@ -9,9 +9,13 @@ set sortseed 11041925
 *Obtain keys for valid and successful submissions from valid EAs 
 ********************************************************************
 use "${gsdData}/0-RawTemp/hh_valid_keys_and_EAs.dta", clear
-keep interview__id itw_valid itw_invalid_reason successful_valid
+keep interview__id itw_valid itw_invalid_reason successful_valid ea
+*Drop submissions from EA which became urban settlement 
+drop if ea==5309000
+*Drop replacement submissions without record of the original household
+drop if ea==160751 | ea==198061 
 keep if successful_valid==1
-keep interview__id
+keep interview__id 
 save "${gsdTemp}/hh_id_successful_valid.dta", replace
 
 
