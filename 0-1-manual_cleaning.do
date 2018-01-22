@@ -7,6 +7,8 @@
 *                         
 *-------------------------------------------------------------------
 
+***** PART 1: URBAN/RURAL/IDPs
+
 *** Importing questionnaire
 ** Version 1
 use "${gsdDownloads}/Somali High Frequency Survey - Wave 2 - Fieldwork", clear
@@ -943,3 +945,162 @@ label var duration_itw_min "Duration of interview (minutes)"
 
 *** Saving dataset with manual corrections
 save "${gsdData}/0-RawTemp/hh_manual_cleaning.dta", replace
+
+
+***** PART 2: NOMADS
+
+*** Importing questionnaire
+** Version 1
+use "${gsdDownloads}/Nomads - v1/Somali High Frequency Survey - Wave 2 - Nomads - Fieldwork", clear
+tostring *_spec, replace
+tostring *_sp, replace
+tostring toilet_ot, replace
+tostring land_use_disp_s, replace
+tostring rl_other, replace
+tostring *_specify, replace
+tostring  housingtype_disp_s, replace
+save "${gsdTemp}/hh_append_v1_nomads", replace
+
+** Version 2
+use "${gsdDownloads}/Nomads - v2/Somali High Frequency Survey - Wave 2 - Nomads - Fieldwork", clear
+tostring *_spec, replace
+tostring *_sp, replace
+tostring *_specify, replace
+tostring loc_retry__Timestamp, replace
+tostring housingtype_disp_s, replace
+tostring hh_list_separated__*, replace
+tostring toilet_ot, replace
+tostring land_use_disp_s, replace
+tostring rl_other, replace
+tostring disp_date, replace
+tostring disp_arrive_date, replace
+save "${gsdTemp}/hh_append_v2_nomads", replace
+
+** Append all versions
+* Main dataset
+use "${gsdTemp}/hh_append_v1_nomads", clear
+append using "${gsdTemp}/hh_append_v2_nomads"
+save "${gsdTemp}/hh_append_nomads", replace
+
+*Rosters
+local files hh_roster_separated hhroster_age motor ra_assets ra_assets_prev rf_food ///
+	rf_food_cereals rf_food_fruit rf_food_meat rf_food_vegetables rl_livestock rl_livestock_pre ///
+	rnf_nonfood shocks
+foreach file in `files' {
+	use "${gsdDownloads}/Nomads - v1/`file'", clear
+	tostring interview__id, replace
+	tostring interview__key, replace
+	capture: tostring *_spec, replace
+	capture: tostring *_sp, replace
+	capture: tostring *_specify, replace
+	capture: tostring ra_namelp_prev, replace
+	capture: tostring rl_give_reason_o, replace
+	capture: tostring hhm_relation_sep_s, replace
+	capture: tostring rl_lose_reason_o, replace
+	save "${gsdTemp}/`file'_append_v1_nomads", replace
+	
+	use "${gsdDownloads}/Nomads - v2/`file'", clear
+	tostring interview__id, replace
+	tostring interview__key, replace
+	capture: tostring *_spec, replace
+	capture: tostring *_sp, replace
+	capture: tostring *_specify, replace
+	capture: tostring hhm_edu_level_other, replace
+	capture: tostring hhm_relation_sep_s, replace
+	capture: tostring rl_lose_reason_o, replace
+	capture: tostring hh_list_separated, replace
+	capture: tostring hhm_relation_other, replace
+	capture: tostring ra_namelp_prev, replace
+	capture: tostring rl_give_reason_o, replace
+	capture: tostring hh_list, replace
+	capture: tostring ra_namelp, replace
+	capture: tostring ra_ynew, replace
+	capture: tostring rnf_item_recall, replace
+	save "${gsdTemp}/`file'_append_v2_nomads", replace
+	
+	use "${gsdTemp}/`file'_append_v1_nomads", clear
+	append using "${gsdTemp}/`file'_append_v2_nomads"
+	save "${gsdTemp}/`file'_append_nomads", replace
+}
+
+use "${gsdTemp}/hh_append_nomads", clear
+
+**** Dropping empty observations in all datasets (main + rosters)
+* Main dataset
+drop if interview__id==""
+save "${gsdTemp}/hh_without_empty_obs_nomads", replace
+
+* Rosters
+local files hh_roster_separated hhroster_age motor ra_assets ra_assets_prev rf_food ///
+	rf_food_cereals rf_food_fruit rf_food_meat rf_food_vegetables rl_livestock rl_livestock_pre ///
+	rnf_nonfood shocks
+foreach file in `files' {
+	use "${gsdTemp}/`file'_append_nomads", clear
+	tostring interview__id, replace
+	drop if interview__id==""
+	save "${gsdData}/0-RawTemp/`file'_manual_cleaning_nomads.dta", replace
+}
+
+*** Importing questionnaire
+use "${gsdTemp}/hh_without_empty_obs_nomads", clear
+
+*** Enumerator name cleaning
+*tab enum_id
+
+*** Team cleaning
+*tab team_id
+
+*** Pre-war region cleaning
+replace ea_reg = 4 if interview__id=="f14c77213f0642ff825041f4923143f2"
+*tab ea_reg
+*tab ea_reg water_point if substr(today,1,10)=="2018-01-21"
+
+*** Generate strata variable to be able to run the pipeline without errors
+g strata = .
+
+*** Water point number cleaning
+replace water_point = 461 if interview__id=="f14c77213f0642ff825041f4923143f2"
+*tab water_point
+*tab water_point team_id if substr(today,1,10)=="2018-01-21"
+
+*** Missing date cleaning at the beginning and at the end of the interview
+*Correcting when missing date using dates and times in metadata
+
+*Identify observations with missing dates
+*br if today == "##N/A##"
+*br if today_end=="##N/A##" & consent==1
+
+*** Incorrect duration cleaning (cases of incorrect date and time records)
+*Correcting when incorrect duration using dates and times in metadata
+*20/01/2018
+replace today = "2018-01-20T07:57:00" if interview__id=="5ce9b3fd41e4407eb729230b62c3391d"
+replace today_end = "2018-01-20T11:16:00" if interview__id=="5ce9b3fd41e4407eb729230b62c3391d"
+
+*Creating duration variable
+*Start time 
+g start_time_temp = ""
+replace start_time_temp = subinstr(today,"T"," ",.)
+replace start_time_temp = subinstr(start_time_temp,"-05:00","",.)
+gen double start_time = clock(start_time_temp, "YMDhms")
+format start_time %tc
+label var start_time "Date and time at which the interview started"
+
+*End time
+g end_time_temp = ""
+replace end_time_temp = subinstr(today_end,"T"," ",.)
+replace end_time_temp = subinstr(end_time_temp,"-05:00","",.)
+gen double end_time = clock(end_time_temp, "YMDhms")
+format end_time %tc
+label var end_time "Date and time at which the interview ended"
+drop start_time_temp end_time_temp
+
+*Computing duration only only for successful interviews, and if the interview was conducted without breaks
+g duration_itw_min = minutes(end_time - start_time) if int_break == 1
+label var duration_itw_min "Duration of interview (minutes)" 
+
+*Identify observations with incorrect duration
+*br if duration_itw_min < 30
+*br
+
+*** Saving dataset with manual corrections
+save "${gsdData}/0-RawTemp/hh_manual_cleaning_nomads.dta", replace
