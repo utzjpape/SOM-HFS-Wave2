@@ -33,6 +33,38 @@ la val drought_SPI ldrought_SPI
 la var drought_SPI "Drought affected (moderately/severely/extremely drought affected per SPI)"
 destring block, replace
 save "${gsdData}/1-CleanTemp/Wave1_SPI.dta", replace
+
+* Wave 2 HHs
+shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\SPI\spi_combined_HHs_Wave2.shp", data("${gsdTemp}/spi_combined_HHs_Wave2.dta") coor("${gsdTemp}/spi_combined_HHs_Wave2_coordinates.dta") replace
+use "${gsdTemp}/spi_combined_HHs_Wave2.dta", clear
+replace GRID_CODE = GRID_CODE/3
+drop if GRID_CODE==0
+collapse (mean) SPI=GRID_CODE, by(strata ea_reg ea interview_ type)
+ren interview interview__id
+su SPI, d
+gen SPI_cat = -3 if inrange(SPI, `r(min)', -2)
+replace SPI_cat = -2 if SPI>-2 & SPI<=-1.5
+replace SPI_cat = -1 if SPI>-1.5 & SPI<=-1
+replace SPI_cat = 0 if SPI>-1 & SPI<1
+replace SPI_cat = 1 if SPI>=1 & SPI<1.5
+replace SPI_cat = 2 if SPI>=1.5 & SPI<2
+replace SPI_cat = 3 if SPI>=2
+la def lSPI_cat -3 "Extremely dry (SPI<=-2)" -2 "Severely dry (SPI -1.5 to -1.99)" -1 "Moderately dry (SPI -1.0 to -1.49)" 0 "Near normal (SPI -.99 to +.99)" 1 "Moderately wet (SPI 1.0 to 1.49)" 2 "Very wet (SPI 1.5 to 1.99)" 3 "Extremely wet (SPI>=2)", replace
+la val SPI_cat lSPI_cat
+la var SPI_cat "SPI Category"
+la var SPI "Standard Precipitation Index (SPI)"
+tabstat SPI, by(SPI_cat) stats(mean min max N) 
+tab ea_reg SPI_cat
+gen drought_SPI = SPI_cat<0
+la def ldrought_SPI 0 "Not affected" 1 "Drought affected", replace
+la val drought_SPI ldrought_SPI
+la var drought_SPI "Drought affected (moderately/severely/extremely drought affected per SPI)"
+save "${gsdData}/1-CleanTemp/Wave2_SPI.dta", replace
+merge 1:1 interview__id using "${gsdData}/0-RawTemp/Wave2_hh_coordinates.dta", assert(match) keepusing(lat* long*)
+ren drought_SPI drought_spi
+gen drought_SPI=drought_spi
+gen ndrought_SPI = drought_spi==0
+export delim ea_reg strata type lat_y long_x drought_SPI ndrought_SPI using "${gsdData}/0-RawTemp/Wave2_hhs_SPI.csv", replace
 * All SOM
 shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\SPI\spi_combined_SOM0.shp", data("${gsdTemp}/spi_combined_SOM0.dta") coor("${gsdTemp}/spi_combined_SOM0_coordinates.dta") replace
 use "${gsdTemp}/spi_combined_SOM0.dta", clear
@@ -53,8 +85,18 @@ tabstat SPI, by(SPI_cat) stats(mean min max N)
 la var SPI_cat "SPI Category"
 la var SPI "Standard Precipitation Index (SPI)"
 drop _ID
-
 save "${gsdData}/1-CleanTemp/SPI_SOM0.dta", replace
+* save in slightly different form for mapping
+use "${gsdTemp}/spi_combined_SOM0.dta", clear
+gen SPI = GRID_CODE/3
+gen SPI_cat = -3 if inrange(SPI, `r(min)', -2)
+replace SPI_cat = -2 if SPI>-2 & SPI<=-1.5
+replace SPI_cat = -1 if SPI>-1.5 & SPI<=-1
+replace SPI_cat = 0 if SPI>-1 & SPI<1
+replace SPI_cat = 1 if SPI>=1 & SPI<1.5
+replace SPI_cat = 2 if SPI>=1.5 & SPI<2
+replace SPI_cat = 3 if SPI>=2
+export delim POINTID SPI SPI_cat using "${gsdData}/1-CleanTemp/SPI_drought_map.csv", replace
 
 
 * NDVI data around Wave 1 HHs
@@ -139,4 +181,9 @@ foreach v in 30 90 rs {
 	la var SVI`v'_cat "SVI`v' category" 
 	la val SVI`v'_cat lSVI
 }
-save 
+
+clear
+
+* IPC Phase data 
+import excel using "${gsdShared}\0-Auxiliary\IPC\IPC_Population.xlsx", clear firstrow
+save "${gsdData}/1-CleanTemp/IPC_Population.dta", replace
