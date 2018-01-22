@@ -7,6 +7,8 @@
 *                         
 *-------------------------------------------------------------------
 
+***** PART 1: URBAN/RURAL/IDPs
+
 ***Importing questionnaire
 use "${gsdData}/0-RawTemp/hh_manual_cleaning.dta", clear
 
@@ -354,3 +356,193 @@ gen successful_valid=(successful==1 & itw_valid==1)
 label var successful_valid "Whether the interview is successful and valid"
 
 save "${gsdData}/0-RawTemp/hh_valid_keys.dta", replace
+
+
+***** PART 2: NOMADS
+
+***Importing questionnaire
+use "${gsdData}/0-RawTemp/hh_manual_cleaning_nomads.dta", clear
+
+***Creating date variables
+*Date in stata format
+g year = substr(today,1,4)
+g month = substr(today,6,2)
+g day = substr(today,9,2)
+destring year month day, replace
+g date_stata = mdy(month,day,year)
+format date_stata %tdDD/NN/YY
+drop year month day
+label var date_stata "Day of data collection (stata format)"
+
+*Date in string format
+g date = substr(today,1,10)
+label var date "Day of data collection (string format)"
+
+
+/*-------------------------------------*/ 
+/*      A - VALIDITY CRITERIA          */
+/*-------------------------------------*/
+
+/* Validity criteria
+
+Criteria for an interview to be valid:
+-The duration of the interview exceeds a certain threshold (threshold to be determined during the pilot) 
+-The interview has GPS coordinates and the GPS coordinates fall within a square of 50m around the waterpoint
+-If the interview is from a replaced household:
+		- at least one record for the original household must exist
+		- the record for the original household must be valid, including the reason for no interview (except for minimum duration)
+*/
+
+*Generating dummy variable for validity of interviews 
+gen itw_valid = 1
+label var itw_valid "Whether the interview is valid or not"
+
+*Generating variable for invalidity reason
+gen itw_invalid_reason =.
+label var itw_invalid_reason "Reason for invalid interview"
+label define itw_invalid_reason 1 "Duration does not exceed threshold" ///
+							    2 "No GPS coordinates" ///
+							    3 "GPS coordinates do not fall within a square of 50m around the waterpoint" ///
+							    4 "No record for the original household while it is a replacement household" ///
+							    5 "Record for the original household is not valid while it is a replacement household"
+label values itw_invalid_reason itw_invalid_reason 
+
+/*-------------------------------------*/ 
+/*           1 - DURATION              */
+/*-------------------------------------*/
+
+*Duration variable was created in 0-1-manual_cleaning.do
+replace itw_valid = 0 if duration_itw_min < 30 
+replace itw_invalid_reason = 1 if duration_itw_min < 30 
+
+/*-------------------------------------*/ 
+/*        2 -  GPS COORDINATES         */
+/*-------------------------------------*/
+
+/*Two GPS coordinates variables in the dataset:
+	- When the enumerator identifies the waterpoint
+	- At the end of the interview, if no GPS coordinates were recorded at the beginning of the interview
+*/
+
+**Renaming water point variable
+g double id_wp = water_point
+label var id_wp "Waterpoint where the interview was conducted"
+
+**Creating a variable for GPS coordinates at the water point level (used when checking that the interview was conducted within a 50m buffer around the water point)
+g double latitude = .
+g double longitude = .
+g accuracy = .
+label var latitude "Latitude at the waterpoint"
+label var longitude "Longitude at the waterpoint"
+label var accuracy "Accuracy of GPS coordinates at the waterpoint"
+*If GPS is working at the waterpoint 
+replace latitude = loc_wp__Latitude if missing(latitude) | latitude == -1000000000 | latitude == -999999999
+replace longitude = loc_wp__Longitude if missing(longitude) | longitude == -1000000000 | longitude == -999999999
+replace accuracy = loc_wp__Accuracy if missing(accuracy) | accuracy == -1000000000 | accuracy == -999999999
+*If GPS is working at the end of the interview but was not at the beginning
+replace latitude = loc_retry__Latitude if missing(latitude) | latitude == -1000000000 | latitude == -999999999
+replace longitude = loc_retry__Longitude if missing(longitude) | longitude == -1000000000 | longitude == -999999999
+replace accuracy = loc_retry__Accuracy if missing(accuracy) | accuracy == -1000000000 | accuracy == -999999999
+
+**Checking that the interview has GPS coordinates
+g gps_coord_y_n = (latitude != . & longitude != . & latitude != -1000000000 & longitude != -1000000000 & latitude != -999999999 & longitude != -999999999) 
+label var gps_coord_y_n "Whether the interview has GPS coordinates"
+replace itw_valid=0 if gps_coord_y_n == 0
+replace itw_invalid_reason=2 if gps_coord_y_n == 0
+save "${gsdTemp}/hh_valid_keys_temp1_nomads.dta", replace
+
+*Importing min and max coordinates of each water point
+import excel "${gsdDataRaw}/Inputs Waterpoints.xls", sheet("Master WPs") firstrow clear
+rename (water_point x_min x_max y_min y_max) (id_wp lon_min lon_max lat_min lat_max)
+drop if _n==1
+label var lat_min "Minimum latitude of the WP"
+label var lat_max "Maximum latitude of the WP"
+label var lon_min "Minimum longitude of the WP"
+label var lon_max "Maximum longitude of the WP"
+destring *, replace
+save "${gsdTemp}/WPs_min_max_coordinates.dta", replace
+
+use "${gsdTemp}/hh_valid_keys_temp1_nomads.dta", clear
+merge m:1 id_wp using "${gsdTemp}/WPs_min_max_coordinates.dta", keep(match master) nogenerate
+
+**Checking that the GPS coordinates fall around the waterpoint with a buffer of 50 meters
+gen not_within_WP=(longitude < lon_min - (accuracy/110000) | ///
+		longitude > lon_max + (accuracy/110000) | ///
+		latitude < lat_min - (accuracy/110000) | ///
+		latitude  > lat_max + (accuracy/110000)) 
+label var not_within_WP "GPS coordinates do not fall within a square of 50m around the waterpoint"
+
+replace itw_valid=0 if not_within_WP==1 & missing(latitude)==0 & missing(longitude)==0 & latitude != -1000000000 & longitude != -1000000000 & latitude != -999999999 & longitude != -999999999
+replace itw_invalid_reason =3 if not_within_WP==1 & missing(latitude)==0 & missing(longitude)==0 & latitude != -1000000000 & longitude != -1000000000 & latitude != -999999999 & longitude != -999999999
+
+save "${gsdTemp}/hh_valid_keys_temp2_nomads.dta", replace
+
+/*-------------------------------------*/ 
+/*        3 - VALID REPLACEMENT        */
+/*-------------------------------------*/
+
+***Generating variables for day of data collection, time slot and household number, for the household being interviewed
+
+*LISTING DAY
+g id_listing_day = listing_day
+label var id_listing_day "Day during which the household was selected"
+
+*LISTING ROUND
+g id_listing_round = listing_round
+label var id_listing_round "Listing round during which the household was selected"
+
+*FINAL HOUSEHOLD
+gen id_household = hhid_nomad
+label var id_household "Household number"
+
+*Generating variables for day of data collection, time slot and household number of the original household in case of replacement (in case of no replacement, original household = household)
+
+*ORIGINAL LISTING DAY
+gen listing_day_original = id_listing_day if replacement_hh==0
+replace listing_day_original = original_listing_day if replacement_hh==1
+label var listing_day_original "Day during which the original household was selected"
+
+*ORIGINAL LISTING ROUND
+gen listing_round_original = id_listing_round if replacement_hh==0
+replace listing_round_original = original_listing_round if replacement_hh==1
+label var listing_round_original "Listing round during which the original household was selected"
+
+*ORIGINAL HOUSEHOLD
+g hh_number_original = id_household if replacement_hh==0
+replace hh_number_original = original_hhid_nomad if replacement_hh==1
+label var hh_number_original "Original household number"
+
+*Sorting interviews to have all visits at the replaced household and then all visits at the replacement household after one another
+sort ea_reg id_wp listing_day_original listing_round_original hh_number_original int_no start_time
+
+**CHECKING WHETHER A RECORD FOR THE ORIGINAL HOUSEHOLD EXISTS IN CASE OF REPLACEMENT**
+
+gen replaced_visit_exists=1 if replacement_hh==1
+label var replaced_visit_exists "If replacement, whether a record for the original household exists"
+
+*Not valid if there is no record for the original household while it is a visit to a replacement household
+replace replaced_visit_exists=0 if replacement_hh==1 & (id_wp!=id_wp[_n - 1] | listing_day_original!=listing_day_original[_n - 1] | listing_round_original!=listing_round_original[_n - 1] | hh_number_original!=hh_number_original[_n - 1] | int_no!=int_no[_n-1])
+replace itw_valid=0 if replacement_hh==1 & replaced_visit_exists==0
+replace itw_invalid_reason=4 if replacement_hh==1 & replaced_visit_exists==0
+
+**CHECKING WHETHER THE RECORD FOR THE ORIGINAL HOUSEHOLD IS VALID IN CASE OF REPLACEMENT**
+
+gen replaced_visit_valid=1 if replacement_hh==1
+label var replaced_visit_valid "If replacement, whether the last record for the original household is valid"
+
+*For the visits to replacement households, we check that the visits to the original household are valid
+replace replaced_visit_valid=0 if replacement_hh==1 & id_wp==id_wp[_n - 1] & listing_day_original==listing_day_original[_n - 1] & listing_round_original==listing_round_original[_n - 1] & hh_number_original==hh_number_original[_n - 1] & int_no==int_no[_n-1] & (id_listing_day!=id_listing_day[_n-1] | id_listing_round!=id_listing_round[_n-1] | id_household!=id_household[_n-1]) & itw_valid[_n-1]==0
+replace itw_valid=0 if replacement_hh==1 & replaced_visit_valid==0
+replace itw_invalid_reason=5 if replacement_hh==1 & replaced_visit_valid==0
+
+/*-------------------------------------*/ 
+/*    B - SUCCESSFULNESS CRITERIA      */
+/*-------------------------------------*/
+
+*An interview is considered successful if an eligible adult was available and consented to be interviewed. 
+gen successful=(athome==1 & adult==1 & maycontinue==1)
+label var successful "Whether the interview is successful"
+gen successful_valid=(successful==1 & itw_valid==1)
+label var successful_valid "Whether the interview is successful and valid"
+
+save "${gsdData}/0-RawTemp/hh_valid_keys_nomads.dta", replace
