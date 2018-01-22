@@ -4,12 +4,10 @@ set more off
 set seed 23081985 
 set sortseed 11041985
 
-
 ********************************************************************
 *Define the number of imputations
 ********************************************************************
 local n = 100
-
 
 ********************************************************************
 *Prepare household dataset
@@ -36,10 +34,11 @@ recode drink_water (1/3=1 "Piped") (4=2 "Tap") (5/9=3 "Tap or well") (10/max=4 "
 recode floor_material (1/2=1 "Solid") (3=2 "Mud") (4/max=3 "Wood/other") (missing=3), gen(hh_floor) label(lhh_floor)
 recode tenure (1=1 "Rent") (2=2 "Own") (3/5=3 "Provided") (6/max=4 "Occupation") (missing=4), gen(hh_ownership) label(lhh_ownership)
 recode hunger (1=0 "Never") (2=1 "Rarely") (3/max=2 "Often") (missing=2), gen(hh_hunger) label(lhh_hunger)
+recode type (4=1)
 recode remit12m (missing=0)
 *Prepare smaller dataset
-keep team strata ea block hh hhsize weight opt_mod pchild psenior hhempl hhsex hhedu hh_type hh_drinkwater hh_floor hh_ownership hh_hunger remit12m cons_f? cons_nf? cons_d astrata type
-ren type hh_ptype
+rename (mod_opt type) (opt_mod hh_ptype)
+keep region strata ea block hh hhsize weight opt_mod pchild psenior hhempl hhsex hhedu hh_type hh_drinkwater hh_floor hh_ownership hh_hunger remit12m cons_f? cons_nf? cons_d hh_ptype
 *Prepare consumption variables
 *Make sure missing modules have missing consumption
 forvalues i = 1/4 {
@@ -74,7 +73,7 @@ xtile pmi_cons_d = mi_cons_d [pweight=weight], nquantiles(4)
 ********************************************************************
 *Build the model and run the imputation
 ********************************************************************
-local model = "hhsize pchild psenior i.hhsex i.hhempl hhedu i.hh_type i.hh_drinkwater i.hh_floor i.hh_ownership i.hh_hunger i.team i.hh_ptype i.remit12m"
+local model = "hhsize pchild psenior i.hhsex i.hhempl hhedu i.hh_type i.hh_drinkwater i.hh_floor i.hh_ownership i.hh_hunger i.region i.hh_ptype i.remit12m"
 local model = "i.pmi_cons_f0 i.pmi_cons_nf0 i.pmi_cons_d `model'"
 *Create core consumption for comparison
 save "${gsdData}/1-CleanTemp/mi-pre.dta", replace
@@ -94,7 +93,7 @@ save "${gsdTemp}/mi.dta", replace
 ********************************************************************
 use "${gsdTemp}/mi.dta", clear
 *prepare variables to merge
-merge m:1 astrata using "${gsdData}/1-CleanTemp/food-deflator.dta", nogen assert(match) keep(match)
+merge m:1 strata using "${gsdData}/1-CleanTemp/food-deflator.dta", nogen assert(match) keep(match)
 gen hhweight = weight * hhsize
 *iterate over modules
 foreach cat in f nf {
@@ -116,31 +115,27 @@ gen tc_core = (cons_f0 + cons_nf0)/deflator + cons_d
 egen pre_tc_summ =rowtotal(cons_f0 cons_f1 cons_f2 cons_f3 cons_f4 cons_nf0 cons_nf1 cons_nf2 cons_nf3 cons_nf4) 
 gen tc_summ=pre_tc_summ / deflator + cons_d
 mi passive: gen tc_imp = (mi_cons_f + mi_cons_nf) / deflator + mi_cons_d
-* Pull in remittances value per capita per diem
-merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh.dta", keepusing(remit_pcpd) nogen assert(match using) keep(match)
-mi passive: gen tc_imp_nr = ((mi_cons_f + mi_cons_nf) / deflator + mi_cons_d )- remit_pcpd
-mi passive: gen tc_imp_nr50 = ((mi_cons_f + mi_cons_nf) / deflator + mi_cons_d )- remit_pcpd*0.5
-label var tc_core "Total real Feb 2016 consumption based on core pc pd curr USD"
-label var tc_summ "Total real Feb 2016 consumption based on summing pc pd curr USD"
-label var tc_imp "Total real Feb 2016 consumption based on imputation pc pd curr USD"
-label var tc_imp_nr "Total real Feb 2016 consumption based on imputation pc pd curr USD minus value of remittances"
-label var tc_imp_nr50 "Total real Feb 2016 consumption based on imputation pc pd curr USD minus 50% of the value of remittances"
+label var tc_core "Total real Dec 2017 consumption based on core pc pd curr USD"
+label var tc_summ "Total real Dec 2017 consumption based on summing pc pd curr USD"
+label var tc_imp "Total real Dec 2017 consumption based on imputation pc pd curr USD"
 
 
 ********************************************************************
 *Include the poverty line and obtain the poverty status
 ********************************************************************
 *Add exchange rate
-gen zone = 3
-merge m:1 zone using "${gsdData}/1-CleanInput/HFS Exchange Rate Survey.dta", nogen keepusing(global_er) assert(match using) keep(match)
-merge m:1 zone using "${gsdData}/1-CleanTemp/inflation.dta", nogen keepusing(gg) assert(match using) keep(match)
-drop zone
+gen team=1 if inlist(strata,6,17,18,19,20,21,44,45,46,47,48,49,50,51)
+replace team=2 if !inlist(strata,6,17,18,19,20,21,44,45,46,47,48,49,50,51)
+merge m:1 team using "${gsdData}/1-CleanInput/HFS Exchange Rate Survey.dta", nogen keepusing(average_er global_er)
+replace team=1 if team==2
+merge m:1 team using "${gsdData}/1-CleanTemp/inflation.dta", nogen keepusing(gg) assert(match using) keep(match)
+drop team
 *Poverty line 1.90 USD in USD PPP (2011) using private consumption PPP conversion factor
 *in 2011: 1 PPP USD was worth 10,731 SSh PPP
-*Inflation from 2011 to Feb 2016: 1.684297
+*Inflation from 2011 to Dec 2017: 1.684297
 *10,731 * 1.684297 = 18,074.19 SSh (2016) could buy 1 PPP 2011 USD
-*1.90 PPP 2011 USD = 18,074.19 * 1.90 = 34,340.96 SSh (2016)
-*In current (2016) USD: 34,340.96 / global_er
+*1.90 PPP 2011 USD = 18,074.19 * 1.90 = 34,340.96 SSh (2017)
+*In current (2017) USD: 34,340.96 / global_er
 gen plinePPP = 10731 * gg * 1.9 / global_er
 gen plinePPP125 = 10731 * gg * 1.25 / global_er
 gen plinePPP_vulnerable_10 =plinePPP*1.1 
@@ -151,8 +146,6 @@ label var plinePPP_vulnerable_10 "Poverty Line corresponding to shock to consump
 label var plinePPP_vulnerable_20 "Poverty Line corresponding to shock to consumption equal to (1-1/1.2)"
 *Calculate poverty
 mi passive: gen poorPPP = tc_imp < plinePPP if !missing(tc_imp)
-mi passive: gen poorPPP_nr = tc_imp_nr < plinePPP if !missing(tc_imp)
-mi passive: gen poorPPP_nr50 = tc_imp_nr50 < plinePPP if !missing(tc_imp)
 mi passive: gen poorPPP125 = tc_imp < plinePPP125 if !missing(tc_imp)
 mi passive: gen poorPPP_vulnerable_10 = tc_imp < plinePPP_vulnerable_10 if !missing(tc_imp)
 mi passive: gen poorPPP_vulnerable_20 = tc_imp < plinePPP_vulnerable_20 if !missing(tc_imp)
@@ -166,19 +159,13 @@ label values poorPPP_vulnerable_10 lpoorPPPlpoorPPP_vulnerable_10
 label var poorPPP_vulnerable_20 "Below 2011 PPP poverty line - Vulnerable, consumption shock 20"
 label define lpoorPPP_vulnerable_20 0 "Non-poor" 1 "Poor"
 label values poorPPP_vulnerable_20 lpoorPPP_vulnerable_20
-label var poorPPP_nr "Below 2011 PPP poverty line - total consumption minus remittances value"
-label values poorPPP_nr lpoorPPP
-label var poorPPP_nr "Below 2011 PPP poverty line - total consumption minus 50% of remittances value"
-label values poorPPP_nr lpoorPPP
 drop global_er gg
 *Estimate poverty figures 
-gen hhweight = weight * hhsize
 mi svyset ea [pweight=hhweight], strata(strata)
 mi estimate: mean poorPPP [pweight=hhweight]
 mi estimate: mean poorPPP125 [pweight=hhweight]
 mi estimate: mean poorPPP_vulnerable_10 [pweight=hhweight]
 mi estimate: mean poorPPP_vulnerable_20 [pweight=hhweight]
-mi estimate: mean poorPPP_nr [pweight=hhweight]
 save "${gsdData}/1-CleanTemp/mi-analysis.dta", replace
 
 
@@ -201,19 +188,17 @@ save "${gsdTemp}/mi-extract.dta", replace
 *Analysis on extract dataset
 use "${gsdTemp}/mi-extract.dta", clear
 fastgini tc_imp [pweight=hhweight]
-collapse (mean) tc_* mi_cons_f? mi_cons_nf? mi_cons_d (mean) poorPPP_prob = poorPPP poorPPP125_prob = poorPPP125 poorPPP_vulnerable_10_prob = poorPPP_vulnerable_10 poorPPP_vulnerable_20_prob = poorPPP_vulnerable_20 poorPPP_nr_prob = poorPPP_nr poorPPP_nr50_prob = poorPPP_nr50, by(team strata ea block hh astrata hhsize weight weight_* hhweight opt_mod plinePPP plinePPP125)
+collapse (mean) tc_* mi_cons_f? mi_cons_nf? mi_cons_d (mean) poorPPP_prob = poorPPP poorPPP125_prob = poorPPP125 poorPPP_vulnerable_10_prob = poorPPP_vulnerable_10 poorPPP_vulnerable_20_prob = poorPPP_vulnerable_20, by(strata ea block hh hhsize weight hhweight opt_mod plinePPP plinePPP125)
 svyset ea [pweight=hhweight], strata(strata)
 mean poorPPP_prob [pweight=hhweight]
 mean poorPPP_vulnerable_10_prob [pweight=hhweight]
 mean poorPPP_vulnerable_20_prob [pweight=hhweight]
 gen poorPPP = poorPPP_prob > .55
 mean poorPPP [pweight=hhweight]
-label var tc_core "Total real Feb 2016 consumption based on core pc pd curr USD"
-label var tc_summ "Total real Feb 2016 consumption based on summing pc pd curr USD"
-label var tc_imp "Total real Feb 2016 consumption based on imputation pc pd curr USD"
+label var tc_core "Total real Dec 2017 consumption based on core pc pd curr USD"
+label var tc_summ "Total real Dec 2017 consumption based on summing pc pd curr USD"
+label var tc_imp "Total real Dec 2017 consumption based on imputation pc pd curr USD"
 label var poorPPP_prob "Probability being below 2011 PPP poverty line"
-label var poorPPP_nr_prob "Probability being below 2011 PPP poverty line - total consumption minus remittances value"
-label var poorPPP_nr50_prob "Probability being below 2011 PPP poverty line - total consumption minus 50% of remittances value"
 label var poorPPP125_prob "Probability being below 2011 PPP extreme poverty line"
 label var poorPPP "Being below 2011 PPP poverty line"
 label var poorPPP_vulnerable_10_prob "Probability of being below 2011 PPP poverty line increased by 10%, equivalent to 9.1% shock to consumption"
@@ -223,6 +208,5 @@ forvalues i = 0/4 {
 	label var mi_cons_nf`i' "Non-Food module `i' consumption pc pd curr USD"
 }
 label var mi_cons_d "Durable consumption pc pd curr USD"
-label var astrata "Analytical strata"
 save "${gsdData}/1-CleanTemp/hhq-poverty.dta", replace
 
