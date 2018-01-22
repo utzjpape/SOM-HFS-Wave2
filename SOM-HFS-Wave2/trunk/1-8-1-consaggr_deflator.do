@@ -126,7 +126,7 @@ collapse (sum) ?share, by(coicop)
 *Add prices
 merge 1:m coicop using "${gsdData}/1-CleanInput/Prices_FSNAU.dta", nogen assert(master match) 
 *Average over regions
-collapse (mean) av_2011 av_2012 dec17 jan18 (max) ?share, by(coicop)
+collapse (mean) av_2011 av_2012 dec17 (max) ?share, by(coicop)
 
 
 ********************************************************************
@@ -140,13 +140,12 @@ foreach k of local lis {
 	gen d`k'2011 = av_2011 * `k'share
 	gen d`k'2012 = av_2012 * `k'share
 	gen d`k'2017 = dec17 * `k'share
-	gen d`k'2018 = jan18 * `k'share
 }
-gen k = 1
-collapse (sum) d?201?, by(k)
+gen team= 1
+collapse (sum) d?201?, by(team)
 *get inflation
 gen gg = dg2017/dg2011
 gen gf = df2017/df2011
-label var gg "Food and non-food CPI inflation between 2011 and Feb 2016"
-label var gf "Food CPI inflation between 2011 and Feb 2016"
+label var gg "Food and non-food CPI inflation between 2011 and Dec 2017"
+label var gf "Food CPI inflation between 2011 and Dec 2017"
 save "${gsdData}/1-CleanTemp/inflation.dta", replace
