@@ -207,7 +207,8 @@ label var no_adults "No of Adults in Households"
 label var no_old_age "No of Elderly in Households"
 drop nadults EAs_toinclude Nb_itwstobeconducted Nb_blocks_EA Dummy_oneblock
 order region strata ea block hh enum beh_treat_opt type type_idp_host ind_profile mod_opt weight poorPPP_prob poorPPP plinePPP poorPPP_vulnerable_10_prob poorPPP_vulnerable_20_prob quintiles_tc tc_imp tc_imp_f tc_imp_nf tc_imp_d pgi pseverity hhsize no_children no_adults no_old_age hhh_gender hhh_age pgender hhh_edu penrol_p penrol_s penrol pworking_age pliteracy lfp_7d_hh emp_7d_hh 
-
+ren region reg_pess 
+la var reg_pess "Region (PESS)"
 
 *********************************************************
 *Declare survey & save 
