@@ -84,10 +84,17 @@ replace edu_status = 0 if (hhm_age < 6)
 replace edu_status = 1 if (hhm_edu_current == 1) & (hhm_age >= 6)
 *Previously enrolled, school age or older
 replace edu_status = 2 if (hhm_edu_ever == 1) & (hhm_age >= 6) & (hhm_edu_current == 0)
-*Never enrolled, but of school age or older 
+*Never enrolled, but of school age or older
 replace edu_status = 3 if (hhm_edu_ever == 0) & (hhm_age >= 6) & (hhm_edu_current == 0)
 label define ledu_status  0 "Not of education age" 1 "Currently enrolled" 2 "Previously enrolled" 3 "Never enrolled", replace
 label values edu_status ledu_status
+* Dummies
+gen enrolled=edu_status==1 if inrange(hhm_age, 6, 17)
+gen enrolled25 = edu_status==1 if inrange(hhm_age, 6, 25)
+la val enrolled lyesno
+la val enrolled25 lyesno
+label var enrolled "Currently enrolled (age 6-17)"
+label var enrolled25 "Currently enrolled (age 6-25)"
 label variable edu_status "Education status"
 *Education level groups
 recode hhm_edu_level (1/7 = 1 "Incomplete Primary") (8/11 = 2 "Complete Primary/Incomplete Secondary")  (12=4 "Complete Secondary") (13/15 17= 5 "University") (16 1000 = 6 "Other"), gen(edu_level_broad)
