@@ -32,7 +32,8 @@ label var type "Urban/Rural/IDP or Nomad"
 *Generate a separate indicators for host and IDPs
 gen type_idp_host=1 if type==3
 replace type_idp_host=2 if type_pop=="Host Only"
-label define type_idp 1 "IDP" 2 "Host Community"
+replace type_idp_host=.z if type_idp_host==.
+label define type_idp 1 "IDP" 2 "Host Community" .z "Not applicable"
 label values type_idp_host type_idp
 label var type_idp_host "IDP or Host Community"
 drop type_pop

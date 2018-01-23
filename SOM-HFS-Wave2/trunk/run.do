@@ -7,8 +7,11 @@ if "${gsdData}"=="" {
 	error 1
 }
 
-*API Download of data (only from Gonzalo's or Philip's computer)
-if (inlist("${suser}","wb484006","WB484006","WB499706","wb499706")) {
+*Decide which parts of the pipeline should be run
+local runimport = 0
+
+*API Download of data for Urban, Rural and IDP households
+if (`runimport'==1) {
 	run "${gsdDo}/api_download.do"
 	api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(1) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}") curl("${gsdBin}") 
 	api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(2) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/v2") curl("${gsdBin}") 
@@ -18,6 +21,13 @@ if (inlist("${suser}","wb484006","WB484006","WB499706","wb499706")) {
 	api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(10) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/v10") curl("${gsdBin}") 
 	api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(11) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/v11") curl("${gsdBin}") 
 }
+
+*API Download of data for Nomads (only from Gonzalo's or Philip's computer)
+if (inlist("${suser}","wb484006","WB484006","WB499706","wb499706")) {
+	run "${gsdDo}/api_download.do"
+	api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(12) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/v12") curl("${gsdBin}") 
+}
+
 
 *Manual cleaning of submissions
 run "${gsdDo}/0-1-manual_cleaning.do"
@@ -39,6 +49,8 @@ run "${gsdDo}/0-6-completeness_submissions.do"
 run "${gsdDo}/0-7-clean.do"
 
 *Prepare the master sample 
+run "${gsdDo}/0-8-prepare_master_sample.do"
+/*
 capture confirm file "${gsdData}\0-RawTemp\master_sample.dta"
 scalar define check=_rc
 if check==0 {
@@ -47,6 +59,7 @@ if check==0 {
 else {
 	run "${gsdDo}/0-8-prepare_master_sample.do"
 }
+*/
 
 *Obtain the sampling weights
 run "${gsdDo}/0-9-estimate_sample_weights.do"

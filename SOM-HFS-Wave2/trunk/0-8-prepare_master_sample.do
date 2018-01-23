@@ -107,9 +107,15 @@ replace hhs_pess=115775 if strata_name=="Mogadishu"
 replace hhs_pess=27068 if strata_name=="Qardho"
 gen tot_hhs_psu=prob*hhs_pess
 drop hhs_pess
-bys strata_id: egen tot_hhs_strata=sum(tot_hhs_psu) 
+gen tot_hhs_strata=19640 if strata_id==1
+replace tot_hhs_strata=47577 if strata_id==3
+replace tot_hhs_strata=115775 if strata_id==4
+replace tot_hhs_strata=64895 if strata_id==5
+replace tot_hhs_strata=19683 if strata_id==6
+replace tot_hhs_strata=13400 if strata_id==7
+bys strata_id: egen tot_hhs_sel_camp_strata=sum(tot_hhs_psu) 
 drop no_blocks_ea
-order strata_id strata_name psu_id tot_hhs_strata tot_hhs_psu prob
+order strata_id strata_name psu_id tot_hhs_strata tot_hhs_sel_camp_strata tot_hhs_psu prob
 save "${gsdTemp}\master_idps.dta", replace
 
 
