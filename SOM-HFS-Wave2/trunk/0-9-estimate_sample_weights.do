@@ -59,23 +59,13 @@ restore
 merge 1:1 psu_id using  "${gsdTemp}\master_sample_no_host.dta", nogen keep(master match) keepusing(tot_hhs_psu)
 order psu_id tot_hhs_psu
 rename (psu_id tot_hhs_psu) (ea_id size_ea)
-*Obtain the number of households from 1st replacement
+*Obtain the number of households from replacement
 rename o_ea psu_id
 merge m:1 psu_id using  "${gsdTemp}\master_sample_no_host.dta", nogen keep(master match) keepusing(tot_hhs_psu)
 order tot_hhs_psu, after(psu_id)
 rename (psu_id tot_hhs_psu) (ea_id_1 size_ea_1)
-*Obtain the number of households from 2nd replacement
-rename o_ea_2 psu_id
-merge m:1 psu_id using  "${gsdTemp}\master_sample_no_host.dta", nogen keep(master match) keepusing(tot_hhs_psu)
-order tot_hhs_psu, after(psu_id)
-rename (psu_id tot_hhs_psu) (ea_id_2 size_ea_2)
-*Obtain the number of households from 3rd replacement
-rename o_ea_3 psu_id
-merge m:1 psu_id using  "${gsdTemp}\master_sample_no_host.dta", nogen keep(master match) keepusing(tot_hhs_psu)
-order tot_hhs_psu, after(psu_id)
-rename (psu_id tot_hhs_psu) (ea_id_3 size_ea_3)
 *Obtain the final original size of the EA
-gen size_o_ea=size_ea if (ea_id_1==. & ea_id_2==. & ea_id_3==.) 
+gen size_o_ea=size_ea if ea_id_1==. 
 replace size_o_ea=size_ea_1 if ea_id_1<. & size_o_ea>=.
 keep ea_id size_o_ea
 rename ea_id psu_id					
@@ -143,21 +133,36 @@ rename (strata ea) (strata_id psu_id)
 merge m:1 strata_id using "${gsdTemp}\sweights_1.1_urban_rural.dta", nogen keep(master match)
 merge m:1 psu_id using "${gsdTemp}\sweights_1.2_urban_rural.dta", nogen keep(master match)
 merge m:1 strata_id using "${gsdTemp}\sweights_1.3.dta", nogen keep(master match)
-*Manual correction for EA 165725 selected 3 times for replacement as original size needs to be distributed 
+*Manual correction for EA 165725 selected multiple times for replacement as original size needs to be distributed 
 preserve 
 keep if psu_id==165725 
 set seed 23061980 
 set sortseed 11021955
-gen rand=uniform() if psu_id==165725 
+gen rand_165725=uniform() if psu_id==165725 
 sort rand
-gen size_o_ea_correct=196.2227 if _n<=12
-replace size_o_ea_correct=499.27823 if _n>12
-replace size_o_ea_correct=1623.1033 if _n>24
+*Original size from EA 163944, 164129 and 164481
+gen size_o_ea_correct=29.59604 if _n<=12
+replace size_o_ea_correct=244.8108 if _n>12
+replace size_o_ea_correct=75.30555 if _n>24
 keep interview__id size_o_ea_correct
+save "${gsdTemp}\sweights_correction_1.dta", replace
+restore
+*Manual correction for EA 114743 selected multiple times for replacement as original size needs to be distributed 
+preserve 
+keep if psu_id==114743 
+set seed 23061980 
+set sortseed 11021955
+gen rand_114743=uniform() if psu_id==114743
+sort rand
+*Original size from EA 113690 and 117488
+gen size_o_ea_correct=1866.371 if _n<=12
+replace size_o_ea_correct=1918.516 if _n>12
+keep interview__id size_o_ea_correct
+append using "${gsdTemp}\sweights_correction_1.dta"
 save "${gsdTemp}\sweights_correction_p1.dta", replace
 restore 
 merge 1:1 interview__id using "${gsdTemp}\sweights_correction_p1.dta", nogen keep(match master)
-replace size_o_ea=size_o_ea_correct if psu_id==165725 
+replace size_o_ea=size_o_ea_correct if psu_id==165725 |  psu_id==114743 
 drop size_o_ea_correct
 gen p1=((n_sel_ea_strata* size_o_ea)/ tot_hhs_strata) 
 
@@ -223,7 +228,7 @@ save "${gsdTemp}\sweights_1.1_host.dta", replace
 *1.2 Number of households estimated in the sample frame for the original EA i (HOi)
 *List of EAs from data collection 
 use "${gsdData}\0-RawOutput\hh_clean.dta", clear
-keep if type_idp_host==2
+*keep if type_idp_host==2
 keep ea
 rename ea id_ea
 duplicates drop 
@@ -239,23 +244,13 @@ restore
 merge 1:1 psu_id using  "${gsdTemp}\master_sample_no_host.dta", nogen keep(master match) keepusing(tot_hhs_psu)
 order psu_id tot_hhs_psu
 rename (psu_id tot_hhs_psu) (ea_id size_ea)
-*Obtain the number of households from 1st replacement
+*Obtain the number of households from replacement
 rename o_ea_h psu_id
 merge m:1 psu_id using  "${gsdTemp}\master_sample_no_host.dta", nogen keep(master match) keepusing(tot_hhs_psu)
 order tot_hhs_psu, after(psu_id)
 rename (psu_id tot_hhs_psu) (ea_id_1 size_ea_1)
-*Obtain the number of households from 2nd replacement
-rename o_ea_2_h psu_id
-merge m:1 psu_id using  "${gsdTemp}\master_sample_no_host.dta", nogen keep(master match) keepusing(tot_hhs_psu)
-order tot_hhs_psu, after(psu_id)
-rename (psu_id tot_hhs_psu) (ea_id_2 size_ea_2)
-*Obtain the number of households from 3rd replacement
-rename o_ea_3_h psu_id
-merge m:1 psu_id using  "${gsdTemp}\master_sample_no_host.dta", nogen keep(master match) keepusing(tot_hhs_psu)
-order tot_hhs_psu, after(psu_id)
-rename (psu_id tot_hhs_psu) (ea_id_3 size_ea_3)
 *Obtain the final original size of the EA
-gen size_o_ea_b=size_ea if (ea_id_1==. & ea_id_2==. & ea_id_3==.) 
+gen size_o_ea_b=size_ea if ea_id_1==. 
 replace size_o_ea_b=size_ea_1 if ea_id_1<. & size_o_ea>=.
 keep ea_id size_o_ea_b
 rename ea_id psu_id					
@@ -430,18 +425,8 @@ rename o_ea psu_id
 merge m:1 psu_id using  "${gsdTemp}\master_sample_no_host.dta", nogen keep(master match) keepusing(tot_hhs_psu)
 order tot_hhs_psu, after(psu_id)
 rename (psu_id tot_hhs_psu) (ea_id_1 size_ea_1)
-*Obtain the number of households from 2nd replacement
-rename o_ea_2 psu_id
-merge m:1 psu_id using  "${gsdTemp}\master_sample_no_host.dta", nogen keep(master match) keepusing(tot_hhs_psu)
-order tot_hhs_psu, after(psu_id)
-rename (psu_id tot_hhs_psu) (ea_id_2 size_ea_2)
-*Obtain the number of households from 3rd replacement
-rename o_ea_3 psu_id
-merge m:1 psu_id using  "${gsdTemp}\master_sample_no_host.dta", nogen keep(master match) keepusing(tot_hhs_psu)
-order tot_hhs_psu, after(psu_id)
-rename (psu_id tot_hhs_psu) (ea_id_3 size_ea_3)
 *Obtain the final original size of the EA
-gen size_o_ea=size_ea if (ea_id_1==. & ea_id_2==. & ea_id_3==.) 
+gen size_o_ea=size_ea if ea_id_1==. 
 replace size_o_ea=size_ea_1 if ea_id_1<. & size_o_ea>=.
 keep ea_id size_o_ea
 rename ea_id psu_id					
