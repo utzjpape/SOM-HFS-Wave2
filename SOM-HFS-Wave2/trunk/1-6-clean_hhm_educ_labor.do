@@ -209,6 +209,8 @@ order team strata ea block hh hhmid enum
 
 preserve
 save "${gsdData}/1-CleanTemp/hhm.dta", replace
+ren region reg_pess
+la var reg_pess "Region (PESS)"
 save "${gsdData}/1-CleanOutput/hhm.dta", replace
 *Prepare household member dataset for imputation
 use "${gsdData}/1-CleanOutput/hhm.dta", clear

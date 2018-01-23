@@ -98,10 +98,18 @@ foreach x in "nfood" "shocks" "food" "livestock" "livestock_pre" "motor" "assets
 	save "${gsdData}/1-CleanInput/`x'.dta", replace
 }
 
+*********************************************************************
+* Save correspondence tables with GPS 
+**********************************************************************
+use "${gsdTemp}/hh_final.dta", clear
+export delim interview__id region strata ea block hh lat_y long_x using "${gsdData}/0-RawTemp/Wave2_hh_coordinates.csv", replace
+keep interview__id region strata ea block hh lat_y long_x
+save "${gsdData}/0-RawTemp/Wave2_hh_coordinates.dta", replace
+
 
 ********************************************************************
-*Drop identifying information from hh
+* Drop identifying information from hh
 ********************************************************************
 use "${gsdTemp}/hh_final.dta", clear
-drop interview__id
+drop interview__id lat_y long_x
 save "${gsdData}/1-CleanInput/hh.dta", replace
