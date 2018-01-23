@@ -709,6 +709,23 @@ foreach variable in `variables4' {
 }
 
 
+* generate cleaned GPS coordinates for HH
+gen double long_x = str_loc__Longitude
+replace long_x = loc_hhid_seg1ret1__Longitude if mi(long_x)
+replace long_x = loc_list__Longitude if mi(long_x)
+replace long_x = loc_barcode__Longitude if mi(long_x)
+replace long_x = loc_retry__Longitude if mi(long_x)
+replace long_x=. if long_x<-1000
+la var long_x "Longitude HH"
+
+gen double lat_y = str_loc__Latitude
+replace lat_y = loc_hhid_seg1ret1__Latitude if mi(lat_y)
+replace lat_y = loc_list__Latitude if mi(lat_y)
+replace lat_y = loc_barcode__Latitude if mi(lat_y)
+replace lat_y = loc_retry__Latitude if mi(lat_y)
+replace lat_y=. if lat_y<-1000
+la var lat_y "Latitude HH"
+
 ********************************************************************
 *Drop administrative info & specify questions
 ********************************************************************
