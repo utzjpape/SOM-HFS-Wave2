@@ -591,6 +591,7 @@ replace wp_valid=(wp_status==1 | wp_status==4 | wp_status==5)
 *Final cleaning
 drop _merge nb_valid_success_itws_wp nb_valid_success_treat1_wp nb_valid_success_treat2_wp nb_valid_success_treat3_wp nb_valid_success_treat4_wp
 order strata_id-sample_initial_wp, after(id_wp)
+gsort strata_id -sample_initial_wp rank_rep_wp id_wp
 
 *Labelling of WP replacement table
 label var id_wp "Waterpoint"
@@ -607,8 +608,12 @@ label var rep_wp "Number of times replacement WP was originally sampled"
 label var rank_rep_wp "Replacement rank of replacement WP"
 label var sample_initial_wp "WP was included in the original sample"
 label var sample_final_wp "WP is included in the final sample"
-label var o_wp "Original WP"
-label var r_seq "Number of replacements between original WP and the WP"
+label var o_wp "Original WP number 1"
+label var o_wp_2 "Original WP number 2"
+label var o_wp_3 "Original WP number 3"
+label var r_seq "Number of replacements between original WP number 1 and the WP"
+label var r_seq_2 "Number of replacements between original WP number 2 and the WP"
+label var r_seq_3 "Number of replacements between original WP number 3 and the WP"
 label var r_date "Date of replacement"
 label var r_wp "Replacement WP"
 label var r_reason "Reason for replacement"
@@ -659,4 +664,3 @@ label var nb_valid_success_treat3_wp "Number of valid and successful interviews 
 label var nb_valid_success_treat4_wp "Number of valid and successful interviews of Treat=4 per WP"
 
 save "${gsdData}/0-RawTemp/hh_valid_keys_and_WPs.dta", replace
-
