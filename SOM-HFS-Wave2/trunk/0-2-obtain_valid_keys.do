@@ -391,7 +391,7 @@ Criteria for an interview to be valid:
 -If the interview is from a replaced household:
 		- at least one record for the original household must exist
 		- the record for the original household must be valid, including the reason for no interview (except for minimum duration)
-*/
+-Livestock must be recorded for a nomadic household */
 
 *Generating dummy variable for validity of interviews 
 gen itw_valid = 1
@@ -404,7 +404,8 @@ label define itw_invalid_reason 1 "Duration does not exceed threshold" ///
 							    2 "No GPS coordinates" ///
 							    3 "GPS coordinates do not fall within a square of 50m around the waterpoint" ///
 							    4 "No record for the original household while it is a replacement household" ///
-							    5 "Record for the original household is not valid while it is a replacement household"
+							    5 "Record for the original household is not valid while it is a replacement household" ///
+								6 "No livestock recorded for nomadic household"
 label values itw_invalid_reason itw_invalid_reason 
 
 /*-------------------------------------*/ 
@@ -536,6 +537,14 @@ replace itw_valid=0 if replacement_hh==1 & replaced_visit_valid==0
 replace itw_invalid_reason=5 if replacement_hh==1 & replaced_visit_valid==0
 
 /*-------------------------------------*/ 
+/*        4 - NO LIVESTOCK  	       */
+/*-------------------------------------*/
+
+*Manually invalidating interviews with no livestock
+replace itw_valid = 0 if interview__id == "cc65811d91f64334816139dc29e7068f"
+replace itw_invalid_reason = 6 if interview__id == "cc65811d91f64334816139dc29e7068f"
+
+/*-------------------------------------*/ 
 /*    B - SUCCESSFULNESS CRITERIA      */
 /*-------------------------------------*/
 
@@ -546,3 +555,4 @@ gen successful_valid=(successful==1 & itw_valid==1)
 label var successful_valid "Whether the interview is successful and valid"
 
 save "${gsdData}/0-RawTemp/hh_valid_keys_nomads.dta", replace
+
