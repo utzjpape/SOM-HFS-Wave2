@@ -1121,7 +1121,7 @@ restore
 
 *A separate monitoring dashboard is constructed for nomads
 
-/*----------------------------------------------------------------------------*/
+*----------------------------------------------------------------------------*/
 /*     IMPORT QUESTIONNAIRE AND GENERATE USEFUL VARIABLES FOR DASHBOARD       */
 /*----------------------------------------------------------------------------*/
 
@@ -1143,10 +1143,6 @@ label var state "State as per the distribution of Teams"
 decode ea_reg, g(ea_reg_str)
 drop ea_reg
 rename ea_reg_str ea_reg
-
-**Enumerator name and ID
-decode enum_id, g(enum_name)
-label drop enum_id
 
 **Interviews meeting validity criteria for GPS coordinates
 g gps_ok = (gps_coord_y_n == 1 & not_within_WP == 0)
@@ -1321,6 +1317,8 @@ local files hh_roster_separated hhroster_age motor ra_assets ra_assets_prev rf_f
 	rnf_nonfood shocks
 foreach file in `files' {
 more
+more
+more
 	use "${gsdData}/0-RawTemp/`file'_manual_cleaning_nomads.dta", clear
 	*Dummy variables: whether each variable is missing or not
 	ds *, has(type string)
@@ -1352,6 +1350,8 @@ more
 	merge 1:1 interview__id using "${gsdTemp}/hh_monitoring_dashboard_temp3_nomads", nogenerate
 	label var missing_prop_`file' "Proportion of missing answers in roster `file'" 
 	order missing_prop_`file', last
+	more
+	more
 	more
 	save "${gsdTemp}/hh_monitoring_dashboard_temp3_nomads", replace
 }
@@ -1489,10 +1489,13 @@ foreach var of varlist rl_raise__* {
 	replace nb_types_livestock = nb_types_livestock + 1 if `var' == 1 & successful == 1
 }
 *Flag if no livestock raised
-g flag_no_livestock = (nb_types_livestock == 0) if successful == 1
+g flag_no_livestock = (nb_types_livestock == 0) if successful_valid == 1
+*Indicator 1: Proportion of households raising livestock
+sum flag_no_livestock
+putexcel BF7=(1-r(mean)) using "${gsdShared}/2-Output/SHFS2_Monitoring_Dashboard_Master_Nomads.xlsm", sheet("Master dashboard") modify
 
 **Whether farming/livestock raising is the main source of livelihood for the household
-g livelihood_farming = (lhood == 8) if successful == 1
+g livelihood_farming = (lhood == 8) if successful_valid == 1
 
 **Whether the household has experienced drought during the last 12 months
 g drought = (shocks0__1 == 1) if successful == 1
@@ -1520,7 +1523,7 @@ order mi_prop_quant_livestock_pre, last
 save "${gsdTemp}/hh_monitoring_dashboard_temp10_nomads", replace
 
 **Total number of animals raised (check for outliers)
-use "${gsdData}/0-RawTemp/rl_livestock_manual_cleaning_nomads.dta"
+use "${gsdData}/0-RawTemp/rl_livestock_manual_cleaning_nomads.dta", clear
 replace rl_own_n = . if rl_own_n == -999999999
 collapse (sum) total_animals_raised=rl_own_n (min) min_animals_raised=rl_own_n, by(interview__id)
 merge 1:1 interview__id using "${gsdTemp}/hh_monitoring_dashboard_temp10_nomads", nogenerate
@@ -1538,6 +1541,41 @@ replace emp_7d_farm = . if emp_7d_farm == -999999999 | emp_7d_farm == -100000000
 collapse (max) employed_farming = emp_7d_farm, by(interview__id)
 merge 1:1 interview__id using "${gsdTemp}/hh_monitoring_dashboard_temp11_nomads", nogenerate
 order employed_farming, last
+*Indicator 2: Proportion of households raising livestock
+sum employed_farming if successful_valid==1
+putexcel BF8=(r(mean)) using "${gsdShared}/2-Output/SHFS2_Monitoring_Dashboard_Master_Nomads.xlsm", sheet("Master dashboard") modify
+save "${gsdTemp}/hh_monitoring_dashboard_temp12_nomads", replace
+
+**Check for prices outliers
+use "${gsdData}/0-RawTemp/rl_livestock_manual_cleaning_nomads.dta", clear
+*Flag if the price is too high or too low compared to the median price of each type of livestock
+g flag_livestock_price = 0
+*USD
+replace flag_livestock_price = 1 if rl_price_today_curr == 5 & rl_livestock__id == 1 & (rl_price_today >= 700 | rl_price_today <= 20) & rl_price_today != . & rl_price_today != -999999999
+replace flag_livestock_price = 1 if rl_price_today_curr == 5 & rl_livestock__id == 2 & (rl_price_today >= 150 | rl_price_today <= 10) & rl_price_today != . & rl_price_today != -999999999
+replace flag_livestock_price = 1 if rl_price_today_curr == 5 & rl_livestock__id == 3 & (rl_price_today >= 150 | rl_price_today <= 10) & rl_price_today != . & rl_price_today != -999999999
+replace flag_livestock_price = 1 if rl_price_today_curr == 5 & rl_livestock__id == 4 & (rl_price_today >= 2000 | rl_price_today <= 200) & rl_price_today != . & rl_price_today != -999999999
+replace flag_livestock_price = 1 if rl_price_today_curr == 5 & rl_livestock__id == 5 & (rl_price_today >= 10 | rl_price_today <= 0) & rl_price_today != . & rl_price_today != -999999999
+replace flag_livestock_price = 1 if rl_price_today_curr == 5 & rl_livestock__id == 6 & (rl_price_today >= 500 | rl_price_today <= 50) & rl_price_today != . & rl_price_today != -999999999
+*Somali shillings
+replace flag_livestock_price = 1 if rl_price_today_curr == 2 & rl_livestock__id == 1 & (rl_price_today >= 10000 | rl_price_today <= 500) & rl_price_today != . & rl_price_today != -999999999
+replace flag_livestock_price = 1 if rl_price_today_curr == 2 & rl_livestock__id == 2 & (rl_price_today >= 2000 | rl_price_today <= 100) & rl_price_today != . & rl_price_today != -999999999
+replace flag_livestock_price = 1 if rl_price_today_curr == 2 & rl_livestock__id == 3 & (rl_price_today >= 2000 | rl_price_today <= 100) & rl_price_today != . & rl_price_today != -999999999
+replace flag_livestock_price = 1 if rl_price_today_curr == 2 & rl_livestock__id == 4 & (rl_price_today >= 30000 | rl_price_today <= 3000) & rl_price_today != . & rl_price_today != -999999999
+replace flag_livestock_price = 1 if rl_price_today_curr == 2 & rl_livestock__id == 5 & (rl_price_today >= 200 | rl_price_today <= 40) & rl_price_today != . & rl_price_today != -999999999
+replace flag_livestock_price = 1 if rl_price_today_curr == 2 & rl_livestock__id == 6 & (rl_price_today >= 8000 | rl_price_today <= 500) & rl_price_today != . & rl_price_today != -999999999
+*Flag if the price seems to be in Somali shillings instead of thousands of Somali shillings
+g flag_livestock_unit = 0
+replace flag_livestock_unit = 1 if rl_price_today_curr == 2 & rl_livestock__id == 1 & rl_price_today >= 1000000 & rl_price_today != . & rl_price_today != -999999999
+replace flag_livestock_unit = 1 if rl_price_today_curr == 2 & rl_livestock__id == 2 & rl_price_today >= 10000 & rl_price_today != . & rl_price_today != -999999999
+replace flag_livestock_unit = 1 if rl_price_today_curr == 2 & rl_livestock__id == 3 & rl_price_today >= 10000 & rl_price_today != . & rl_price_today != -999999999
+replace flag_livestock_unit = 1 if rl_price_today_curr == 2 & rl_livestock__id == 4 & rl_price_today >= 1000000 & rl_price_today != . & rl_price_today != -999999999
+replace flag_livestock_unit = 1 if rl_price_today_curr == 2 & rl_livestock__id == 5 & rl_price_today >= 1000 & rl_price_today != . & rl_price_today != -999999999
+replace flag_livestock_unit = 1 if rl_price_today_curr == 2 & rl_livestock__id == 6 & rl_price_today >= 1000000 & rl_price_today != . & rl_price_today != -999999999
+*Whether price or unit seems incorrect for at least one type of livestock
+collapse (max) flag_livestock_price flag_livestock_unit, by(interview__id)
+merge 1:1 interview__id using "${gsdTemp}/hh_monitoring_dashboard_temp12_nomads", nogenerate
+order flag_livestock_price flag_livestock_unit, last
 
 
 /*----------------------------------------------------------------------------*/
@@ -1582,15 +1620,15 @@ g disp = (migr_disp == 1) if successful == 1
 g flag_idp = 0
 label var flag_idp "Whether the EA is an IDP camp but the household was said not to be displaced"
 
-save "${gsdTemp}/hh_monitoring_dashboard_temp12_nomads", replace
+save "${gsdTemp}/hh_monitoring_dashboard_temp13_nomads", replace
 
 **Number of people in employment/inside the labour force
 use "${gsdData}/0-RawTemp/hhroster_age_manual_cleaning_nomads.dta", clear
 replace emp_7d_active = . if emp_7d_active == -999999999 | emp_7d_active == -1000000000
 collapse (sum) emp_7d_active, by(interview__id)
-merge 1:1 interview__id using "${gsdTemp}/hh_monitoring_dashboard_temp12_nomads", nogenerate
+merge 1:1 interview__id using "${gsdTemp}/hh_monitoring_dashboard_temp13_nomads", nogenerate
 
-save "${gsdTemp}/hh_monitoring_dashboard_temp13_nomads", replace
+save "${gsdTemp}/hh_monitoring_dashboard_temp14_nomads", replace
 
 
 /*----------------------------------------------------------------------------*/
@@ -1796,7 +1834,7 @@ collapse (sum) nb_itw=index itw_valid successful successful_valid gps_ok ///
 	(mean) nhhm_succ nb_own_assets nb_shocks ///
 	(sum) fisheries disp ///
 	(mean) emp_7d_active ///
-	(max) flag_food_empty flag_non_food_empty flag_assets_empty flag_ndkn_edu flag_ndkn_house flag_ndkn_labour flag_remit flag_idp flag_no_livestock flag_high_nb_livestock flag_incorrect_nb_livestock drought ///
+	(max) flag_food_empty flag_non_food_empty flag_assets_empty flag_ndkn_edu flag_ndkn_house flag_ndkn_labour flag_remit flag_idp flag_no_livestock flag_high_nb_livestock flag_incorrect_nb_livestock drought flag_livestock_price flag_livestock_unit ///
 	(min) flag_shocks_empty ///
 	(sum) nb_cons_food_low nb_cons_non_food_low nb_own_assets_low ///
 	(mean) total_animals_raised nb_types_livestock mi_prop_quant_livestock mi_prop_quant_livestock_pre employed_farming livelihood_farming, ///
@@ -1868,8 +1906,10 @@ g nhhm_succ_ave = $nhhm_succ_ave
 24  - Quantity of livestock raised equal to 0 while the respondent said to raise this type of livestock
 25  - High proportion of missing quantities of livestock raised currently
 26  - High proportion of missing quantities of livestock raised before displacement
-27  - Nomadic household but no farming
+27  - Nomadic household but no farming or livestock raising as employment
 28  - No drought for any of the interviews
+29  - Livestock price too high or too low 
+30  - Incorrect unit for livestock price
 */
 
 g flag_duration = (duration_med < 80 & missing(duration_med) == 0)
@@ -1915,6 +1955,8 @@ g flag_mi_quant_livestock = (mi_prop_quant_livestock > 0.05 & missing(mi_prop_qu
 g flag_mi_quant_livestock_pre = (mi_prop_quant_livestock_pre > 0.05 & missing(mi_prop_quant_livestock_pre) == 0)
 g flag_no_farming = (employed_farming < 1) if missing(employed_farming) == 0
 g flag_no_drought = (drought == 0) if missing(drought) == 0
+*flag_livestock_price
+*flag_livestock_unit
 
 g flag = ""
 replace flag = flag + "/" + "Shorter duration of interviews than other enumerators" if flag_duration == 1
@@ -1956,8 +1998,10 @@ replace flag = flag + "/" + "High number of livestock raised" if flag_high_nb_li
 replace flag = flag + "/" + "Quantity of livestock raised equal to 0 while the respondent said to raise this type of livestock" if flag_incorrect_nb_livestock == 1
 replace flag = flag + "/" + "High proportion of missing quantities of livestock raised currently" if flag_mi_quant_livestock == 1
 replace flag = flag + "/" + "High proportion of missing quantities of livestock raised before displacement" if flag_mi_quant_livestock_pre == 1
-replace flag = flag + "/" + "Nomadic household but no farming" if flag_no_farming == 1
+replace flag = flag + "/" + "Nomadic household but no farming or livestock raising as employment" if flag_no_farming == 1
 replace flag = flag + "/" + "No drought for any of the interviews" if flag_no_drought == 1
+replace flag = flag + "/" + "Livestock price too high or too low" if flag_livestock_price == 1
+replace flag = flag + "/" + "Incorrect unit for livestock price" if flag_livestock_unit == 1
 replace flag = substr(flag,2,.)
 
 *Final cleaning and labelling
@@ -2027,7 +2071,7 @@ label var duration_med_all "Median duration of successful interviews - across al
 label var ndkn_food_non_food_ave "Average proportion of 'no'/'don't know' in the food and non-food consumption module - across all Enumerators"	
 label var nhhm_succ_ave "Average number of household members - across all Enumerators"
 
-save "${gsdTemp}/hh_monitoring_dashboard_temp14_nomads", replace
+save "${gsdTemp}/hh_monitoring_dashboard_temp15_nomads", replace
 
 keep state team_id enum_id enum_name date_stata ///
 	nb_itw itw_valid successful successful_valid successful_valid_cum ///
@@ -2288,14 +2332,14 @@ restore
 
 preserve
 
-use "${gsdTemp}/hh_monitoring_dashboard_temp14_nomads", clear
+use "${gsdTemp}/hh_monitoring_dashboard_temp15_nomads", clear
 
 keep state team_id enum_id enum_name date_stata flag_*
 order state team_id enum_id enum_name date_stata flag_duration flag_hhm ///
 	flag_missing_main flag_roster_separated flag_roster_hh flag_roster_motor flag_roster_assets flag_roster_assets_prev flag_roster_food flag_roster_cereals flag_roster_fruits  flag_roster_meat flag_roster_vegetables flag_roster_livestock flag_roster_livestock_pre flag_roster_non_food flag_roster_shocks ///
 	flag_ndkn_food_non_food flag_prices_quant_food_non_food flag_skip flag_remit flag_missing_idp flag_ndkn_labour flag_ndkn_edu flag_ndkn_house ///
 	flag_food_empty flag_non_food_empty flag_assets_empty flag_nb_cons_food_low flag_nb_cons_non_food_low flag_nb_own_assets_low flag_shocks_empty flag_idp flag_edu_not_realistic ///
-	flag_no_livestock flag_high_nb_livestock flag_incorrect_nb_livestock flag_mi_quant_livestock flag_mi_quant_livestock_pre flag_no_farming flag_no_drought
+	flag_no_livestock flag_high_nb_livestock flag_incorrect_nb_livestock flag_mi_quant_livestock flag_mi_quant_livestock_pre flag_no_farming flag_no_drought flag_livestock_price flag_livestock_unit
 *Export	
 export excel using "${gsdShared}/2-Output/SHFS2_Monitoring_Dashboard_Master_Nomads.xlsm", sheet("Output - Flags") cell(B6) sheetmodify
 
