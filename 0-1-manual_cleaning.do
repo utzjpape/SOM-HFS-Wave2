@@ -952,17 +952,22 @@ save "${gsdData}/0-RawTemp/hh_manual_cleaning.dta", replace
 *** Importing questionnaire
 ** Version 1
 use "${gsdDownloads}/Nomads - v1/Somali High Frequency Survey - Wave 2 - Nomads - Fieldwork", clear
+decode enum_id, g(enum_name)
+label drop enum_id
 tostring *_spec, replace
 tostring *_sp, replace
 tostring toilet_ot, replace
 tostring land_use_disp_s, replace
 tostring rl_other, replace
 tostring *_specify, replace
+tostring housingtype_s, replace
 tostring  housingtype_disp_s, replace
 save "${gsdTemp}/hh_append_v1_nomads", replace
 
 ** Version 2
 use "${gsdDownloads}/Nomads - v2/Somali High Frequency Survey - Wave 2 - Nomads - Fieldwork", clear
+decode enum_id, g(enum_name)
+label drop enum_id
 tostring *_spec, replace
 tostring *_sp, replace
 tostring *_specify, replace
@@ -976,10 +981,28 @@ tostring disp_date, replace
 tostring disp_arrive_date, replace
 save "${gsdTemp}/hh_append_v2_nomads", replace
 
+** Version 4
+use "${gsdDownloads}/Nomads - v4/Somali High Frequency Survey - Wave 2 - Nomads - Fieldwork", clear
+decode enum_id, g(enum_name)
+label drop enum_id
+tostring *_spec, replace
+tostring *_sp, replace
+tostring *_specify, replace
+tostring loc_retry__Timestamp, replace
+tostring housingtype_disp_s, replace
+tostring hh_list_separated__*, replace
+tostring toilet_ot, replace
+tostring land_use_disp_s, replace
+tostring rl_other, replace
+tostring disp_date, replace
+tostring disp_arrive_date, replace
+save "${gsdTemp}/hh_append_v4_nomads", replace
+
 ** Append all versions
 * Main dataset
 use "${gsdTemp}/hh_append_v1_nomads", clear
 append using "${gsdTemp}/hh_append_v2_nomads"
+append using "${gsdTemp}/hh_append_v4_nomads"
 save "${gsdTemp}/hh_append_nomads", replace
 
 *Rosters
@@ -1018,8 +1041,28 @@ foreach file in `files' {
 	capture: tostring rnf_item_recall, replace
 	save "${gsdTemp}/`file'_append_v2_nomads", replace
 	
+	use "${gsdDownloads}/Nomads - v4/`file'", clear
+	tostring interview__id, replace
+	tostring interview__key, replace
+	capture: tostring *_spec, replace
+	capture: tostring *_sp, replace
+	capture: tostring *_specify, replace
+	capture: tostring hhm_edu_level_other, replace
+	capture: tostring hhm_relation_sep_s, replace
+	capture: tostring rl_lose_reason_o, replace
+	capture: tostring hh_list_separated, replace
+	capture: tostring hhm_relation_other, replace
+	capture: tostring ra_namelp_prev, replace
+	capture: tostring rl_give_reason_o, replace
+	capture: tostring hh_list, replace
+	capture: tostring ra_namelp, replace
+	capture: tostring ra_ynew, replace
+	capture: tostring rnf_item_recall, replace
+	save "${gsdTemp}/`file'_append_v4_nomads", replace
+	
 	use "${gsdTemp}/`file'_append_v1_nomads", clear
 	append using "${gsdTemp}/`file'_append_v2_nomads"
+	append using "${gsdTemp}/`file'_append_v4_nomads"
 	save "${gsdTemp}/`file'_append_nomads", replace
 }
 
@@ -1045,6 +1088,17 @@ foreach file in `files' {
 use "${gsdTemp}/hh_without_empty_obs_nomads", clear
 
 *** Enumerator name cleaning
+replace enum_id = 4302 if interview__id=="d961d542f6154f3289da43e32b4af331"
+replace enum_id = 4303 if interview__id=="5fc9409d2b284429b91cffc1aa3d7438"
+replace enum_id = 4303 if interview__id=="edca1855b16441d8946e9cbc483c4fc2"
+replace enum_id = 4303 if interview__id=="9597ad13cdb646f3b5d7101a05e9fe44"
+replace enum_id = 4302 if interview__id=="3c4e364c44834bdba26a08fce0bf506f"
+
+replace enum_name = "Mohamed Sheikh Abdullahi" if interview__id=="d961d542f6154f3289da43e32b4af331"
+replace enum_name = "Mohamed Adan Hassan" if interview__id=="5fc9409d2b284429b91cffc1aa3d7438"
+replace enum_name = "Mohamed Adan Hassan" if interview__id=="edca1855b16441d8946e9cbc483c4fc2"
+replace enum_name = "Mohamed Adan Hassan" if interview__id=="9597ad13cdb646f3b5d7101a05e9fe44"
+replace enum_name = "Mohamed Sheikh Abdullahi" if interview__id=="3c4e364c44834bdba26a08fce0bf506f"
 *tab enum_id
 
 *** Team cleaning
@@ -1052,14 +1106,17 @@ use "${gsdTemp}/hh_without_empty_obs_nomads", clear
 
 *** Pre-war region cleaning
 *tab ea_reg
-*tab ea_reg water_point if substr(today,1,10)=="2018-01-21"
+*tab ea_reg water_point if substr(today,1,10)=="2018-01-24"
 
-*** Generate strata variable to be able to run the pipeline without errors
+*** Generating strata variable to be able to run the pipeline without errors
 g strata = .
 
 *** Water point number cleaning
 *tab water_point
-*tab water_point team_id if substr(today,1,10)=="2018-01-21"
+*tab water_point team_id if substr(today,1,10)=="2018-01-24"
+
+*** Cleaning consent tracking devices
+replace consent_tracking = 0 if barcode_tracking == 169670
 
 *** Missing date cleaning at the beginning and at the end of the interview
 *Correcting when missing date using dates and times in metadata
@@ -1073,6 +1130,12 @@ g strata = .
 *20/01/2018
 replace today = "2018-01-20T07:57:00" if interview__id=="5ce9b3fd41e4407eb729230b62c3391d"
 replace today_end = "2018-01-20T11:16:00" if interview__id=="5ce9b3fd41e4407eb729230b62c3391d"
+*23/01/2018
+replace today = "2018-01-20T12:26:00" if interview__id=="6f6b300910964a118d85074e0115cf79"
+replace today_end = "2018-01-20T14:20:00" if interview__id=="6f6b300910964a118d85074e0115cf79"
+*24/01/2018
+replace today = "2018-01-20T10:17:00" if interview__id=="eed2c7b52f5242abbfbdb947e2de1661"
+replace today_end = "2018-01-20T12:15:00" if interview__id=="eed2c7b52f5242abbfbdb947e2de1661"
 
 *Creating duration variable
 *Start time 
