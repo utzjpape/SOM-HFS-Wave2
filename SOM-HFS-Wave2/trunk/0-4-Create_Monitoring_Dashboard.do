@@ -1121,7 +1121,7 @@ restore
 
 *A separate monitoring dashboard is constructed for nomads
 
-*----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
 /*     IMPORT QUESTIONNAIRE AND GENERATE USEFUL VARIABLES FOR DASHBOARD       */
 /*----------------------------------------------------------------------------*/
 
@@ -1356,6 +1356,9 @@ more
 	save "${gsdTemp}/hh_monitoring_dashboard_temp3_nomads", replace
 }
 
+*Set proportion of missing answers in the non-food dataset to 0 when the interview was not successful
+replace missing_prop_rnf_nonfood = . if successful == 0
+
 *** 3. Key question: Remittances
 **Dummy variable: whether answer to the question on receipt of remittances (from abroad) is missing/don't know/refused to answer
 g ndkn_remittances_ext = (remit12m_yn == -98 | remit12m_yn == -99 | remit12m_yn == -999999999 | remit12m_yn == -1000000000) if successful == 1
@@ -1495,7 +1498,7 @@ sum flag_no_livestock
 putexcel BF7=(1-r(mean)) using "${gsdShared}/2-Output/SHFS2_Monitoring_Dashboard_Master_Nomads.xlsm", sheet("Master dashboard") modify
 
 **Whether farming/livestock raising is the main source of livelihood for the household
-g livelihood_farming = (lhood == 8) if successful_valid == 1
+g livelihood_farming = (lhood == 8) if successful == 1
 
 **Whether the household has experienced drought during the last 12 months
 g drought = (shocks0__1 == 1) if successful == 1
@@ -1617,7 +1620,7 @@ label var flag_shocks_empty "Whether no shock is said to be faced by the househo
 **Whether the household was displaced
 g disp = (migr_disp == 1) if successful == 1
 *Flag if the EA is an IDP camp but the household was said not to be displaced
-g flag_idp = 0
+g flag_idp = 0 if successful == 1
 label var flag_idp "Whether the EA is an IDP camp but the household was said not to be displaced"
 
 save "${gsdTemp}/hh_monitoring_dashboard_temp13_nomads", replace
@@ -1864,6 +1867,9 @@ g ndkn_food_non_food_ave = ($ndkn_food_ave + $ndkn_non_food_ave)/2
 sum nhhm_succ, d
 global nhhm_succ_ave = `r(mean)'
 g nhhm_succ_ave = $nhhm_succ_ave
+*Set number fo fishermen and displaced households equal to zero when no interview was successful
+replace fisheries = . if successful == 0
+replace disp = . if successful == 0
 
 /*List of flags
 1	- Shorter duration of interviews than other enumerators
@@ -1914,7 +1920,7 @@ g nhhm_succ_ave = $nhhm_succ_ave
 
 g flag_duration = (duration_med < 80 & missing(duration_med) == 0)
 g flag_hhm = (nhhm_succ <= 3.5)
-g flag_missing_main = (missing_prop_main > 0.05)
+g flag_missing_main = (missing_prop_main > 0.05 & missing(missing_prop_main) == 0)
 g flag_roster_separated = (missing_prop_hh_roster_separated > 0.3 & missing(missing_prop_hh_roster_separated) == 0)
 g flag_roster_hh = (missing_prop_hhroster_age > 0.1 & missing(missing_prop_hhroster_age) == 0)
 g flag_roster_motor = (missing_prop_motor > 0.3 & missing(missing_prop_motor) == 0)
@@ -1929,13 +1935,13 @@ g flag_roster_livestock = (missing_prop_rl_livestock > 0.05 & missing(missing_pr
 g flag_roster_livestock_pre = (missing_prop_rl_livestock_pre > 0.1 & missing(missing_prop_rl_livestock_pre) == 0)
 g flag_roster_non_food = (missing_prop_rnf_nonfood > 0.05 & missing(missing_prop_rnf_nonfood) == 0)
 g flag_roster_shocks = (missing_prop_shocks > 0.1 & missing(missing_prop_shocks) == 0)
-g flag_ndkn_food_non_food = ((ndkn_food + ndkn_non_food)/2 > 0.47)
+g flag_ndkn_food_non_food = ((ndkn_food + ndkn_non_food)/2 > 0.47 & (ndkn_food != . | ndkn_non_food != .))
 g flag_prices_quant_food_non_food = ((ndkn_food_quant != . & ndkn_non_food_quant != . & (ndkn_food_quant + ndkn_non_food_quant)/2 > 0.3) | ///
 	(ndkn_food_quant != . & ndkn_non_food_quant == . & ndkn_food_quant > 0.3) | ///
 	(ndkn_food_quant == . & ndkn_non_food_quant != . & ndkn_non_food_quant > 0.3))
-g flag_skip = (prop_skip_patterns > $threshold_skip_patterns)
+g flag_skip = (prop_skip_patterns > $threshold_skip_patterns & prop_skip_patterns != .)
 *flag_remit
-g flag_missing_idp = (ndkn_IDP_status > 0)
+g flag_missing_idp = (ndkn_IDP_status > 0 & missing(ndkn_IDP_status) == 0)
 *flag_ndkn_labour
 *flag_ndkn_edu
 *flag_ndkn_house
@@ -1946,7 +1952,7 @@ g flag_nb_cons_food_low = (nb_cons_food_low >= 1)
 g flag_nb_cons_non_food_low = (nb_cons_non_food_low >= 1)
 g flag_nb_own_assets_low = (nb_own_assets_low >= 2)
 *flag_shocks_empty
-replace flag_idp = 0 if missing(flag_idp)
+replace flag_idp = 0 if missing(flag_idp) == 1 & successful > 0
 g flag_edu_not_realistic = (soft_const_edu > 0 & missing(soft_const_edu) == 0)
 *flag_no_livestock
 *flag_high_nb_livestock
@@ -2297,6 +2303,7 @@ g no_gps = (itw_invalid_reason==2)
 g not_within_WP = (itw_invalid_reason==3)
 g no_original_itw = (itw_invalid_reason==4)
 g invalid_original_itw = (itw_invalid_reason==5)
+g no_livestock = (itw_invalid_reason==6)
 
 *Final cleaning and labelling
 label var date_stata "Day of data collection"
@@ -2314,11 +2321,12 @@ label var no_gps "No GPS coordinates"
 label var not_within_WP "GPS coordinates do not fall within a radius of 50m around the waterpoint" 
 label var no_original_itw "No record for the original household while it is a replacement household"
 label var invalid_original_itw "Record for the original household is not valid while it is a replacement household"
+label var no_livestock "No livestock"
 label var successful "Whether the interview is successful"
 label var interview__id "Key"
 
 order date_stata state strata_id strata_name team_id enum_id enum_name id_wp int_no itw_invalid_reason ///
-	short_duration no_gps not_within_WP no_original_itw invalid_original_itw successful interview__id 
+	short_duration no_gps not_within_WP no_original_itw invalid_original_itw no_livestock successful interview__id 
 
 gsort -date_stata team_id enum_id int_no itw_invalid_reason
 
@@ -2340,6 +2348,7 @@ order state team_id enum_id enum_name date_stata flag_duration flag_hhm ///
 	flag_ndkn_food_non_food flag_prices_quant_food_non_food flag_skip flag_remit flag_missing_idp flag_ndkn_labour flag_ndkn_edu flag_ndkn_house ///
 	flag_food_empty flag_non_food_empty flag_assets_empty flag_nb_cons_food_low flag_nb_cons_non_food_low flag_nb_own_assets_low flag_shocks_empty flag_idp flag_edu_not_realistic ///
 	flag_no_livestock flag_high_nb_livestock flag_incorrect_nb_livestock flag_mi_quant_livestock flag_mi_quant_livestock_pre flag_no_farming flag_no_drought flag_livestock_price flag_livestock_unit
+
 *Export	
 export excel using "${gsdShared}/2-Output/SHFS2_Monitoring_Dashboard_Master_Nomads.xlsm", sheet("Output - Flags") cell(B6) sheetmodify
 
