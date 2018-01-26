@@ -57,7 +57,9 @@ foreach var in hhm_read hhm_write hhm_edu_current hhm_edu_k_current hhm_edu_reas
 }
 replace hhm_edu_reason=.z if hhm_edu_current!=0 | hhm_age>20
 replace hhm_edu_disp=.z if migr_idp!=1
-replace hhm_edu_ever=.z if hhm_edu_current!=0 | hhm_edu_disp!=0
+*Correct an incorrect skip pattern
+replace hhm_edu_ever=1 if migr_idp==0 & hhm_edu_current==1 & hhm_age>5 
+replace hhm_edu_ever=.z if (hhm_edu_current!=0 | hhm_edu_disp!=0) & !inlist(hhm_edu_ever,0,1)
 replace hhm_edu_years_kdk=.z if hhm_edu_ever!=1 & hhm_edu_current!=1 & hhm_edu_disp!=1
 replace hhm_edu_years=.z if hhm_edu_years_kdk>=.
 replace hhm_edu_level=.z if  hhm_edu_ever!=1 & hhm_edu_current!=1 & hhm_edu_disp!=1
