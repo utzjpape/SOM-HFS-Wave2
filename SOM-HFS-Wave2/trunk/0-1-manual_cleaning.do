@@ -1094,11 +1094,11 @@ replace enum_id = 4303 if interview__id=="edca1855b16441d8946e9cbc483c4fc2"
 replace enum_id = 4303 if interview__id=="9597ad13cdb646f3b5d7101a05e9fe44"
 replace enum_id = 4302 if interview__id=="3c4e364c44834bdba26a08fce0bf506f"
 
-replace enum_name = "Mohamed Sheikh Abdullahi" if interview__id=="d961d542f6154f3289da43e32b4af331"
+replace enum_name = "Mohamed Sheik Abdullahi" if interview__id=="d961d542f6154f3289da43e32b4af331"
 replace enum_name = "Mohamed Adan Hassan" if interview__id=="5fc9409d2b284429b91cffc1aa3d7438"
 replace enum_name = "Mohamed Adan Hassan" if interview__id=="edca1855b16441d8946e9cbc483c4fc2"
 replace enum_name = "Mohamed Adan Hassan" if interview__id=="9597ad13cdb646f3b5d7101a05e9fe44"
-replace enum_name = "Mohamed Sheikh Abdullahi" if interview__id=="3c4e364c44834bdba26a08fce0bf506f"
+replace enum_name = "Mohamed Sheik Abdullahi" if interview__id=="3c4e364c44834bdba26a08fce0bf506f"
 *tab enum_id
 
 *** Team cleaning
@@ -1106,7 +1106,7 @@ replace enum_name = "Mohamed Sheikh Abdullahi" if interview__id=="3c4e364c44834b
 
 *** Pre-war region cleaning
 *tab ea_reg
-*tab ea_reg water_point if substr(today,1,10)=="2018-01-24"
+*tab ea_reg water_point if substr(today,1,10)=="2018-01-25"
 
 *** Generating strata variable to be able to run the pipeline without errors
 g strata = .
@@ -1116,10 +1116,14 @@ g strata = .
 *tab water_point team_id if substr(today,1,10)=="2018-01-24"
 
 *** Cleaning consent tracking devices
-replace consent_tracking = 0 if barcode_tracking == 169670
+replace consent_tracking = 0 if interview__id=="05ffa1152ec44bcfba36eea2ee5f5fff"
+replace barcode_tracking = . if interview__id=="05ffa1152ec44bcfba36eea2ee5f5fff"
 
 *** Missing date cleaning at the beginning and at the end of the interview
 *Correcting when missing date using dates and times in metadata
+*25/01/2018
+replace today = "2018-01-25T12:26:00" if interview__id=="3c77c86f107544c4a4ed8d507d1bc006"
+replace today_end = "2018-01-25T14:40:00" if interview__id=="3c77c86f107544c4a4ed8d507d1bc006"
 
 *Identify observations with missing dates
 *br if today == "##N/A##"
