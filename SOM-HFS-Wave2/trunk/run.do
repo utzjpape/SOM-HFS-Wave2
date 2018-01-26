@@ -25,7 +25,10 @@ if (`runimport'==1) {
 *API Download of data for Nomads (only from Gonzalo's or Philip's computer)
 if (inlist("${suser}","wb484006","WB484006","WB499706","wb499706")) {
 	run "${gsdDo}/api_download.do"
-	api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(12) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/v12") curl("${gsdBin}") 
+	api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(1) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/Nomads/v1") curl("${gsdBin}") 
+	api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(2) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/Nomads/v2") curl("${gsdBin}") 
+	api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(3) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/Nomads/v3") curl("${gsdBin}") 
+	api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(4) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/Nomads/v4") curl("${gsdBin}") 
 }
 
 
