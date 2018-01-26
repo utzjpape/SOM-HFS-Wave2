@@ -543,6 +543,10 @@ replace itw_invalid_reason=5 if replacement_hh==1 & replaced_visit_valid==0
 *Manually invalidating interviews with no livestock
 replace itw_valid = 0 if interview__id == "cc65811d91f64334816139dc29e7068f"
 replace itw_invalid_reason = 6 if interview__id == "cc65811d91f64334816139dc29e7068f"
+replace itw_valid = 0 if interview__id == "a590342a884a468888f2b5640b4c6053"
+replace itw_invalid_reason = 6 if interview__id == "a590342a884a468888f2b5640b4c6053"
+replace itw_valid = 0 if interview__id == "f05387d7c9cc4e55b34d9b0b90a710fe"
+replace itw_invalid_reason = 6 if interview__id == "f05387d7c9cc4e55b34d9b0b90a710fe"
 
 /*-------------------------------------*/ 
 /*    B - SUCCESSFULNESS CRITERIA      */
@@ -555,4 +559,3 @@ gen successful_valid=(successful==1 & itw_valid==1)
 label var successful_valid "Whether the interview is successful and valid"
 
 save "${gsdData}/0-RawTemp/hh_valid_keys_nomads.dta", replace
-
