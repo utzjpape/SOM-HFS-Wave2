@@ -67,6 +67,13 @@ else if ("${suser}"=="Antoine") {
 	*Box directory where the Data folder can be located
 	local swdBox = "C:/Users/Antoine/Dropbox/WB SHFS II/9. Data, Data Monitoring/1. Inputs, Codes and Outputs Pipeline/Data"
 }
+else if ("${suser}"=="Agnès") {
+	*Agnes 2
+	*Local directory of your checked out copy of the code
+	local swdLocal = "D:/Dropbox/WB SHFS II/9. Data, Data Monitoring/1. Inputs, Codes and Outputs Pipeline/Code"
+	*Box directory where the Data folder can be located
+	local swdBox = "D:/Dropbox/WB SHFS II/9. Data, Data Monitoring/1. Inputs, Codes and Outputs Pipeline/Data"
+}
 	
 else {
 	di as error "Configure work environment in 00-init.do before running the code."
