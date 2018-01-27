@@ -962,6 +962,7 @@ tostring rl_other, replace
 tostring *_specify, replace
 tostring housingtype_s, replace
 tostring  housingtype_disp_s, replace
+tostring land_unit_spec_disp, replace
 save "${gsdTemp}/hh_append_v1_nomads", replace
 
 ** Version 2
@@ -979,6 +980,7 @@ tostring land_use_disp_s, replace
 tostring rl_other, replace
 tostring disp_date, replace
 tostring disp_arrive_date, replace
+tostring land_unit_spec_disp, replace
 save "${gsdTemp}/hh_append_v2_nomads", replace
 
 ** Version 4
@@ -1020,6 +1022,7 @@ foreach file in `files' {
 	capture: tostring rl_give_reason_o, replace
 	capture: tostring hhm_relation_sep_s, replace
 	capture: tostring rl_lose_reason_o, replace
+	capture: tostring rnf_free_other, replace
 	save "${gsdTemp}/`file'_append_v1_nomads", replace
 	
 	use "${gsdDownloads}/Nomads - v2/`file'", clear
@@ -1039,6 +1042,7 @@ foreach file in `files' {
 	capture: tostring ra_namelp, replace
 	capture: tostring ra_ynew, replace
 	capture: tostring rnf_item_recall, replace
+	capture: tostring rnf_free_other, replace
 	save "${gsdTemp}/`file'_append_v2_nomads", replace
 	
 	use "${gsdDownloads}/Nomads - v4/`file'", clear
@@ -1106,18 +1110,28 @@ replace enum_name = "Mohamed Sheik Abdullahi" if interview__id=="3c4e364c44834bd
 
 *** Pre-war region cleaning
 *tab ea_reg
-*tab ea_reg water_point if substr(today,1,10)=="2018-01-25"
+*tab ea_reg water_point if substr(today,1,10)=="2018-01-26"
 
 *** Generating strata variable to be able to run the pipeline without errors
 g strata = .
 
 *** Water point number cleaning
 *tab water_point
-*tab water_point team_id if substr(today,1,10)=="2018-01-24"
+*tab water_point team_id if substr(today,1,10)=="2018-01-26"
 
 *** Cleaning consent tracking devices
 replace consent_tracking = 0 if interview__id=="05ffa1152ec44bcfba36eea2ee5f5fff"
 replace barcode_tracking = . if interview__id=="05ffa1152ec44bcfba36eea2ee5f5fff"
+replace tracking_phone_yn = . if interview__id=="05ffa1152ec44bcfba36eea2ee5f5fff"
+replace tracking_phone = . if interview__id=="05ffa1152ec44bcfba36eea2ee5f5fff"
+replace consent_tracking = 0 if interview__id=="7153776b33fc4db9b9df5aa5bfe1fdb2"
+replace barcode_tracking = . if interview__id=="7153776b33fc4db9b9df5aa5bfe1fdb2"
+replace tracking_phone_yn = . if interview__id=="7153776b33fc4db9b9df5aa5bfe1fdb2"
+replace tracking_phone = . if interview__id=="7153776b33fc4db9b9df5aa5bfe1fdb2"
+replace consent_tracking = 0 if interview__id=="dd473d064cd2431f864c8c699e04f285"
+replace barcode_tracking = . if interview__id=="dd473d064cd2431f864c8c699e04f285"
+replace tracking_phone_yn = . if interview__id=="dd473d064cd2431f864c8c699e04f285"
+replace tracking_phone = . if interview__id=="dd473d064cd2431f864c8c699e04f285"
 
 *** Missing date cleaning at the beginning and at the end of the interview
 *Correcting when missing date using dates and times in metadata
@@ -1135,11 +1149,11 @@ replace today_end = "2018-01-25T14:40:00" if interview__id=="3c77c86f107544c4a4e
 replace today = "2018-01-20T07:57:00" if interview__id=="5ce9b3fd41e4407eb729230b62c3391d"
 replace today_end = "2018-01-20T11:16:00" if interview__id=="5ce9b3fd41e4407eb729230b62c3391d"
 *23/01/2018
-replace today = "2018-01-20T12:26:00" if interview__id=="6f6b300910964a118d85074e0115cf79"
-replace today_end = "2018-01-20T14:20:00" if interview__id=="6f6b300910964a118d85074e0115cf79"
+replace today = "2018-01-23T12:26:00" if interview__id=="6f6b300910964a118d85074e0115cf79"
+replace today_end = "2018-01-23T14:20:00" if interview__id=="6f6b300910964a118d85074e0115cf79"
 *24/01/2018
-replace today = "2018-01-20T10:17:00" if interview__id=="eed2c7b52f5242abbfbdb947e2de1661"
-replace today_end = "2018-01-20T12:15:00" if interview__id=="eed2c7b52f5242abbfbdb947e2de1661"
+replace today = "2018-01-24T10:17:00" if interview__id=="eed2c7b52f5242abbfbdb947e2de1661"
+replace today_end = "2018-01-24T12:15:00" if interview__id=="eed2c7b52f5242abbfbdb947e2de1661"
 
 *Creating duration variable
 *Start time 
