@@ -2176,7 +2176,7 @@ preserve
 
 *List of valid and successful interviews per waterpoint
 gsort id_wp -int_no
-decode int_no, g(int_no_str)
+tostring int_no, g(int_no_str)
 g list_val_succ = ","+int_no_str if successful_valid == 1
 replace list_val_succ = list_val_succ + list_val_succ[_n-1] if id_wp == id_wp[_n-1]
 replace list_val_succ = substr(list_val_succ,2,.)
@@ -2184,7 +2184,7 @@ bysort id_wp: g list_val_succ_wp = list_val_succ[_N]
 
 *Collapse by region/strata/waterpoint
 collapse (sum) nb_itw=index itw_valid successful successful_valid val_succ1 val_succ2 val_succ3 val_succ4 ///
-		(mean) target_itw_wp (first) list_val_succ_wp wp_status wp_valid, by(ea_reg strata_id strata_name id_wp type_pop final_main_wp) ///
+		(mean) target_itw_wp (first) list_val_succ_wp wp_status wp_valid, by(ea_reg strata_id strata_name id_wp type_pop final_main_wp)
 
 *Target number of interviews at the waterpoint
 *g target_itw_wp = 12*final_main_wp
