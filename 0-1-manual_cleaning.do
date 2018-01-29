@@ -1110,20 +1110,23 @@ replace enum_name = "Mohamed Sheik Abdullahi" if interview__id=="3c4e364c44834bd
 
 *** Pre-war region cleaning
 *tab ea_reg
-*tab ea_reg water_point if substr(today,1,10)=="2018-01-26"
+*tab ea_reg water_point if substr(today,1,10)=="2018-01-28"
 
 *** Generating strata variable to be able to run the pipeline without errors
 g strata = .
 
 *** Water point number cleaning
 *tab water_point
-*tab water_point team_id if substr(today,1,10)=="2018-01-26"
+*tab water_point team_id if substr(today,1,10)=="2018-01-28"
 
 *** Cleaning consent tracking devices
+*21/01/2018
 replace consent_tracking = 0 if interview__id=="05ffa1152ec44bcfba36eea2ee5f5fff"
 replace barcode_tracking = . if interview__id=="05ffa1152ec44bcfba36eea2ee5f5fff"
 replace tracking_phone_yn = . if interview__id=="05ffa1152ec44bcfba36eea2ee5f5fff"
 replace tracking_phone = . if interview__id=="05ffa1152ec44bcfba36eea2ee5f5fff"
+*22/01/2018
+replace barcode_tracking = 169583 if interview__id=="2094ebaefe4e4273885ef62d9483fd27"
 replace consent_tracking = 0 if interview__id=="7153776b33fc4db9b9df5aa5bfe1fdb2"
 replace barcode_tracking = . if interview__id=="7153776b33fc4db9b9df5aa5bfe1fdb2"
 replace tracking_phone_yn = . if interview__id=="7153776b33fc4db9b9df5aa5bfe1fdb2"
@@ -1132,6 +1135,11 @@ replace consent_tracking = 0 if interview__id=="dd473d064cd2431f864c8c699e04f285
 replace barcode_tracking = . if interview__id=="dd473d064cd2431f864c8c699e04f285"
 replace tracking_phone_yn = . if interview__id=="dd473d064cd2431f864c8c699e04f285"
 replace tracking_phone = . if interview__id=="dd473d064cd2431f864c8c699e04f285"
+*26/01/2018
+replace consent_tracking = 1 if interview__id=="f3c55e5de7f94b5a9e41602762aa5c19"
+replace barcode_tracking = 169566 if interview__id=="f3c55e5de7f94b5a9e41602762aa5c19"
+replace tracking_phone_yn = 1 if interview__id=="f3c55e5de7f94b5a9e41602762aa5c19"
+replace tracking_phone = 0634378404 if interview__id=="f3c55e5de7f94b5a9e41602762aa5c19"
 
 *** Missing date cleaning at the beginning and at the end of the interview
 *Correcting when missing date using dates and times in metadata
@@ -1183,3 +1191,4 @@ label var duration_itw_min "Duration of interview (minutes)"
 
 *** Saving dataset with manual corrections
 save "${gsdData}/0-RawTemp/hh_manual_cleaning_nomads.dta", replace
+
