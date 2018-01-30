@@ -18,6 +18,7 @@ drop strata strata_name_list strata_id_list
 rename strata_id strata
 order strata strata_name type_pop, after(loc_check_barcode)
 
+*Include nomads
 
 ********************************************************************
 *Include the correct type of population 
@@ -26,9 +27,11 @@ drop type
 gen type=1 if (type_pop=="Urban/Rural" | type_pop=="Urban/Rural and Host" | type_pop=="Host Only") & inlist(strata,26,28,30,31,33,37,39,41,43,45,49,51,52,54,57)
 replace type=2 if (type_pop=="Urban/Rural" | type_pop=="Urban/Rural and Host") & inlist(strata,25,27,29,32,34,38,40,42,44,48,50,53,55,56)
 replace type=3 if type_pop=="IDP" & inlist(strata,1,2,3,4,5,6,7)
+replace type=4 if nomads==.
 label define type_hh 1 "Urban" 2 "Rural" 3 "IDP" 4 "Nomads"
 label values type type_hh
 label var type "Urban/Rural/IDP or Nomad"
+drop nomad
 *Generate a separate indicators for host and IDPs
 gen type_idp_host=1 if type==3
 replace type_idp_host=2 if type_pop=="Host Only"
@@ -733,15 +736,15 @@ drop today examnumber modules__1 modules__2 modules__3 modules__4 modules__5 mod
 drop ea_barcode ea_barcode_check somsld ea_barcode_confirm loc_barcode__Latitude loc_barcode__Longitude loc_barcode__Accuracy loc_barcode__Altitude loc_barcode__Timestamp loc_check_barcode
 drop ea_list ea_list_confirm loc_list__Latitude loc_list__Longitude loc_list__Accuracy loc_list__Altitude loc_list__Timestamp loc_check_list 
 drop ea_barcode_int original_block original_str original_hh visit_n blid_seg1ret1 strid_seg1ret1 hhid_seg1ret1 loc_hhid_seg1ret1__Latitude loc_hhid_seg1ret1__Longitude loc_hhid_seg1ret1__Accuracy loc_hhid_seg1ret1__Altitude loc_hhid_seg1ret1__Timestamp loc_hhid_check
-drop enum_offset block bl_replace bl_replace_reason bl_replace1 bl_replace_reason1 bl_replace2 bl_replace_reason2 bl_replace3 bl_replace_reason3 bl_replace4 bl_replace_reason4 chosen_block bl_success n_str_no_success__* str_no_success
-drop random_draw int_bl_rep* rep* seg_str_prev1 n_hh hh_no_success n_hh_no_success__* str_loc_check hh_success strc* seg_str seg_hh_prev1 str_loc__Latitude str_loc__Longitude str_loc__Accuracy str_loc__Altitude str_loc__Timestamp
+drop enum_offset block bl_replace bl_replace_reason bl_replace1 bl_replace_reason1 bl_replace2 bl_replace_reason2 bl_replace3 bl_replace_reason3 bl_replace4 bl_replace_reason4 chosen_block bl_success 
+drop random_draw int_bl_rep* rep* seg_str_prev1 str_loc_check hh_success strc* seg_str seg_hh_prev1 str_loc__Latitude str_loc__Longitude str_loc__Accuracy str_loc__Altitude str_loc__Timestamp
 drop hhid_seg1ret0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 hh8 hh9 hh10 hh11 hh12 hh13 hh14 hh15 hh16 hh17 hh18 hh19 hh20 hh_list__0 hh_list__1 hh_list__2 hh_list__3 hh_list__4 hh_list__5 hh_list__6 hh_list__7 hh_list__8 hh_list__9 hh_list__10 hh_list__11 hh_list__12 hh_list__13 hh_list__14 hhh_id1 hhh_id1_int hhh_name hhh_id hh_list_separated__*
 drop aa cook_source_sp electricity_fee_spec rf_lowcons1 check1 check2 check3 check4
 drop contact_info phone_number follow_up_yn testimonial testimonial_consent share_phone_agencies loc_retry__Latitude loc_retry__Longitude loc_retry__Accuracy loc_retry__Altitude loc_retry__Timestamp loc_check2 enum1 int_break enum2 enum2_1 enum3__0 enum3__1 enum3__2 enum3__3 enum3__4 enum3__5 enum3__6 enum3__7 enum3__8 enum3__9 enum3__10 enum3__11 enum3__12 enum3__13 enum3__14 enum3__1000 enum4 enum5 enum6__0 enum6__1 enum6__2 enum6__3 enum6__4 enum6__5 enum6__6 enum6__7 enum6__8 enum6__9 enum6__10 enum6__11 enum6__12 enum6__13 enum6__14 enum6__1000 enum7 enum8__2 enum8__3 enum8__4 enum8__5 enum8__6 enum8__7 enum8__8 enum8__9 enum8__10 enum8__11 enum8__12 enum8__13 enum8__14 enum8__15 enum9 today_end ssSys_IRnd interview__key
 drop has__errors interview__status start_time end_time duration_itw_min date_stata date itw_valid itw_invalid_reason latitude longitude accuracy latitude_str longitude_str accuracy_str gps_coord_y_n lon_min lon_max lat_min lat_max not_within_EA id_ea id_block id_structure id_household block_number_original str_number_original previous_visit_exists previous_visit_valid GPS_pair latitude_pr longitude_pr accuracy_pr distance_meters dist_previous_visit_check successful successful_valid index treat1 treat2 treat3 treat4 val1 val2 val3 val4 succ1 succ2 succ3 succ4 val_succ1 val_succ2 val_succ3 val_succ4
 drop status_psu_UR_IDP status_psu_host tot_block x_min x_max y_min y_max main_uri rank_rep_uri rank_rep_uri_2 main_h rank_rep_h sample_initial_uri sample_initial_h sample_final_uri sample_final_h o_ea o_ea_2 o_ea_3 r_seq r_seq_2 r_seq_3 r_date r_ea r_ea_2 r_ea_3 r_reason test_rep o_ea_h o_ea_2_h o_ea_3_h r_seq_h r_seq_2_h r_seq_3_h r_date_h r_ea_h r_ea_2_h r_ea_3_h r_reason_h test_rep_h final_main_uri final_rep_uri final_rank_rep_uri final_rep_uri_2 final_rank_rep_uri_2 final_main_h final_rep_h final_rank_rep_h target_itw_ea nb_val_succ_itw_ea ea_status ea_valid nb_interviews_ea nb_treat1_ea nb_treat2_ea nb_treat3_ea nb_treat4_ea nb_valid_interviews_ea nb_valid_treat1_ea nb_valid_treat2_ea nb_valid_treat3_ea nb_valid_treat4_ea nb_success_interviews_ea nb_success_treat1_ea nb_success_treat2_ea nb_success_treat3_ea nb_success_treat4_ea nb_valid_success_itws_ea nb_valid_success_treat1_ea nb_valid_success_treat2_ea nb_valid_success_treat3_ea nb_valid_success_treat4_ea
 drop visit_no consent electricity_str rf_sum_consumed_cereals cook_str
-drop strata_name n_str hhr_id_int hhh_id0_int hhm_unite hh_number_original
+drop strata_name hhr_id_int hhh_id0_int hhm_unite hh_number_original
 drop idp_ea_yn housingtype_s drink_water_spec cook_source spec_water_spec light_sp electricity_price_kdk toilet_ot sewage_spec land_use_disp__1000 land_use_disp__n98 land_use_disp__n99
 drop waste_spec floor_material_sp roof_material_sp land_help_disp_spec housingtype_disp_s land_use_disp_s land_res_reason_disp_spec
 drop land_help_disp land_res_reason_disp drink_source_disp_sp land_unit_spec land_tenure_sp land_unit_spec_disp landag_use_disp_spec social_saf_net_spec lhood_spec lhood_prev_spec

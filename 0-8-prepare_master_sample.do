@@ -77,7 +77,23 @@ save "${gsdTemp}\master_urban_rural.dta", replace
 ********************************************************************
 *Sampling frame for IDPs
 ********************************************************************
-foreach x in "1_Buloburto EA" "1_Jowhar EA" "1_Maxaas EA" "3_Luuq EA" "3_Afmadow EA" "3_Kismayo EA" "4_Mogadishu EA" "5_Qardho EA" "5_Galkaacyo_North EA" "5_Galkaacyo_South EA" "6_Burao EA" "6_Hargeisa EA" "7_Baidoa EA" "7_Marca EA" {
+*Include information at the strata level for camps
+qui foreach x in "1_Central_Regions" "3_Jubaland" "4_Mogadishu" "5_Puntland" "6_Somaliland" "7_South_West" {
+	import excel "${gsdDataRaw}\IDPMasterStrata_v15.xlsx", sheet("`x'") firstrow case(lower) clear
+	drop if strata_id>=.
+    keep strata_id idp_camp selected
+	drop if selected==0
+	drop selected
+	save "${gsdTemp}\master_camp_`x'.dta", replace
+}
+use "${gsdTemp}\master_camp_1_Central_Regions.dta", clear
+foreach x in "1_Central_Regions" "3_Jubaland" "4_Mogadishu" "5_Puntland" "6_Somaliland" "7_South_West" {
+	append using "${gsdTemp}\master_camp_`x'.dta"
+}
+save "${gsdData}\0-RawTemp\master_idps_camps.dta", replace
+
+*Information at the EA and block level
+qui foreach x in "1_Buloburto EA" "1_Jowhar EA" "1_Maxaas EA" "3_Luuq EA" "3_Afmadow EA" "3_Kismayo EA" "4_Mogadishu EA" "5_Qardho EA" "5_Galkaacyo_North EA" "5_Galkaacyo_South EA" "6_Burao EA" "6_Hargeisa EA" "7_Baidoa EA" "7_Marca EA" {
 	import excel "${gsdDataRaw}\IDPMasterStrata_v15.xlsx", sheet("`x'") firstrow case(lower) clear
 	drop if strata_id>=.
 	rename (idp_camp ea_id prop_sel no_blocks) (strata_name psu_id prob no_blocks_ea)
@@ -114,8 +130,9 @@ replace tot_hhs_strata=64895 if strata_id==5
 replace tot_hhs_strata=19683 if strata_id==6
 replace tot_hhs_strata=13400 if strata_id==7
 bys strata_id: egen tot_hhs_sel_camp_strata=sum(tot_hhs_psu) 
-drop no_blocks_ea
 order strata_id strata_name psu_id tot_hhs_strata tot_hhs_sel_camp_strata tot_hhs_psu prob
+save "${gsdData}\0-RawTemp\master_idps_eas.dta", replace
+drop no_blocks_ea
 save "${gsdTemp}\master_idps.dta", replace
 
 
@@ -144,3 +161,33 @@ label var tot_hhs_strata "Total no. HHs in Strata"
 label var tot_hhs_psu "Total no. HHs in EA"
 label var host_ea "Host EA: Yes or No"
 save "${gsdData}\0-RawTemp\master_sample.dta", replace
+
+
+********************************************************************
+*Sampling for the nomads 
+********************************************************************
+import excel "${gsdDataRaw}\Inputs Waterpoints.xls", sheet("Input_List WPs") firstrow case(lower) clear
+save "${gsdData}\0-RawTemp\master_nomads.dta", replace
+*Listing for the nomads
+use "${gsdDownloads}\Nomads - Listing\Nomad listing form - Fieldwork.dta", clear
+*==============================
+*Identify unique cases 
+*(temporary fix for the code to work until we have manual correction from Altia)
+*==============================
+bys water_point listing_day listing_round:  gen dup = cond(_N==1,0,_n)
+*br interview__id water_point listing_day listing_round  if dup>0
+drop if interview__id=="8764e84e03644a30a07efd5fe0e46af2"
+drop if interview__id=="fb34056979544b5297d5085c8e72dd71"
+drop if interview__id=="d48ec2d887114353b6eaa0c548f49480"
+drop if interview__id=="ff2718cf5f8146fa87bb3d48ce5fce00"
+drop if interview__id=="a4d1edd184e94bd9833beecab15078f8"
+drop if interview__id=="149763115722468e91c1344462aeaec8"
+drop if interview__id=="cbfb47e325814f0fa15f9a4c06ea8885"
+drop if interview__id=="2b315e2a169243c5b333e12225a7d501"
+drop if interview__id=="04955fb883dc4dc8993908f675458696"
+drop if interview__id=="72b308530b2c40e183871707c405c415"
+drop if interview__id=="e6ab874202a343248128d30b8028bef2"
+drop if interview__id=="931c68af5339478ca40d2dd8b373da2c"
+drop if interview__id=="f63c6fe2bfe94948bc6389c2087ece4c"
+keep n_eligible n_main water_point listing_day listing_round hh1_nomad hh2_nomad hh3_nomad hh4_nomad hh5_nomad hh6_nomad hh7_nomad hh8_nomad hh9_nomad hh10_nomad hh11_nomad hh12_nomad hh13_nomad hh14_nomad hh15_nomad hh16_nomad hh17_nomad hh18_nomad hh19_nomad hh20_nomad hh21_nomad hh22_nomad hh23_nomad hh24_nomad hh25_nomad
+save "${gsdData}\0-RawTemp\master_nomads_listing.dta", replace
