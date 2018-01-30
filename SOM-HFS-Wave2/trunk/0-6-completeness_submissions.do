@@ -117,6 +117,7 @@ qui foreach file in `files' {
 	
 	*Drop incomplete submissions with no information on food consumption 
 	merge m:1 interview__id using "${gsdTemp}/incomplete_hhs.dta"
+    drop if interview__id=="13bfa5fca6614c9cbca14b373ca19136"
 	drop if _merge==3
 	drop _merge
 	
