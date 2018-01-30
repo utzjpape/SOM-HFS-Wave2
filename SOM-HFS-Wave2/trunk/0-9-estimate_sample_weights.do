@@ -10,15 +10,17 @@ set sortseed 11021955
 ********************************************************************
 /*
 	Probability of selecting household h in EA i of strata j is given by
-	Phij = P1 * P2 * P3 such that 
+	Phij = P1 * P2 * P3 * P4 such that 
 
 	P1=Probability of selecting the EA
 	P2=Probability of selecting the Block
-	P3=Probability of selecting the household
+	P3=Probability of selecting the structure
+	P4=Probability of selecting the household
 
 	P1= EAj * HOi / Hj  
 	P2= BSi / Bi
-	P3= HSi / Hi
+	P3= SSk/Sk
+	P4= HSm / Hm
 
 	Thus, the variables needed to estimate the sampling weights are:
 	
@@ -27,8 +29,10 @@ set sortseed 11021955
 	1.3 Number of households estimated in the sample frame in strata j (Hj)
 	2.1 Number of blocks selected in EA i (BSi)
 	2.2 Number of blocks in EA i (Bi)
-	3.1 Number of households selected in EA i (HSi)
-	3.2 Number of households in EA i (Hi)
+	3.1 Number of selected structures in block k (SSk)
+	3.2 Number of structures in block k (Sk)
+	4.1 Number of households selected in structure m (HSm)
+	4.2 Number of households structure m (Hm)
 	
 */
 
@@ -109,21 +113,29 @@ rename (tot_block nbblk2se) (n_block_ea n_block_sel_ea)
 append using "${gsdTemp}\sweights_2_lowrank.dta"
 save "${gsdTemp}\sweights_2_urban_rural.dta", replace
 
-*3.1 Number of households selected in EA i (HSi)
+*3.1 Number of selected structures in block k (SSk)
+*3.2 Number of structures in block k (Sk)
 use "${gsdData}\0-RawOutput\hh_clean.dta", clear
 keep if (type==1 | type==2) & type_idp_host>=.
-keep interview__id strata ea
-rename (strata ea) (strata_id psu_id)
-bys psu_id: egen n_hh_sel_ea=count(psu_id)
-drop strata_id interview__id
-duplicates drop
-save "${gsdTemp}\sweights_3.1_urban_rural.dta", replace
+egen exclude_structures=rowtotal(n_str_no_success__*) 
+gen tot_n_str=n_str - exclude_structures
+*Impute the median number of structures to missings and zero structures
+sum tot_n_str, d
+replace tot_n_str=r(p50) if tot_n_str>=. | tot_n_str==0
+keep interview__id tot_n_str
+save "${gsdTemp}\sweights_3_urban_rural.dta", replace
 
-*3.2 Number of households in EA i (Hi)
-use "${gsdData}\0-RawTemp\master_sample.dta", clear
-drop if host_ea==1
-keep psu_id tot_hhs_psu
-save "${gsdTemp}\sweights_3.2.dta", replace
+*4.1 Number of households selected in structure m (HSm)
+*4.2 Number of households structure m (Hm)
+use "${gsdData}\0-RawOutput\hh_clean.dta", clear
+keep if (type==1 | type==2) & type_idp_host>=.
+egen exclude_hhs=rowtotal(n_hh_no_success__*) 
+gen tot_n_hhs=n_hh - exclude_hhs
+*Impute the median number of households to missings and zero households
+sum tot_n_hhs, d
+replace tot_n_hhs=r(p50) if tot_n_hhs>=. | tot_n_hhs==0
+keep interview__id tot_n_hhs
+save "${gsdTemp}\sweights_4_urban_rural.dta", replace
 
 *Estimate P1
 use "${gsdData}\0-RawOutput\hh_clean.dta", clear
@@ -171,16 +183,18 @@ merge m:1 psu_id using "${gsdTemp}\sweights_2_urban_rural.dta", nogen keep(maste
 gen p2=n_block_sel_ea/n_block_ea
 
 *Estimate P3
-merge m:1 psu_id using "${gsdTemp}\sweights_3.1_urban_rural.dta", nogen keep(master match)
-merge m:1 psu_id using "${gsdTemp}\sweights_3.2.dta", nogen keep(master match)
-gen p3=n_hh_sel_ea/tot_hhs_psu
+merge m:1 interview__id using "${gsdTemp}\sweights_3_urban_rural.dta", nogen assert(match)
+gen p3=1/tot_n_str
+
+*Estimate P4
+merge m:1 interview__id using "${gsdTemp}\sweights_4_urban_rural.dta", nogen assert(match)
+gen p4=1/tot_n_hhs
 
 *Estimate Probability of selection and sampling weights 
-gen prob_sel=p1*p2*p3
+gen prob_sel=p1*p2*p3*p4
 gen weight_temp=1/prob_sel
 keep interview__id weight_temp
 save "${gsdTemp}\sweights_urban_rural.dta", replace
-
 
 
 ********************************************************************
@@ -188,7 +202,7 @@ save "${gsdTemp}\sweights_urban_rural.dta", replace
 ********************************************************************
 /*
 	Probability of selecting household h in EA i of strata j is given by
-	Phij = P1 * P2 * P3 such that 
+	Phij = P1 * P2 * P3 *P4 such that 
 
 	P1=Probability of selecting the EA from two separate sampling processes (for urban/rural households and host communities)
 		P1a=Probability of selecting the EA from the sampling process for urban and rural areas
@@ -198,8 +212,10 @@ save "${gsdTemp}\sweights_urban_rural.dta", replace
 
 	P1=  P1a + P1b – P1a*P1b
 	P2= BSi / Bi
-	P3= HSi / Hi
+	P3= SSk/Sk
+	P4= HSm / Hm
 
+	
 	Thus, the variables needed to estimate the sampling weights are:
 	
 	1.1 Number of EAs selected in the host community sample j (EAj)
@@ -208,10 +224,11 @@ save "${gsdTemp}\sweights_urban_rural.dta", replace
 
 	2.1 Number of blocks selected in EA i (BSi)
 	2.2 Number of blocks in EA i (Bi)
-	3.1 Number of households selected in EA i (HSi)
-	3.2 Number of households in EA i (Hi)
+	3.1 Number of selected structures in block k (SSk)
+	3.2 Number of structures in block k (Sk)
+	4.1 Number of households selected in structure m (HSm)
+	4.2 Number of households structure m (Hm)
 	
-		
 */
 
 *1.1 Number of EAs selected in the host community sample j (EAj)
@@ -304,21 +321,29 @@ rename (tot_block nbblk2se) (n_block_ea n_block_sel_ea)
 append using "${gsdTemp}\sweights_2_host.dta"
 save "${gsdTemp}\sweights_2_host.dta", replace
 
-*3.1 Number of households selected in EA i (HSi)
+*3.1 Number of selected structures in block k (SSk)
+*3.2 Number of structures in block k (Sk)
 use "${gsdData}\0-RawOutput\hh_clean.dta", clear
 keep if type_idp_host==2
-keep interview__id strata ea
-rename (strata ea) (strata_id psu_id)
-bys psu_id: egen n_hh_sel_ea=count(psu_id)
-drop strata_id interview__id
-duplicates drop
-save "${gsdTemp}\sweights_3.1_host.dta", replace
+egen exclude_structures=rowtotal(n_str_no_success__*) 
+gen tot_n_str=n_str - exclude_structures
+*Impute the median number of structures to missings and zero structures
+sum tot_n_str, d
+replace tot_n_str=r(p50) if tot_n_str>=. | tot_n_str==0
+keep interview__id tot_n_str
+save "${gsdTemp}\sweights_3_host.dta", replace
 
-*3.2 Number of households in EA i (Hi)
-use "${gsdData}\0-RawTemp\master_sample.dta", clear
-keep if host_ea==1
-keep psu_id tot_hhs_psu
-save "${gsdTemp}\sweights_3.2_host.dta", replace
+*4.1 Number of households selected in structure m (HSm)
+*4.2 Number of households structure m (Hm)
+use "${gsdData}\0-RawOutput\hh_clean.dta", clear
+keep if type_idp_host==2
+egen exclude_hhs=rowtotal(n_hh_no_success__*) 
+gen tot_n_hhs=n_hh - exclude_hhs
+*Impute the median number of households to missings and zero households
+sum tot_n_hhs, d
+replace tot_n_hhs=r(p50) if tot_n_hhs>=. | tot_n_hhs==0
+keep interview__id tot_n_hhs
+save "${gsdTemp}\sweights_4_host.dta", replace
 
 *Estimate P1
 use "${gsdData}\0-RawOutput\hh_clean.dta", clear
@@ -337,72 +362,84 @@ merge m:1 psu_id using "${gsdTemp}\sweights_2_host.dta", nogen keep(master match
 gen p2=n_block_sel_ea/n_block_ea
 
 *Estimate P3
-merge m:1 psu_id using "${gsdTemp}\sweights_3.1_host.dta", nogen keep(master match)
-merge m:1 psu_id using "${gsdTemp}\sweights_3.2_host.dta", nogen keep(master match)
-gen p3=n_hh_sel_ea/tot_hhs_psu
+merge m:1 interview__id using "${gsdTemp}\sweights_3_host.dta", nogen assert(match)
+gen p3=1/tot_n_str
+
+*Estimate P4
+merge m:1 interview__id using "${gsdTemp}\sweights_4_host.dta", nogen assert(match)
+gen p4=1/tot_n_hhs
 
 *Estimate Probability of selection and sampling weights 
-gen prob_sel=p1*p2*p3
+gen prob_sel=p1*p2*p3*p4
 gen weight_temp=1/prob_sel
 keep interview__id weight_temp
 save "${gsdTemp}\sweights_host.dta", replace
-
 
 
 ********************************************************************
 * IDP households
 ********************************************************************
 /*
-	Probability of selecting household h in EA i of strata j is given by
-	Phij = P1 * P2 * P3 *P4 such that 
+	Probability of selecting household h in EA i of strata j of Camp c is given by
+	Phijc = P1 * P2 * P3 * P4 * P5 such that 
 
 	P1=Probability of selecting the Camp
 	P2=Probability of selecting the EA
 	P3=Probability of selecting the Block
-	P4=Probability of selecting the household
+	P4=Probability of selecting the structure
+	P5=Probability of selecting the household
 
-	P1= HHc/Hj
-	P2= EAj * HOi / HCj  
+	P1= Cj * Hc /Hj
+	P2= EAc * Bi / Bc  
 	P3= BSi / Bi
-	P4= HSi / Hi
+	P4= SSk/Sk
+	P5= HSm / Hm
 
 	Thus, the variables needed to estimate the sampling weights are:
 	
-	1.1 Number of households in the camp
-	1.2 Number of households estimated in the sample frame in strata j (Hj) 
-	2.1 Number of EAs selected in strata j (EAj)
-	2.2 Number of households estimated in the sample frame for the original EA i (HOi)
-	2.3 Number of households estimated in the sample frame in selected camps from strata j (HCj)
+	1.1 Number of camps selected in strata j (Cj)
+	1.2 Number of households estimated in the sample frame in camp c (Hc)
+	1.3 Number of households estimated in the sample frame in strata j (Hj)
+	2.1 Number of EAs selected in camp c (EAc)
+	2.2 Number of blocks in the sample frame in the original EA i (Bi)
+	2.3 Number of blocks in the sample frame in the camp (Bc)
 	3.1 Number of blocks selected in EA i (BSi)
 	3.2 Number of blocks in EA i (Bi)
-	4.1 Number of households selected in EA i (HSi)
-	4.2 Number of households in EA i (Hi)
-		
+	4.1 Number of selected structures in block k (SSk)
+	4.2 Number of structures in block k (Sk)
+	5.1 Number of households selected in structure m (HSm)
+	5.2 Number of households structure m (Hm)
+	
 */
 
-*1.1 Number of households in the camp
-*1.2 Number of households estimated in the sample frame in strata j (Hj) 
+*1.1 Number of camps selected in strata j (Cj)
+use "${gsdData}\0-RawTemp\master_idps_camps.dta", clear
+gen n_camp_sel_strata=1
+collapse (sum) n_camp_sel_strata, by(strata_id)
+save "${gsdTemp}\sweights_1.1_idp.dta", replace
+
+*1.2 Number of households in the camp
+*1.3 Number of households estimated in the sample frame in strata j (Hj) 
 use "${gsdData}\0-RawTemp\master_sample.dta", clear
 keep if tot_hhs_sel_camp_strata<.
 bys strata_name: egen tot_hh_camp=sum(tot_hhs_psu)
 keep psu_id tot_hh_camp tot_hhs_strata
-save "${gsdTemp}\sweights_1_idp.dta", replace
+save "${gsdTemp}\sweights_1.2_1.3_idp.dta", replace
 
-*2.1 Number of EAs selected in strata j (EAj)
+*2.1 Number of EAs selected in camp c (EAc)
 import excel "${gsdDataRaw}\IDPMasterStrata_v15.xlsx", sheet("Final_Sample") firstrow case(lower) clear
 drop if strata_id==.
 keep if selected_final>=1
 bys ea_id: egen n_intw_ea=sum(selected_final)
 gen n_sel_ea=n_intw_ea/12
-keep strata_id ea_id n_sel_ea
+keep strata_id idp_camp ea_id n_sel_ea 
 duplicates drop 
-bys strata_id: egen n_sel_ea_strata=sum(n_sel_ea)
+bys idp_camp: egen n_sel_ea_camp=sum(n_sel_ea)
 drop n_sel_ea ea_id
 duplicates drop 
 save "${gsdTemp}\sweights_2.1_idp.dta", replace
 
-*2.2 Number of households estimated in the sample frame for the original EA i (HOi)
-*List of EAs from data collection 
+*2.2 Number of blocks in the sample frame in the original EA i (Bi)
 use "${gsdData}\0-RawOutput\hh_clean.dta", clear
 keep if type==3
 keep ea
@@ -411,31 +448,36 @@ duplicates drop
 *Include id of replacement EA
 merge 1:1 id_ea using "${gsdData}\0-RawTemp\EA_Replacement_Table_Complete.dta", nogen keep(match master) keepusing(o_ea o_ea_2 o_ea_3)
 rename id_ea psu_id
-*Obtain the number of households from master sample
-preserve 
-use "${gsdData}\0-RawTemp\master_sample.dta", clear
-drop if host_ea==1
-save "${gsdTemp}\master_sample_no_host.dta", replace
+*Obtain the number of blocks from master sample
+preserve
+import excel "${gsdDataRaw}\IDPMasterStrata_v15.xlsx", sheet("Final_Sample") firstrow case(lower) clear
+destring ea_id, replace
+drop if ea_id>=.
+keep ea_id no_blocks_ea
+duplicates drop
+rename ea_id psu_id
+save "${gsdTemp}\master_idp_blocks_psu.dta", replace
 restore
-merge 1:1 psu_id using  "${gsdTemp}\master_sample_no_host.dta", nogen keep(master match) keepusing(tot_hhs_psu)
-order psu_id tot_hhs_psu
-rename (psu_id tot_hhs_psu) (ea_id size_ea)
+merge 1:1 psu_id using  "${gsdTemp}\master_idp_blocks_psu.dta", nogen keep(master match) keepusing(no_blocks_ea)
+order psu_id no_blocks_ea
+rename (psu_id no_blocks_ea) (ea_id size_ea)
 *Obtain the number of households from 1st replacement
 rename o_ea psu_id
-merge m:1 psu_id using  "${gsdTemp}\master_sample_no_host.dta", nogen keep(master match) keepusing(tot_hhs_psu)
-order tot_hhs_psu, after(psu_id)
-rename (psu_id tot_hhs_psu) (ea_id_1 size_ea_1)
+merge m:1 psu_id using  "${gsdTemp}\master_idp_blocks_psu.dta", nogen keep(master match) keepusing(no_blocks_ea)
+order no_blocks_ea, after(psu_id)
+rename (psu_id no_blocks_ea) (ea_id_1 size_ea_1)
 *Obtain the final original size of the EA
 gen size_o_ea=size_ea if ea_id_1==. 
 replace size_o_ea=size_ea_1 if ea_id_1<. & size_o_ea>=.
 keep ea_id size_o_ea
-rename ea_id psu_id					
+rename (ea_id size_o_ea) (psu_id blocks_o_ea)
 save "${gsdTemp}\sweights_2.2_idp.dta", replace
 
-*2.3 Number of households estimated in the sample frame in selected camps from strata j (HCj)
-use "${gsdData}\0-RawTemp\master_sample.dta", clear
-keep if tot_hhs_sel_camp_strata<.
-keep strata_id tot_hhs_sel_camp_strata
+*2.3 Number of blocks in the sample frame in the camp (Bc)
+use "${gsdData}\0-RawTemp\master_idps_eas.dta", clear
+rename strata_name idp_camp
+bys idp_camp: egen n_block_camp=sum(no_blocks_ea)
+keep strata_id idp_camp n_block_camp
 duplicates drop
 save "${gsdTemp}\sweights_2.3_idp.dta", replace
 
@@ -454,51 +496,158 @@ duplicates drop
 destring psu_id, replace
 save "${gsdTemp}\sweights_3_idp.dta", replace
 
-*4.1 Number of households selected in EA i (HSi)
+*4.1 Number of selected structures in block k (SSk)
+*4.2 Number of structures in block k (Sk)
 use "${gsdData}\0-RawOutput\hh_clean.dta", clear
 keep if type==3
-keep interview__id strata ea
-rename (strata ea) (strata_id psu_id)
-bys psu_id: egen n_hh_sel_ea=count(psu_id)
-drop strata_id interview__id
-duplicates drop
-save "${gsdTemp}\sweights_4.1_idp.dta", replace
+egen exclude_structures=rowtotal(n_str_no_success__*) 
+gen tot_n_str=n_str - exclude_structures
+*Impute the median number of structures to missings and zero structures
+sum tot_n_str, d
+replace tot_n_str=r(p50) if tot_n_str>=. | tot_n_str==0
+keep interview__id tot_n_str
+save "${gsdTemp}\sweights_4_idp.dta", replace
 
-*4.2 Number of households in EA i (Hi)
-use "${gsdData}\0-RawTemp\master_sample.dta", clear
-keep if tot_hhs_sel_camp_strata<.
-keep psu_id tot_hhs_psu
-save "${gsdTemp}\sweights_4.2_idp.dta", replace
+*5.1 Number of households selected in structure m (HSm)
+*5.2 Number of households structure m (Hm)
+use "${gsdData}\0-RawOutput\hh_clean.dta", clear
+keep if type==3
+egen exclude_hhs=rowtotal(n_hh_no_success__*) 
+gen tot_n_hhs=n_hh - exclude_hhs
+*Impute the median number of households to missings and zero households
+sum tot_n_hhs, d
+replace tot_n_hhs=r(p50) if tot_n_hhs>=. | tot_n_hhs==0
+keep interview__id tot_n_hhs
+save "${gsdTemp}\sweights_5_idp.dta", replace
 
 *Estimate P1
 use "${gsdData}\0-RawOutput\hh_clean.dta", clear
 keep if type==3
 keep interview__id strata ea
 rename (strata ea) (strata_id psu_id)
-merge m:1 psu_id using "${gsdTemp}\sweights_1_idp.dta", nogen keep(master match)
-gen p1=tot_hh_camp/ tot_hhs_strata
+merge m:1 strata_id using "${gsdTemp}\sweights_1.1_idp.dta", nogen assert(match)
+merge m:1 psu_id using "${gsdTemp}\sweights_1.2_1.3_idp.dta", nogen keep(match)
+gen p1=(n_camp_sel_strata * tot_hh_camp) /tot_hhs_strata 
 
 *Estimate P2
-merge m:1 strata_id using "${gsdTemp}\sweights_2.1_idp.dta", nogen keep(master match)
 merge m:1 psu_id using "${gsdTemp}\sweights_2.2_idp.dta", nogen keep(master match)
-merge m:1 strata_id using "${gsdTemp}\sweights_2.3_idp.dta", nogen keep(master match)
-gen p2=((n_sel_ea_strata* size_o_ea)/ tot_hhs_strata) 
+*Include the link between EA and camp
+preserve
+import excel "${gsdDataRaw}\IDPMasterStrata_v15.xlsx", sheet("Final_Sample") firstrow case(lower) clear
+keep ea_id idp_camp
+rename ea_id psu_id
+duplicates drop
+destring psu_id, replace
+save "${gsdTemp}\sweights_match_ea_camp.dta", replace	
+restore	
+merge m:1 psu_id using "${gsdTemp}\sweights_match_ea_camp.dta", nogen keep(match)
+merge m:1 idp_camp using "${gsdTemp}\sweights_2.1_idp.dta", nogen keep(match)
+merge m:1 idp_camp using "${gsdTemp}\sweights_2.3_idp.dta", nogen keep(match)
+gen p2=((n_sel_ea_camp*blocks_o_ea)/  n_block_camp) 
 
 *Estimate P3
 merge m:1 psu_id using "${gsdTemp}\sweights_3_idp.dta", nogen keep(master match)
 gen p3=n_block_sel_ea/n_block_ea
 
 *Estimate P4
-merge m:1 psu_id using "${gsdTemp}\sweights_4.1_idp.dta", nogen keep(master match)
-merge m:1 psu_id using "${gsdTemp}\sweights_4.2_idp.dta", nogen keep(master match)
-gen p4=n_hh_sel_ea/tot_hhs_psu
+merge m:1 interview__id using "${gsdTemp}\sweights_4_idp.dta", nogen assert(match)
+gen p4=1/tot_n_str
+
+*Estimate P5
+merge m:1 interview__id using "${gsdTemp}\sweights_5_idp.dta", nogen assert(match)
+gen p5=1/tot_n_hhs
 
 *Estimate Probability of selection and sampling weights 
-gen prob_sel=p1*p2*p3*p4
+gen prob_sel=p1*p2*p3*p4*p5
 gen weight_temp=1/prob_sel
 keep interview__id weight_temp
 save "${gsdTemp}\sweights_idp.dta", replace
 
+
+********************************************************************
+* Nomadic households 
+********************************************************************
+/*
+	Probability of selecting household h in water point i of strata j is given by
+	Phij = P1 * P2 * P3 such that 
+
+	P1=Probability of selecting the water point
+	P2=Probability of selecting the listing round
+	P3=Probability of selecting the household
+
+	P1= WSj / Wj
+	P2= LSSr/Lr
+	P3= HSr / Hr
+	
+	Thus, the variables needed to estimate the sampling weights are:
+	
+	1.1 Number of selected water points in strata j (WSj)
+	1.2 Number of water points in strata j(Wj)
+	2.1 Number of selected listing rounds r (LSr)
+	2.2 Number of listing rounds r (Lr)
+	3.1 Number of households selected in listing round r(HSr)
+	3.2 Number of households listed in round r (Hr)
+
+*/
+
+*1.1 Number of selected water points in strata j (WSj)
+use "${gsdData}\0-RawTemp\master_nomads.dta", clear
+bys strata_id: egen n_sel_wp_strata=sum(main_wp)
+keep strata_id n_sel_wp_strata
+duplicates drop
+save "${gsdTemp}\sweights_1.1_nomads.dta", replace
+
+*1.2 Number of water points in strata j(Wj)
+use "${gsdData}\0-RawTemp\master_nomads.dta", clear
+gen n_tot_wp_strata=1
+collapse (sum) n_tot_wp_strata, by(strata_id)
+save "${gsdTemp}\sweights_1.2_nomads.dta", replace
+
+*2.1 Number of selected listing rounds r (LSr)
+*2.2 Number of listing rounds r (Lr)
+use "${gsdData}\0-RawOutput\hh_clean.dta", clear
+keep if type==4
+keep ea listing_day listing_round 
+duplicates drop
+*Obtain the total number of listing rounds
+collapse (max) listing_round, by(ea listing_day )
+rename ea psu_id
+save "${gsdTemp}\sweights_2_nomads.dta", replace
+
+*3.1 Number of households selected in listing round r(HSr)
+*3.2 Number of households listed in round r (Hr)
+use "${gsdData}\0-RawOutput\hh_clean.dta", clear
+keep if type==4
+gen x=1
+bys water_point listing_day listing_round: egen n_sel=sum(x)
+merge m:1 water_point listing_day listing_round using "${gsdData}\0-RawTemp\master_nomads_listing.dta", nogen keep(master match)
+keep interview__id n_eligible n_sel
+*Correct missing values 
+replace n_eligible=n_sel if n_eligible>=.
+save "${gsdTemp}\sweights_3_nomads.dta", replace
+
+*Estimate P1
+use "${gsdData}\0-RawOutput\hh_clean.dta", clear
+keep if type==4
+keep interview__id strata ea listing_day
+rename (strata ea) (strata_id psu_id)
+merge m:1 strata_id using "${gsdTemp}\sweights_1.1_nomads.dta", nogen keep(match)
+merge m:1 strata_id using "${gsdTemp}\sweights_1.2_nomads.dta", nogen keep(match)
+gen p1=n_sel_wp_strata/n_tot_wp_strata
+
+*Estimate P2
+merge m:1 psu_id listing_day using "${gsdTemp}\sweights_2_nomads.dta", nogen keep(match)
+gen p2=1/listing_round
+
+*Estimate P3
+merge 1:1 interview__id using "${gsdTemp}\sweights_3_nomads.dta", nogen keep(match)
+gen p3=n_sel / n_eligible
+
+*Estimate Probability of selection and sampling weights 
+gen prob_sel=p1*p2*p3
+gen weight_temp=1/prob_sel
+keep interview__id weight_temp
+save "${gsdTemp}\sweights_nomads.dta", replace
 
 
 ********************************************************************
@@ -507,6 +656,7 @@ save "${gsdTemp}\sweights_idp.dta", replace
 use "${gsdTemp}\sweights_urban_rural.dta", clear
 append using "${gsdTemp}\sweights_host.dta"
 append using "${gsdTemp}\sweights_idp.dta"
+append using "${gsdTemp}\sweights_nomads.dta"
 *Include strata and households from PESS
 merge 1:1 interview__id using "${gsdData}\0-RawOutput\hh_clean.dta", nogen assert(match) keepusing(strata)
 rename strata strata_id
@@ -517,7 +667,14 @@ keep strata_id tot_hhs_strata
 duplicates drop 
 save "${gsdTemp}\strata_pess_hhs.dta", replace
 restore
-merge m:1 strata_id using "${gsdTemp}\strata_pess_hhs.dta", assert(match) nogen
+merge m:1 strata_id using "${gsdTemp}\strata_pess_hhs.dta", keep(match master) nogen
+*Include households from PESS for the nomads
+replace tot_hhs_strata=56398 if strata_id==8
+replace tot_hhs_strata=30499 if strata_id==9
+replace tot_hhs_strata=70664 if strata_id==10
+replace tot_hhs_strata=78497 if strata_id==12
+replace tot_hhs_strata=173286 if strata_id==13
+replace tot_hhs_strata=78247 if strata_id==14
 *Scale weights to match households from PESS regions 
 bys strata_id: egen weight_temp_strata=sum(weight_temp)
 gen weight = weight_temp * (tot_hhs_strata/ weight_temp_strata) 
@@ -532,4 +689,3 @@ merge 1:1 interview__id using "${gsdTemp}\weights_all_hhs.dta", nogen keep(maste
 order weight, after(block_id)
 label var weight "Household weight"
 save "${gsdData}\0-RawTemp\hh_sweights.dta", replace
-

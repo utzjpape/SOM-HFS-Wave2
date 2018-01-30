@@ -111,5 +111,5 @@ save "${gsdData}/0-RawTemp/Wave2_hh_coordinates.dta", replace
 * Drop identifying information from hh
 ********************************************************************
 use "${gsdTemp}/hh_final.dta", clear
-drop interview__id lat_y long_x
+drop interview__id lat_y long_x n_str str_no_success n_str_no_success__* n_hh hh_no_success n_hh_no_success__*
 save "${gsdData}/1-CleanInput/hh.dta", replace
