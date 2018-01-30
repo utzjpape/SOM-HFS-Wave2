@@ -216,6 +216,7 @@ tabout poorPPP hh_enterprise  using "${gsdOutput}/Remittances_raw6.xls" , svy pe
 
 ********************************************************************************
 * Round 2: additional statistics
+* Wave 1
 use "${gsdData}/1-CleanInput/SHFS2016/hhm.dta", clear
 recode migr_from (1=1 "Same district") (2 3=2 "Same state") (4 5 6 7=3 "Different state") (1001 1002=4 "Abroad"), gen(migr)
 gen int_migrant = inlist(migr, 2, 3)
@@ -235,11 +236,33 @@ la var literacy "Literacy share"
 la var enrolled "Enrollment share"
 la var s_aged "Nb school-aged"
 gen non_migrant = int_migrant==0 & intl_migrant==0
-save "${gsdData}/1-CleanTemp/hhm-migrant-edu.dta", replace
+save "${gsdData}/1-CleanTemp/hhm-migrant-edu_w1.dta", replace
+* Wave 2
+use "${gsdData}/1-CleanOutput/hhm.dta", clear
+* HHH migrants 
+gen int_migrant=(birthplace_som!=reg_pess) if ishead==1
+gen intl_migrant=born_somalia==0 if ishead==1
+gen sage = inrange(age, 6, 17) if !mi(age)
+gen childrenu5 = inrange(age, 0, 5)
+collapse (max) int_migrant intl_migrant childrenu5 (mean) literacy enrolled sage hhsize , by(strata ea block hh)
+gen s_aged=round(sage*hhsize)
+la def lint_migrant 1 "Int Migrant" 0 "Non-migrant", replace
+la val int_migrant lint_migrant
+la def lintl_migrant 1 "Intl Migrant" 0 "Non-migrant", replace
+la val intl_migrant lintl_migrant
+la var int_migrant "HHH is internal migrant"
+la var intl_migrant "HHH is intl migrant"
+la var literacy "Literacy share"
+la var enrolled "Enrollment share"
+la var s_aged "Nb school-aged"
+gen non_migrant = int_migrant==0 & intl_migrant==0
+save "${gsdData}/1-CleanTemp/hhm-migrant-edu_w2.dta", replace
+
 
 *School expenditures 
+* wave 1
 use "${gsdData}/1-CleanInput/SHFS2016/nonfood.dta", clear 
-merge m:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhm-migrant-edu.dta", assert(match using) keep(match) nogen keepusing(s_aged hhsize int_migrant intl_migrant non_migrant enrolled childrenu5)
+merge m:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhm-migrant-edu_w1.dta", assert(match using) keep(match) nogen keepusing(s_aged hhsize int_migrant intl_migrant non_migrant enrolled childrenu5)
 keep if inlist(itemid, 1080, 1081)
 ren purc_usd_imp exp
 drop purc* imputed pr* free*
@@ -249,47 +272,126 @@ gen health_expense = exp1081*52/hhsize
 la var educ_expense "Mean annual educational expenses per school-aged child, current USD"
 la var health_expense "Mean annual health care expenses per capita, current USD"
 merge 1:1 strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hh.dta", assert(match using) nogen
-gen pw=weight_cons*hhsize
-svyset ea [pw=pw], strata(strata)
+save "${gsdTemp}/hhm-migrant-edu-expenditure_w1.dta", replace
+* Wave 2
+use "${gsdData}/1-CleanOutput/nonfood.dta", clear 
+merge m:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhm-migrant-edu_w2.dta", assert(match using) keep(match) nogen keepusing(s_aged hhsize int_migrant intl_migrant non_migrant enrolled childrenu5)
+keep if inlist(itemid, 1082, 1083, 1084, 1085, 1086)
+ren purc_usd_imp exp
+drop purc* imputed pr* free* recall
+reshape wide exp, i(strata ea block hh) j(itemid)
+gen educ_expense = (exp1082 + exp1083)*52/s_aged if s_aged>0
+gen health_expense = (exp1084 + exp1085 + exp1086)*52/hhsize
+la var educ_expense "Mean annual educational expenses per school-aged child, current USD"
+la var health_expense "Mean annual health care expenses per capita, current USD"
+drop exp*
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanOutput/hh.dta", assert(match) nogen
+save "${gsdTemp}/hhm-migrant-edu-expenditure_w2.dta", replace
+
 
 * Income quintiles with remittances receipt, migration, literacy
 * New additions 
-tabout remit12m quintiles_tc  using "${gsdOutput}/Remittances_raw7.xls" , svy percent c(col se) npos(col) sebnone h1(Remittances and income quintiles) replace
+use "${gsdTemp}/hhm-migrant-edu-expenditure_w1.dta", clear
+gen pw=weight_cons*hhsize
+svyset ea [pw=pw], strata(strata)
+tabout remit12m quintiles_tc  using "${gsdOutput}/Remittances_raw71.xls" , svy percent c(col se) npos(col) sebnone h1(Remittances and income quintiles) replace
 recode remit_pcpd (0=.)
-tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if !missing(remit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2("Mean value (USD) of remittances pc (Conditional) pd") append
-tabout int_migrant quintiles_tc  using "${gsdOutput}/Remittances_raw7.xls" , svy percent c(col se) npos(col) sebnone h1("Internal migrants and income quintiles") append
-tabout intl_migrant quintiles_tc  using "${gsdOutput}/Remittances_raw7.xls" , svy percent c(col se) npos(col) sebnone h1("International migrants and income quintiles") append
-tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==0, svy sum c(mean pliteracy se) f(3) sebnone npos(col) h2("income quintiles and literacy, non-recipients") append
-tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==1, svy sum c(mean pliteracy se) f(3) sebnone npos(col) h2("income quintiles and literacy, recipients") append
-tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==0, svy sum c(mean tc_imp se) f(3) sebnone npos(col) h2("income quintiles and consumption, non-recipients") append
-tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==1, svy sum c(mean tc_imp se) f(3) sebnone npos(col) h2("income quintiles and consumption, recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw71.xls" if !missing(remit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2("Mean value (USD) of remittances pc (Conditional) pd") append
+tabout int_migrant quintiles_tc  using "${gsdOutput}/Remittances_raw71.xls" , svy percent c(col se) npos(col) sebnone h1("Internal migrants and income quintiles") append
+tabout intl_migrant quintiles_tc  using "${gsdOutput}/Remittances_raw71.xls" , svy percent c(col se) npos(col) sebnone h1("International migrants and income quintiles") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw71.xls" if remit12m==0, svy sum c(mean pliteracy se) f(3) sebnone npos(col) h2("income quintiles and literacy, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw71.xls" if remit12m==1, svy sum c(mean pliteracy se) f(3) sebnone npos(col) h2("income quintiles and literacy, recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw71.xls" if remit12m==0, svy sum c(mean tc_imp se) f(3) sebnone npos(col) h2("income quintiles and consumption, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw71.xls" if remit12m==1, svy sum c(mean tc_imp se) f(3) sebnone npos(col) h2("income quintiles and consumption, recipients") append
 replace tc_imp_f=tc_imp_f/7/hhsize
-tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==0, svy sum c(mean tc_imp_f se) f(3) sebnone npos(col) h2("income quintiles and food consumption, non-recipients") append
-tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==1, svy sum c(mean tc_imp_f se) f(3) sebnone npos(col) h2("income quintiles and food consumption, recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw71.xls" if remit12m==0, svy sum c(mean tc_imp_f se) f(3) sebnone npos(col) h2("income quintiles and food consumption, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw71.xls" if remit12m==1, svy sum c(mean tc_imp_f se) f(3) sebnone npos(col) h2("income quintiles and food consumption, recipients") append
 gen remit_proportion = remit_pcpd / tc_imp
-tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==1, svy sum c(mean remit_proportion se) f(3) sebnone npos(col) h2("income quintiles, remittances as proportion of income") append
-tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==0, svy sum c(mean enrolled se) f(3) sebnone npos(col) h2("income quintiles and education, non-recipients") append
-tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==1, svy sum c(mean enrolled se) f(3) sebnone npos(col) h2("income quintiles and education, recipients") append
-tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==0, svy sum c(mean educ_expense se) f(3) sebnone npos(col) h2("income quintiles and educational expense, non-recipients") append
-tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==1, svy sum c(mean educ_expense se) f(3) sebnone npos(col) h2("income quintiles and educational expense, recipients") append
-tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==0, svy sum c(mean health_expense se) f(3) sebnone npos(col) h2("income quintiles and health expense, non-recipients") append
-tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==1, svy sum c(mean health_expense se) f(3) sebnone npos(col) h2("income quintiles and health expense, recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw71.xls" if remit12m==1, svy sum c(mean remit_proportion se) f(3) sebnone npos(col) h2("income quintiles, remittances as proportion of income") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw71.xls" if remit12m==0, svy sum c(mean enrolled se) f(3) sebnone npos(col) h2("income quintiles and education, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw71.xls" if remit12m==1, svy sum c(mean enrolled se) f(3) sebnone npos(col) h2("income quintiles and education, recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw71.xls" if remit12m==0 if s_aged>0, svy sum c(mean educ_expense se) f(3) sebnone npos(col) h2("income quintiles and educational expense, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw71.xls" if remit12m==1 if s_aged>0, svy sum c(mean educ_expense se) f(3) sebnone npos(col) h2("income quintiles and educational expense, recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw71.xls" if remit12m==0, svy sum c(mean health_expense se) f(3) sebnone npos(col) h2("income quintiles and health expense, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw71.xls" if remit12m==1, svy sum c(mean health_expense se) f(3) sebnone npos(col) h2("income quintiles and health expense, recipients") append
 replace tc_imp_nf=tc_imp_nf/7/hhsize
-tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==0, svy sum c(mean tc_imp_nf se) f(3) sebnone npos(col) h2("income quintiles and nonfood expenditure, non-recipients") append
-tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==1, svy sum c(mean tc_imp_nf se) f(3) sebnone npos(col) h2("income quintiles and nonfood expenditure, recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw71.xls" if remit12m==0, svy sum c(mean tc_imp_nf se) f(3) sebnone npos(col) h2("income quintiles and nonfood expenditure, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw71.xls" if remit12m==1, svy sum c(mean tc_imp_nf se) f(3) sebnone npos(col) h2("income quintiles and nonfood expenditure, recipients") append
 drop if team==2
 drop quintiles_tc
 xtile quintiles_tc = tc_imp [pw=pw], n(5)
 replace meals_adult=. if meals_adult>10
 replace meals_childrenu5=. if meals_childrenu5>10
 svyset ea [pw=weight_adj], strata(strata)
-tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==0, svy sum c(mean nomoney se) f(3) sebnone npos(col) h2("income quintiles and lack of money for food, non-recipients") append
-tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==1, svy sum c(mean nomoney se) f(3) sebnone npos(col) h2("income quintiles and lack of money for food, recipients") append
-tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==0, svy sum c(mean meals_adult se) f(3) sebnone npos(col) h2("income quintiles and adult meals, non-recipients") append
-tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==1, svy sum c(mean meals_adult se) f(3) sebnone npos(col) h2("income quintiles and adult meals, recipients") append
-tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==0, svy sum c(mean meals_childrenu5 se) f(3) sebnone npos(col) h2("income quintiles and child meals, non-recipients") append
-tabout quintiles_tc using "${gsdOutput}/Remittances_raw7.xls" if remit12m==1, svy sum c(mean meals_childrenu5 se) f(3) sebnone npos(col) h2("income quintiles and child meals, recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw71.xls" if remit12m==0, svy sum c(mean nomoney se) f(3) sebnone npos(col) h2("income quintiles and lack of money for food, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw71.xls" if remit12m==1, svy sum c(mean nomoney se) f(3) sebnone npos(col) h2("income quintiles and lack of money for food, recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw71.xls" if remit12m==0, svy sum c(mean meals_adult se) f(3) sebnone npos(col) h2("income quintiles and adult meals, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw71.xls" if remit12m==1, svy sum c(mean meals_adult se) f(3) sebnone npos(col) h2("income quintiles and adult meals, recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw71.xls" if remit12m==0, svy sum c(mean meals_childrenu5 se) f(3) sebnone npos(col) h2("income quintiles and child meals, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw71.xls" if remit12m==1, svy sum c(mean meals_childrenu5 se) f(3) sebnone npos(col) h2("income quintiles and child meals, recipients") append
 
+* Wave 2
+use "${gsdTemp}/hhm-migrant-edu-expenditure_w2.dta", clear
+gen pw=weight*hhsize
+svyset ea [pw=pw], strata(strata)
+tabout remit12m quintiles_tc  using "${gsdOutput}/Remittances_raw72.xls" , svy percent c(col se) npos(col) sebnone h1(Remittances and income quintiles) replace
+recode remit_pcpd (0=.)
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw72.xls" if !missing(remit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2("Mean value (USD) of remittances pc (Conditional) pd") append
+tabout int_migrant quintiles_tc  using "${gsdOutput}/Remittances_raw72.xls" , svy percent c(col se) npos(col) sebnone h1("Internal migrants and income quintiles") append
+tabout intl_migrant quintiles_tc  using "${gsdOutput}/Remittances_raw72.xls" , svy percent c(col se) npos(col) sebnone h1("International migrants and income quintiles") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw72.xls" if remit12m==0, svy sum c(mean pliteracy se) f(3) sebnone npos(col) h2("income quintiles and literacy, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw72.xls" if remit12m==1, svy sum c(mean pliteracy se) f(3) sebnone npos(col) h2("income quintiles and literacy, recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw72.xls" if remit12m==0, svy sum c(mean tc_imp se) f(3) sebnone npos(col) h2("income quintiles and consumption, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw72.xls" if remit12m==1, svy sum c(mean tc_imp se) f(3) sebnone npos(col) h2("income quintiles and consumption, recipients") append
+replace tc_imp_f=tc_imp_f/7/hhsize
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw72.xls" if remit12m==0, svy sum c(mean tc_imp_f se) f(3) sebnone npos(col) h2("income quintiles and food consumption, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw72.xls" if remit12m==1, svy sum c(mean tc_imp_f se) f(3) sebnone npos(col) h2("income quintiles and food consumption, recipients") append
+gen remit_proportion = remit_pcpd / tc_imp
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw72.xls" if remit12m==1, svy sum c(mean remit_proportion se) f(3) sebnone npos(col) h2("income quintiles, remittances as proportion of income") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw72.xls" if remit12m==0, svy sum c(mean enrolled se) f(3) sebnone npos(col) h2("income quintiles and education, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw72.xls" if remit12m==1, svy sum c(mean enrolled se) f(3) sebnone npos(col) h2("income quintiles and education, recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw72.xls" if remit12m==0 & s_aged>0, svy sum c(mean educ_expense se) f(3) sebnone npos(col) h2("income quintiles and educational expense, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw72.xls" if remit12m==1 & s_aged>0, svy sum c(mean educ_expense se) f(3) sebnone npos(col) h2("income quintiles and educational expense, recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw72.xls" if remit12m==0, svy sum c(mean health_expense se) f(3) sebnone npos(col) h2("income quintiles and health expense, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw72.xls" if remit12m==1, svy sum c(mean health_expense se) f(3) sebnone npos(col) h2("income quintiles and health expense, recipients") append
+replace tc_imp_nf=tc_imp_nf/7/hhsize
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw72.xls" if remit12m==0, svy sum c(mean tc_imp_nf se) f(3) sebnone npos(col) h2("income quintiles and nonfood expenditure, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw72.xls" if remit12m==1, svy sum c(mean tc_imp_nf se) f(3) sebnone npos(col) h2("income quintiles and nonfood expenditure, recipients") append
+
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw72.xls" if remit12m==0, svy sum c(mean nomoney se) f(3) sebnone npos(col) h2("income quintiles and lack of money for food, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw72.xls" if remit12m==1, svy sum c(mean nomoney se) f(3) sebnone npos(col) h2("income quintiles and lack of money for food, recipients") append
+
+* Wave 2 with just the regions that were both in Wave 1 and Wave 2
+use "${gsdTemp}/hhm-migrant-edu-expenditure_w2.dta", clear
+keep if inlist(reg_pess, 1,3,4,11,12,13,16,17,18)
+gen pw=weight*hhsize
+svyset ea [pw=pw], strata(strata)
+tabout remit12m quintiles_tc  using "${gsdOutput}/Remittances_raw721.xls" , svy percent c(col se) npos(col) sebnone h1(Remittances and income quintiles) replace
+recode remit_pcpd (0=.)
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw721.xls" if !missing(remit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2("Mean value (USD) of remittances pc (Conditional) pd") append
+tabout int_migrant quintiles_tc  using "${gsdOutput}/Remittances_raw721.xls" , svy percent c(col se) npos(col) sebnone h1("Internal migrants and income quintiles") append
+tabout intl_migrant quintiles_tc  using "${gsdOutput}/Remittances_raw721.xls" , svy percent c(col se) npos(col) sebnone h1("International migrants and income quintiles") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw721.xls" if remit12m==0, svy sum c(mean pliteracy se) f(3) sebnone npos(col) h2("income quintiles and literacy, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw721.xls" if remit12m==1, svy sum c(mean pliteracy se) f(3) sebnone npos(col) h2("income quintiles and literacy, recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw721.xls" if remit12m==0, svy sum c(mean tc_imp se) f(3) sebnone npos(col) h2("income quintiles and consumption, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw721.xls" if remit12m==1, svy sum c(mean tc_imp se) f(3) sebnone npos(col) h2("income quintiles and consumption, recipients") append
+replace tc_imp_f=tc_imp_f/7/hhsize
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw721.xls" if remit12m==0, svy sum c(mean tc_imp_f se) f(3) sebnone npos(col) h2("income quintiles and food consumption, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw721.xls" if remit12m==1, svy sum c(mean tc_imp_f se) f(3) sebnone npos(col) h2("income quintiles and food consumption, recipients") append
+gen remit_proportion = remit_pcpd / tc_imp
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw721.xls" if remit12m==1, svy sum c(mean remit_proportion se) f(3) sebnone npos(col) h2("income quintiles, remittances as proportion of income") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw721.xls" if remit12m==0, svy sum c(mean enrolled se) f(3) sebnone npos(col) h2("income quintiles and education, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw721.xls" if remit12m==1, svy sum c(mean enrolled se) f(3) sebnone npos(col) h2("income quintiles and education, recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw721.xls" if remit12m==0 & s_aged>0, svy sum c(mean educ_expense se) f(3) sebnone npos(col) h2("income quintiles and educational expense, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw721.xls" if remit12m==1 & s_aged>0, svy sum c(mean educ_expense se) f(3) sebnone npos(col) h2("income quintiles and educational expense, recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw721.xls" if remit12m==0, svy sum c(mean health_expense se) f(3) sebnone npos(col) h2("income quintiles and health expense, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw721.xls" if remit12m==1, svy sum c(mean health_expense se) f(3) sebnone npos(col) h2("income quintiles and health expense, recipients") append
+replace tc_imp_nf=tc_imp_nf/7/hhsize
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw721.xls" if remit12m==0, svy sum c(mean tc_imp_nf se) f(3) sebnone npos(col) h2("income quintiles and nonfood expenditure, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw721.xls" if remit12m==1, svy sum c(mean tc_imp_nf se) f(3) sebnone npos(col) h2("income quintiles and nonfood expenditure, recipients") append
+
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw721.xls" if remit12m==0, svy sum c(mean nomoney se) f(3) sebnone npos(col) h2("income quintiles and lack of money for food, non-recipients") append
+tabout quintiles_tc using "${gsdOutput}/Remittances_raw721.xls" if remit12m==1, svy sum c(mean nomoney se) f(3) sebnone npos(col) h2("income quintiles and lack of money for food, recipients") append
 
 
 * Housetypes
@@ -303,7 +405,7 @@ tabout house_ownership using "${gsdOutput}/Remittances_raw8.xls" if !missing(rem
 tabout int_migrant house_ownership using "${gsdOutput}/Remittances_raw8.xls" , svy percent c(col se) npos(col) sebnone h1(Internal migrants and house ownership) append
 tabout intl_migrant house_ownership using "${gsdOutput}/Remittances_raw8.xls" , svy percent c(col se) npos(col) sebnone h1(International migrants and house ownership) append
 
-* Remittances and Migration
+* Remittances and Migration - Wave 1
 svyset ea [pw=weight_adj], strata(strata)
 tabout remit12m int_migrant  using "${gsdOutput}/Remittances_raw9.xls" , svy percent c(col se) npos(col) sebnone h1(Remittances and int migrant) replace
 tabout remit12m intl_migrant  using "${gsdOutput}/Remittances_raw9.xls" , svy percent c(col se) npos(col) sebnone h1(Remittances and intl migrant) append
@@ -314,6 +416,41 @@ tabout remit12m int_migrant using "${gsdOutput}/Remittances_raw9.xls" , c(freq c
 tabout remit12m intl_migrant using "${gsdOutput}/Remittances_raw9.xls" , c(freq col) npos(col) f(0) sebnone h1(Recipients and intl migrants in HH) append
 tabout remit12m non_migrant using "${gsdOutput}/Remittances_raw9.xls" , c(freq col) npos(col) f(0) sebnone h1(Recipients and no migrants in HH) append
 tabout non_migrant using "${gsdOutput}/Remittances_raw9.xls" if !missing(remit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2(Mean value (USD) of remittances pc (Conditional) pd, no migrant) append
+
+* Remittances and Migration - Wave 1
+use "${gsdTemp}/hhm-migrant-edu-expenditure_w2.dta", clear
+svyset ea [pw=weight], strata(strata) singleunit(centered)
+recode *remit_pcpd (0=.)
+tabout remit12m int_migrant using "${gsdOutput}/Remittances_raw92.xls" , svy percent c(col se) npos(col) sebnone h1(Remittances and int migrant) replace
+tabout remit12m intl_migrant using "${gsdOutput}/Remittances_raw92.xls" , svy percent c(col se) npos(col) sebnone h1(Remittances and intl migrant) append
+tabout int_migrant using "${gsdOutput}/Remittances_raw92.xls" if !missing(remit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2(Mean value (USD) of remittances pc (Conditional) pd, int migrant) append
+tabout intl_migrant using "${gsdOutput}/Remittances_raw92.xls" if !missing(remit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2(Mean value (USD) of remittances pc (Conditional) pd, intl migrant) append
+tabout remit12m non_migrant using "${gsdOutput}/Remittances_raw92.xls" , svy percent c(col se) npos(col) sebnone h1(Remittances and no migrants in HH) append
+tabout remit12m int_migrant using "${gsdOutput}/Remittances_raw92.xls" , c(freq col) npos(col) f(0) sebnone h1(Recipients and int migrants in HH) append
+tabout remit12m intl_migrant using "${gsdOutput}/Remittances_raw92.xls" , c(freq col) npos(col) f(0) sebnone h1(Recipients and intl migrants in HH) append
+tabout remit12m non_migrant using "${gsdOutput}/Remittances_raw92.xls" , c(freq col) npos(col) f(0) sebnone h1(Recipients and no migrants in HH) append
+tabout non_migrant using "${gsdOutput}/Remittances_raw92.xls" if !missing(remit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2(Mean value (USD) of remittances pc (Conditional) pd, no migrant) append
+* international remittances only
+tabout intlremit12m_yn int_migrant using "${gsdOutput}/Remittances_raw92_intl.xls" , svy percent c(col se) npos(col) sebnone h1(Remittances and int migrant) replace
+tabout intlremit12m_yn intl_migrant using "${gsdOutput}/Remittances_raw92_intl.xls" , svy percent c(col se) npos(col) sebnone h1(Remittances and intl migrant) append
+tabout int_migrant using "${gsdOutput}/Remittances_raw92_intl.xls" if !missing(intlremit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2(Mean value (USD) of remittances pc (Conditional) pd, int migrant) append
+tabout intl_migrant using "${gsdOutput}/Remittances_raw92_intl.xls" if !missing(intlremit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2(Mean value (USD) of remittances pc (Conditional) pd, intl migrant) append
+tabout intlremit12m_yn non_migrant using "${gsdOutput}/Remittances_raw92_intl.xls" , svy percent c(col se) npos(col) sebnone h1(Remittances and no migrants in HH) append
+tabout intlremit12m_yn int_migrant using "${gsdOutput}/Remittances_raw92_intl.xls" , c(freq col) npos(col) f(0) sebnone h1(Recipients and int migrants in HH) append
+tabout intlremit12m_yn intl_migrant using "${gsdOutput}/Remittances_raw92_intl.xls" , c(freq col) npos(col) f(0) sebnone h1(Recipients and intl migrants in HH) append
+tabout intlremit12m_yn non_migrant using "${gsdOutput}/Remittances_raw92_intl.xls" , c(freq col) npos(col) f(0) sebnone h1(Recipients and no migrants in HH) append
+tabout non_migrant using "${gsdOutput}/Remittances_raw92_intl.xls" if !missing(intlremit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2(Mean value (USD) of remittances pc (Conditional) pd, no migrant) append
+* internal remittances only
+tabout intremit12m_yn int_migrant using "${gsdOutput}/Remittances_raw92_int.xls" , svy percent c(col se) npos(col) sebnone h1(Remittances and int migrant) replace
+tabout intremit12m_yn intl_migrant using "${gsdOutput}/Remittances_raw92_int.xls" , svy percent c(col se) npos(col) sebnone h1(Remittances and intl migrant) append
+tabout int_migrant using "${gsdOutput}/Remittances_raw92_int.xls" if !missing(intremit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2(Mean value (USD) of remittances pc (Conditional) pd, int migrant) append
+tabout intl_migrant using "${gsdOutput}/Remittances_raw92_int.xls" if !missing(intremit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2(Mean value (USD) of remittances pc (Conditional) pd, intl migrant) append
+tabout intremit12m_yn non_migrant using "${gsdOutput}/Remittances_raw92_int.xls" , svy percent c(col se) npos(col) sebnone h1(Remittances and no migrants in HH) append
+tabout intremit12m_yn int_migrant using "${gsdOutput}/Remittances_raw92_int.xls" , c(freq col) npos(col) f(0) sebnone h1(Recipients and int migrants in HH) append
+tabout intremit12m_yn intl_migrant using "${gsdOutput}/Remittances_raw92_int.xls" , c(freq col) npos(col) f(0) sebnone h1(Recipients and intl migrants in HH) append
+tabout intremit12m_yn non_migrant using "${gsdOutput}/Remittances_raw92_int.xls" , c(freq col) npos(col) f(0) sebnone h1(Recipients and no migrants in HH) append
+tabout non_migrant using "${gsdOutput}/Remittances_raw92_int.xls" if !missing(intremit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2(Mean value (USD) of remittances pc (Conditional) pd, no migrant) append
+
 
 * Remittances and child labour 
 use "${gsdData}/1-CleanInput/SHFS2016/hhm.dta", clear
@@ -341,12 +478,73 @@ svyset ea [pweight=weight_adj], strata(strata)
 tabout remit12m type  using "${gsdOutput}/Remittances_raw11.xls" , svy percent c(col se) npos(col) sebnone h1("Remittances and population type") replace
 tabout type using "${gsdOutput}/Remittances_raw11.xls" if !missing(remit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2(Mean value (USD) of remittances pc (Conditional) pd, no migrant) append
 
+************************************************************************************
+* Wave 2 Overview *
+************************************************************************************
+use "${gsdData}/1-CleanOutput/hh.dta", clear
+recode *remit_pcpd supp_som_pcpd(0=.)
+svyset ea [pweight=weight], strata(strata) singleunit(centered)
+foreach pre in "int" "intl" {
+	la var `pre'remit_mode__1 "Mode: Bank"
+	la var `pre'remit_mode__2 "Mode: Remittances company"
+	la var `pre'remit_mode__3 "Mode: Mail"
+	la var `pre'remit_mode__4 "Mode: Courier"
+	la var `pre'remit_mode__5 "Mode: Internet"
+	la var `pre'remit_mode__6 "Mode: Bank card"
+	la var `pre'remit_mode__7 "Mode: travel of family member"
+	la var `pre'remit_mode__8 "Mode: Bus/Minibus"
+	la var `pre'remit_mode__9 "Mode: Mobile phone"
+	
+}
+
+* Level and value of remittances
+tabout remit12m type  using "${gsdOutput}/Remittances_raw12.xls" , svy percent c(col se) npos(col) sebnone h1("Intl + int remittances and population type") replace
+tabout intremit12m_yn type  using "${gsdOutput}/Remittances_raw12.xls" , svy percent c(col se) npos(col) sebnone h1("Intl remittances and population type") append
+tabout intlremit12m_yn type  using "${gsdOutput}/Remittances_raw12.xls" , svy percent c(col se) npos(col) sebnone h1("Int remittances and population type") append
+tabout supp_som_yn type  using "${gsdOutput}/Remittances_raw12.xls" , svy percent c(col se) npos(col) sebnone h1("Sending remittances and population type") append
+
+tabout type using "${gsdOutput}/Remittances_raw12.xls" if !missing(remit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2("Mean value of intl+int remittances pc (Conditional) pd") append
+tabout type using "${gsdOutput}/Remittances_raw12.xls" if !missing(intremit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2("Mean value of intl remittances pc (Conditional) pd") append
+tabout type using "${gsdOutput}/Remittances_raw12.xls" if !missing(intlremit_pcpd), svy sum c(mean remit_pcpd se) f(3) sebnone npos(col) h2("Mean value of int remittances pc (Conditional) pd") append
+tabout type using "${gsdOutput}/Remittances_raw12.xls" if !missing(supp_som_pcpd), svy sum c(mean supp_som_pcpd se) f(3) sebnone npos(col) h2("Mean value of remittances sent pc (Conditional) pd") append
+
+/* Overlap int, intl, support
+tabout remit12m supp_som_yn  using "${gsdOutput}/Remittances_raw12.xls" , svy percent c(col se) npos(col) sebnone h1("Intl + int remittances and population type") append
+tabout remit12m using "${gsdOutput}/Remittances_raw12.xls" if, svy sum c(mean supp_som_yn se) f(3) sebnone npos(col) h2("Mean value of remittances sent pc (Conditional) pd") append
+*/
+
+* Most common family relations who send remittances
+tabout intremit_relation using "${gsdOutput}/Remittances_raw13.xls" , svy percent c(col se) npos(col) sebnone h2("Family relation of sender, int remit") replace
+tabout intlremit_relation using "${gsdOutput}/Remittances_raw13.xls" , svy percent c(col se) npos(col) sebnone h2("Family relation of sender, intl remit") append
+
+* Relationship & migration
+tabout intlremit_relation using "${gsdOutput}/Remittances_raw13.xls", svy sum c(mean intlremit_source se) f(3) sebnone npos(col) h2("Lived with family prev, intl") append
+tabout intremit_relation using "${gsdOutput}/Remittances_raw13.xls", svy sum c(mean intremit_source se) f(3) sebnone npos(col) h2("Lived with family prev, int") append
+tabout intlremit_relation using "${gsdOutput}/Remittances_raw13.xls"  if intlremit_source==1, svy sum c(mean intlremit_source_mig se) f(3) sebnone npos(col) h2("Migrated for work, intl") append
+tabout intremit_relation using "${gsdOutput}/Remittances_raw13.xls" if intremit_source==1, svy sum c(mean intremit_source_mig se) f(3) sebnone npos(col) h2("Migrated for work, int") append
+
+
+* Channels of receipt
+tabout intlremit_mode__1 using "${gsdOutput}/Remittances_raw14.xls" , svy percent c(col se) npos(col) sebnone h2("Intl remit mode 1") replace
+foreach i of numlist 2/9 {
+	tabout intlremit_mode__`i' using "${gsdOutput}/Remittances_raw14.xls" , svy percent c(col se) npos(col) sebnone h2("Intl remit mode `i'") append
+}
+recode intremit_mode* (0=0) (1/9=1)
+tabout intremit_mode__1 using "${gsdOutput}/Remittances_raw14.xls" , svy percent c(col se) npos(col) sebnone h2("Int remit mode 1") append
+foreach i of numlist 2/9 {
+	tabout intremit_mode__`i' using "${gsdOutput}/Remittances_raw14.xls" , svy percent c(col se) npos(col) sebnone h2("Int remit mode `i'") append
+}
+
 
 * put it all together
-foreach i of numlist 1/11 {
+foreach i of numlist 14 {
 	insheet using "${gsdOutput}/Remittances_raw`i'.xls", clear nonames tab
-	export excel using "${gsdOutput}/Remittances_Figures_v2.xlsx", sheetreplace sheet("Raw_Data_`i'")
+	export excel using "${gsdOutput}/Remittances_Figures_v4.xlsx", sheetreplace sheet("Raw_Data_`i'")
 }
-*
+
+foreach i in "92" "92_intl" "92_int" {
+	insheet using "${gsdOutput}/Remittances_raw`i'.xls", clear nonames tab
+	export excel using "${gsdOutput}/Remittances_Figures_v4.xlsx", sheetreplace sheet("Raw_Data_`i'")
+}
 
 

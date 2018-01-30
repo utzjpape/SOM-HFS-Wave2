@@ -4,6 +4,39 @@ set more off
 set seed 23081980 
 set sortseed 11041955
 
+*********************************************************
+* Combine wave 1 and wave 2 data sets 
+*********************************************************
+* HH level dataset 
+use "${gsdData}/1-CleanInput/SHFS2016/hh.dta", clear
+ren weight weight_unadjusted
+ren weight_adj weight
+ren reg_pess region
+ren house_ownership tenure
+append using "${gsdData}/1-CleanOutput/hh.dta", gen(t)
+la def lt 0 "Wave1" 1 "Wave2", replace
+la val t lt 
+replace reg_pess = region if mi(reg_pess)
+drop region
+replace weight_cons = weight if mi(weight_cons)
+ren weight weight_adj
+recode tenure (1=1 "Own") (2=2 "Rent") (3/max=3 "Other"), gen(tenure1)
+save "${gsdData}/1-CleanInput/hh_all.dta", replace
+* HHM level dataset
+use "${gsdData}/1-CleanInput/SHFS2016/hhm.dta", clear
+ren weight weight_unadjusted
+gen enrolled=edu_status==1 if inrange(age, 6, 17)
+gen enrolled25 = edu_status==1 if inrange(age, 6, 25)
+append using "${gsdData}/1-CleanOutput/hhm.dta", gen(t)
+drop reg_pess
+la def lt 0 "Wave1" 1 "Wave2", replace
+la val t lt 
+save "${gsdData}/1-CleanInput/hhm_all.dta", replace
+
+use "${gsdData}/1-CleanInput/SHFS2016/hhq-poverty.dta", clear
+append using "${gsdData}/1-CleanTemp/hhq-poverty.dta", gen(t)
+save "${gsdData}/1-CleanInput/SHFS2016/hhq-poverty_all.dta", replace 
+
 ****************************************
 ****************** Maps ****************
 ****************************************
@@ -126,7 +159,7 @@ graph export "${gsdOutput}/2016_conflict_fatalities_reg.png", replace
 ********************************************************************************
 * Rainfall and NDVI timeseries
 use "${gsdData}/1-CleanTemp/rainfall_timeseries.dta", clear
-export excel using "${gsdOutput}/DroughtImpact_Figures_v3.xlsx", sheetreplace sheet("Raw_Rainfall_TS") first(variables)
+export excel using "${gsdOutput}/DroughtImpact_Figures_v4.xlsx", sheetreplace sheet("Raw_Rainfall_TS") first(variables)
 
 ** IPC classification over time ** 
 use "${gsdData}/1-CleanTemp/IPC_Population.dta", clear
@@ -136,7 +169,7 @@ format date %td
 drop *1 *0
 order date total_* projection
 sort date
-export excel using "${gsdOutput}/DroughtImpact_Figures_v3.xlsx", sheet("Raw_IPC") sheetreplace firstrow(variables)
+export excel using "${gsdOutput}/DroughtImpact_Figures_v4.xlsx", sheet("Raw_IPC") sheetreplace firstrow(variables)
 
 ** SPI ** 
 * All SOM
@@ -151,7 +184,7 @@ append using "${gsdData}/1-CleanTemp/Wave1_SPI.dta"
 kdensity SPI, at(x_SPI) nograph gen(y_SPI_hh)
 keep x_SPI y_SPI y_SPI_hh
 drop if mi(x_SPI, y_SPI_hh, y_SPI)
-export excel using "${gsdOutput}/DroughtImpact_Figures_v3.xlsx", sheet("Raw_Drought_Indicators") sheetmodify cell(D1) firstrow(variables)
+export excel using "${gsdOutput}/DroughtImpact_Figures_v4.xlsx", sheet("Raw_Drought_Indicators") sheetmodify cell(D1) firstrow(variables)
 * Wave 2 HHs 
 use "${gsdData}/1-CleanTemp/SPI_SOM0.dta", clear
 su SPI, d
@@ -163,7 +196,7 @@ append using "${gsdData}/1-CleanTemp/Wave2_SPI.dta"
 kdensity SPI, at(x_SPI) nograph gen(y_SPI_hh_w2)
 keep y_SPI_hh_w2
 drop if mi(y_SPI_hh_w2)
-export excel using "${gsdOutput}/DroughtImpact_Figures_v3.xlsx", sheet("Raw_Drought_Indicators") sheetmodify cell(G1) firstrow(variables)
+export excel using "${gsdOutput}/DroughtImpact_Figures_v4.xlsx", sheet("Raw_Drought_Indicators") sheetmodify cell(G1) firstrow(variables)
 
 * SPI Category - Wave 1 households
 use "${gsdData}/1-CleanTemp/Wave1_SPI.dta", clear
@@ -175,11 +208,10 @@ tabout SPI_cat x using "${gsdOutput}/DroughtImpact_raw00.xls" , svy percent c(co
 
 * SPI Category - Wave 2 households
 use "${gsdData}/1-CleanTemp/Wave2_SPI.dta", clear
-su SPI, d
-*merge 1:1 team strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hh.dta", assert(match) keepusing(weight_adj hhsize)
-*svyset ea [pweight=weight_adj], strata(strata)
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", assert(master match) keep(match) keepusing(weight hhsize)
+svyset ea [pweight=weight], strata(strata)
 gen x = 1
-tabout SPI_cat using "${gsdOutput}/DroughtImpact_raw00.xls", sum oneway cells(sum x) f(3) h1("SPI Category - Wave 2") append
+tabout SPI_cat x using "${gsdOutput}/DroughtImpact_raw00.xls",  svy percent c(col se) npos(col) sebnone h1("SPI Category - Wave 2") append
 
 ** NDVI Deviation **
 * All SOM
@@ -198,7 +230,7 @@ append using "${gsdData}/1-CleanTemp/Wave1_NDVI.dta"
 kdensity NDVI_deviation, at(x_NDVI) nograph gen(y_NDVI_hh)
 keep x_NDVI y_NDVI y_NDVI_hh
 drop if mi(x_NDVI, y_NDVI_hh, y_NDVI)
-export excel using "${gsdOutput}/DroughtImpact_Figures_v3.xlsx", sheet("Raw_Drought_Indicators") sheetmodify cell(A1) firstrow(variables)
+export excel using "${gsdOutput}/DroughtImpact_Figures_v4.xlsx", sheet("Raw_Drought_Indicators") sheetmodify cell(A1) firstrow(variables)
 * just households
 use "${gsdData}/1-CleanTemp/Wave1_NDVI.dta", clear
 su NDVI_deviation, d
@@ -228,15 +260,13 @@ reg NDVI_deviation precip_combined
 **************************************************
 ********************* Graphs *********************
 **************************************************
+* Correlates of drought-affected households
+* Wave 1
 use "${gsdData}/1-CleanInput/SHFS2016/hh.dta", clear
 merge 1:1 team strata ea block hh using "${gsdData}/1-CleanTemp/Wave1_SPI.dta", nogen assert(match)
 merge 1:1 team strata ea block hh using "${gsdData}/1-CleanTemp/Wave1_NDVI.dta", assert(match) nogen
-
 gen pweight=weight_cons*hhsize
 svyset ea [pweight=pweight], strata(strata)
-
-* Correlates of drought-affected households
-* Wave 1
 gen x=1
 la var x "Proportion"
 tabout drought_SPI using "${gsdOutput}/DroughtImpact_raw0.xls", svy percent c(col) npos(col) sebnone h2(drought SPI Affected - Wave 1) replace
@@ -247,22 +277,24 @@ tabout reg_pess using "${gsdOutput}/DroughtImpact_raw0.xls", sum c(sum  drought_
 tabout reg_pess using "${gsdOutput}/DroughtImpact_raw0.xls", sum c(sum  drought_NDVI sum  nodrought_NDVI) sebnone h2(drought NDVI Affected by pre-war region) append
 * Wave 2
 use "${gsdData}/1-CleanTemp/Wave2_SPI.dta", clear
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", assert(master match) keep(match) keepusing(weight hhsize)
+gen pweight=weight*hhsize
+svyset ea [pweight=weight], strata(strata)
 gen x=1
 la var x "Proportion"
 gen nodrought_SPI=drought_SPI==0
-tabout ea_reg using "${gsdOutput}/DroughtImpact_raw0.xls", sum c(sum drought_SPI sum  nodrought_SPI) sebnone h2(drought_SPI Affected by pre-war region - Wave 2) append
-* ACTIVATE WHEN WAVE2 WEIGHTS ARE AVAILABLE
-*tabout drought_SPI using "${gsdOutput}/DroughtImpact_raw0.xls", svy percent c(col) npos(col) sebnone h1(drought SPI Affected - Wave 2) append
+tabout region using "${gsdOutput}/DroughtImpact_raw0.xls", sum c(sum drought_SPI sum  nodrought_SPI) sebnone h2(drought_SPI Affected by pre-war region - Wave 2) append
+tabout drought_SPI using "${gsdOutput}/DroughtImpact_raw0.xls", svy percent c(col) npos(col) sebnone h1(drought SPI Affected - Wave 2) append
 
 * Main correlate stats
 use "${gsdData}/1-CleanInput/hh_all.dta", clear
-merge m:1 team strata ea block hh using "${gsdData}/1-CleanTemp/Wave1_SPI.dta", nogen assert(match)
-merge m:1 team strata ea block hh using "${gsdData}/1-CleanTemp/Wave1_NDVI.dta", nogen assert(match)
+merge 1:1 t strata ea block hh using "${gsdData}/1-CleanTemp/SPI_w1w2.dta", assert(match using) keep(match) keepusing(SPI_cat drought_SPI)
 gen pweight=weight_cons*hhsize
 svyset ea [pweight=pweight], strata(strata)
-
 egen drought = group(t drought_SPI), label
 
+* Drop IDPs
+drop if type==3
 * Poverty - headcount
 tabout drought using "${gsdOutput}/DroughtImpact_raw1.xls", svy sum c(mean poorPPP_prob lb ub) sebnone f(3) h1(Drought (SPI) and Poverty) npos(col) replace
 tabout drought type  using "${gsdOutput}/DroughtImpact_raw1.xls" , svy sum c(mean poorPPP_prob) sebnone f(3) h1(Drought (SPI) and Poverty by population type - Wave 1) npos(col) append
@@ -284,12 +316,15 @@ foreach i of local drought {
 tabout drought gini using "${gsdOutput}/DroughtImpact_raw2.xls" , svy c(freq) sebnone f(3) npos(col) h1(GINI coefficient) replace
 
 * Growth incidence and decomposition
+* total
 use "${gsdData}/1-CleanInput/hh_all.dta", clear
-merge m:1 team strata ea block hh using "${gsdData}/1-CleanTemp/Wave1_SPI.dta", nogen assert(match)
-merge m:1 team strata ea block hh using "${gsdData}/1-CleanTemp/Wave1_NDVI.dta", nogen assert(match)
+merge 1:1 t strata ea block hh using "${gsdData}/1-CleanTemp/SPI_w1w2.dta", assert(match using) keep(match) keepusing(SPI_cat drought_SPI)
 gen pweight=weight_cons*hhsize
 svyset ea [pweight=pweight], strata(strata)
 egen drought = group(t drought_SPI), label
+drop if type==3 
+drop if migr_idp==1
+keep if inlist(reg_pess, 1,3,4,11,12,13,16,17,18)
 preserve
 keep if t==1 
 save "${gsdTemp}/hh_SPI_w2.dta", replace
@@ -306,68 +341,180 @@ ren (pr_growth pg_ci_u pg_ci_l) (drought_gic drought_ci_h drought_ci_l)
 merge 1:1 pctl using "${gsdTemp}/gic_nodrought.dta", assert(match) nogen keepusing(pr_growth pg_ci_u pg_ci_l)
 ren (pr_growth pg_ci_u pg_ci_l) (ndrought_gic ndrought_ci_h ndrought_ci_l)
 export excel using "${gsdOutput}/DroughtImpact_raw3.xls", replace first(variables)
-export excel using "${gsdOutput}/DroughtImpact_Figures_v3.xlsx", sheetreplace sheet("Raw_Data_3") first(variables)
+export excel using "${gsdOutput}/DroughtImpact_Figures_v4.xlsx", sheetreplace sheet("Raw_Data_3") first(variables)
 
-********************* Diff-in-Diff estimation **********************************
-* CHANGE TC_IMP TO tc_core ONCE ACTUAL WAVE 2 DATA IS IN
+* urban
 use "${gsdData}/1-CleanInput/hh_all.dta", clear
-merge m:1 team strata ea block hh using "${gsdData}/1-CleanTemp/Wave1_SPI.dta", nogen assert(match)
-*merge m:1 team strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hhq-poverty.dta", nogen assert(match master) keepusing(tc_imp)
+merge 1:1 t strata ea block hh using "${gsdData}/1-CleanTemp/SPI_w1w2.dta", assert(match using) keep(match) keepusing(SPI_cat drought_SPI)
 gen pweight=weight_cons*hhsize
 svyset ea [pweight=pweight], strata(strata)
+egen drought = group(t drought_SPI), label
+keep if type==1
+preserve
+keep if t==1 
+save "${gsdTemp}/hh_SPI_w2u.dta", replace
+restore
+keep if t==0
+save "${gsdTemp}/hh_SPI_w1u.dta", replace
+cd "${gsdTemp}"
+use "${gsdTemp}/hh_SPI_w1u.dta", clear
+gicurve using "${gsdTemp}/hh_SPI_w2u.dta" [aw=pweight] if drought_SPI==1, var1(tc_imp) var2(tc_imp) np(100) ci(100) bands(20) out("gic_droughtu.dta") 
+gicurve using "${gsdTemp}/hh_SPI_w2u.dta" [aw=pweight] if drought_SPI==0, var1(tc_imp) var2(tc_imp) np(100) ci(100) bands(20) out("gic_nodroughtu.dta")
+use "${gsdTemp}/gic_droughtu.dta", clear
+drop gr_in_mean gr_in_median mean_of_growth intgrl1 
+ren (pr_growth pg_ci_u pg_ci_l) (drought_gic drought_ci_h drought_ci_l)
+merge 1:1 pctl using "${gsdTemp}/gic_nodroughtu.dta", assert(match) nogen keepusing(pr_growth pg_ci_u pg_ci_l)
+ren (pr_growth pg_ci_u pg_ci_l) (ndrought_gic ndrought_ci_h ndrought_ci_l)
+export excel using "${gsdOutput}/DroughtImpact_raw3_urban.xls", replace first(variables)
+export excel using "${gsdOutput}/DroughtImpact_Figures_v4.xlsx", sheetreplace sheet("Raw_Data_3_urban") first(variables)
 
+* rural
+use "${gsdData}/1-CleanInput/hh_all.dta", clear
+merge 1:1 t strata ea block hh using "${gsdData}/1-CleanTemp/SPI_w1w2.dta", assert(match using) keep(match) keepusing(SPI_cat drought_SPI)
+gen pweight=weight_cons*hhsize
+svyset ea [pweight=pweight], strata(strata)
+egen drought = group(t drought_SPI), label
+keep if type==2
+preserve
+keep if t==1 
+save "${gsdTemp}/hh_SPI_w2r.dta", replace
+restore
+keep if t==0
+save "${gsdTemp}/hh_SPI_w1r.dta", replace
+cd "${gsdTemp}"
+use "${gsdTemp}/hh_SPI_w1r.dta", clear
+gicurve using "${gsdTemp}/hh_SPI_w2r.dta" [aw=pweight] if drought_SPI==1, var1(tc_imp) var2(tc_imp) np(100) ci(100) bands(20) out("gic_droughtr.dta") 
+gicurve using "${gsdTemp}/hh_SPI_w2r.dta" [aw=pweight] if drought_SPI==0, var1(tc_imp) var2(tc_imp) np(100) ci(100) bands(20) out("gic_nodroughtr.dta")
+use "${gsdTemp}/gic_droughtu.dta", clear
+drop gr_in_mean gr_in_median mean_of_growth intgrl1 
+ren (pr_growth pg_ci_u pg_ci_l) (drought_gic drought_ci_h drought_ci_l)
+merge 1:1 pctl using "${gsdTemp}/gic_nodroughtr.dta", assert(match) nogen keepusing(pr_growth pg_ci_u pg_ci_l)
+ren (pr_growth pg_ci_u pg_ci_l) (ndrought_gic ndrought_ci_h ndrought_ci_l)
+export excel using "${gsdOutput}/DroughtImpact_raw3_rural.xls", replace first(variables)
+export excel using "${gsdOutput}/DroughtImpact_Figures_v4.xlsx", sheetreplace sheet("Raw_Data_3_rural") first(variables)
+
+********************************************************************************
+********************* Diff-in-Diff estimation **********************************
+********************************************************************************
+use "${gsdData}/1-CleanInput/hh_all.dta", clear
+merge 1:1 t strata ea block hh using "${gsdData}/1-CleanTemp/SPI_w1w2.dta", nogen assert(match using) keep(match) keepusing(SPI_cat drought_SPI)
+merge 1:1 t strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hhq-poverty_all.dta", nogen assert(match master) keepusing(tc_core)
+merge 1:1 t strata ea block hh using "${gsdData}/1-CleanTemp/ACLED_w1w2.dta", assert(match) nogen
+gen pweight=weight_cons*hhsize
+svyset ea [pweight=pweight], strata(strata) singleunit(centered)
+
+drop if type==3
+drop if migr_idp==1
 * We want to run the estimation with dep var in logs, so let's look at that
 *hist tc_imp 
+*hist tc_core
 *graph export "${gsdOutput}/tc_imp_hist.png", replace
-gen ltc_imp = log(tc_imp)
-la var ltc_imp "Log imputed core consumption"
-*hist ltc_imp
+gen ltc_core = log(tc_core)
+la var ltc_core "Log imputed core consumption"
+*hist ltc_core
 *graph export "${gsdOutput}/ltc_imp_hist.png", replace
 
-* Checking a few correlates
-svy: reg tc_imp hhh_gender
+/* Checking a few correlates
+svy: reg tc_core hhh_gender
 svy: reg drought_SPI hhh_gender
-svy: reg tc_imp i.hhh_edu
-svy: reg drought_SPI i.hhh_edu
-svy: reg tc_imp pliteracy 
+* The above two seem to indicate that hhh_gender should be left out
+*svy: reg tc_imp i.hhh_edu
+*svy: reg drought_SPI i.hhh_edu
+svy: reg tc_core pliteracy 
 svy: reg drought_SPI pliteracy
+* These above two are good
+svy: reg tc_core remit12m
 svy: reg drought_SPI remit12m
+* the above also fine
+tab tenure1, gen(ten)
+foreach i in 1 2 3 {
+	svy: reg tc_core ten`i'
+	svy: reg drought_SPI ten`i'
+	drop ten`i'
+}
+* probably not worth including tenure
+tab floor_material, gen(fm)
+foreach i of numlist 1/5 {
+	svy: reg tc_core fm`i'
+	svy: reg drought_SPI fm`i'
+	drop fm`i'
+}
+* floor material should probably go in
+svy: reg tc_core i.roof_material
+svy: reg drought_SPI i.roof_material
+* roof material largely related to tc_core and largely unrelated to drought, so makes sense to include
+svy: reg tc_core pgender
+svy: reg drought_SPI pgender
+* include pgender
+*/
+*svy: reg tc_core fatalities
+*svy: reg drought_SPI hhsize
 
-* Now let's look at a few specifications
-* (1) without any controls, dep var in logs
-diff ltc_imp [pw=pweight], period(t) treated(drought_SPI) 
-outreg2 using "${gsdOutput}/DroughtImpact_raw4.xls", replace ctitle(`r(depvar)' - No controls) addstat(Mean control t(0), r(mean_c0), Mean treated t(0), r(mean_t0), Diff t(0), r(diff0), Mean control t(1), r(mean_c1), Mean treated t(1), r(mean_t1), Diff t(1), r(diff1)) label excel keep(_diff) nocons
-* (2) with population type controls, dep var in logs
-tab type, gen(type)
-tab reg_pess, gen(region)
-diff ltc_imp [pw=pweight], period(t) treated(drought_SPI) cov(type*)
-outreg2 using "${gsdOutput}/DroughtImpact_raw4.xls", append ctitle(`r(depvar)' - Population type controls) addstat(Mean control t(0), r(mean_c0), Mean treated t(0), r(mean_t0), Diff t(0), r(diff0), Mean control t(1), r(mean_c1), Mean treated t(1), r(mean_t1), Diff t(1), r(diff1)) label excel keep(_diff) nocons
-* (3) with pre-war region control as robustness
-diff ltc_imp [pw=pweight], period(t) treated(drought_SPI) cov(type* region*)
-outreg2 using "${gsdOutput}/DroughtImpact_raw4.xls", append ctitle(`r(depvar)' - Population type and regions controls) addstat(Mean control t(0), r(mean_c0), Mean treated t(0), r(mean_t0), Diff t(0), r(diff0), Mean control t(1), r(mean_c1), Mean treated t(1), r(mean_t1), Diff t(1), r(diff1)) label excel keep(_diff) nocons
+* Regressions 
+* Poverty and consumption *
 gen droughtxpost = drought_SPI*t
-svy: reg ltc_imp t drought_SPI droughtxpost i.type i.reg_pess
-* (4) with pop type, hhh gender, hhh edu, remit12m
-tab hhh_edu, gen(educ)
-diff ltc_imp [pw=pweight], period(t) treated(drought_SPI) cov(type* region* remit12m hhh_gender educ*)
-outreg2 using "${gsdOutput}/DroughtImpact_raw4.xls", append ctitle(`r(depvar)' - Population type, regions, HHH edu and gender, remittances controls) addstat(Mean control t(0), r(mean_c0), Mean treated t(0), r(mean_t0), Diff t(0), r(diff0), Mean control t(1), r(mean_c1), Mean treated t(1), r(mean_t1), Diff t(1), r(diff1)) label excel keep(_diff) nocons
-* (5) With poor PPP_prob
-diff poorPPP_prob [pw=pweight], period(t) treated(drought_SPI) 
-outreg2 using "${gsdOutput}/DroughtImpact_raw4.xls", append ctitle(`r(depvar)' - No controls) addstat(Mean control t(0), r(mean_c0), Mean treated t(0), r(mean_t0), Diff t(0), r(diff0), Mean control t(1), r(mean_c1), Mean treated t(1), r(mean_t1), Diff t(1), r(diff1)) label excel keep(_diff) nocons
-* (6) PoorPPP_prob with controls 
-diff poorPPP_prob [pw=pweight], period(t) treated(drought_SPI) cov(type* region* remit12m hhh_gender educ*)
-outreg2 using "${gsdOutput}/DroughtImpact_raw4.xls", append ctitle(`r(depvar)' - Population type, regions, HHH edu and gender, remittances controls) addstat(Mean control t(0), r(mean_c0), Mean treated t(0), r(mean_t0), Diff t(0), r(diff0), Mean control t(1), r(mean_c1), Mean treated t(1), r(mean_t1), Diff t(1), r(diff1)) label excel keep(_diff) nocons
-* (7) with continuous treatment
-gen SPIxpost = SPI*t
-svy: reg ltc_imp t SPI SPIxpost i.type i.reg_pess
-outreg2 using "${gsdOutput}/DroughtImpact_raw4b.xls", replace ctitle(`r(depvar)' - Population type and regions controls, with continuous treatment)   label excel nocons
+la var droughtxpost "DD Estimator"
+gen drought_SPI1 = SPI_cat<-1
+gen droughtxpost1 = drought_SPI1*t
+gen rural=type==2
+gen urban=type==1
+gen total=1
+gen fatxdrought = drought_SPI*fatalities
+global controls rural hhsize fatalities fatxdrought pliteracy remit12m hhh_gender i.tenure1 pgender i.floor_material i.roof_material 
 
-insheet using "${gsdOutput}/DroughtImpact_raw4.txt", clear
-export excel using "${gsdOutput}/DroughtImpact_Figures_v3.xlsx", sheetreplace sheet("Raw_Data_4")
-insheet using "${gsdOutput}/DroughtImpact_raw4b.txt", clear
-export excel using "${gsdOutput}/DroughtImpact_Figures_v3.xlsx", sheetmodify sheet("Raw_Data_4") cell(A20)
 
-* Unconditional values for comparison
+foreach t in total urban rural {
+	* 1-1-1 - log core consumption without controls, full sample
+	preserve
+	keep if `t'==1
+	svy: reg ltc_core t drought_SPI droughtxpost
+	outreg2 using "${gsdOutput}/DroughtImpact_raw4_`t'.xls", replace ctitle("1-1-1 - log core consumption without controls, full `t' sample")label excel keep(t drought_SPI droughtxpost) nocons
+	* 1-1-2 - log core consumption with full set of controls, full sample
+	svy: reg ltc_core t drought_SPI droughtxpost $controls
+	outreg2 using "${gsdOutput}/DroughtImpact_raw4_`t'.xls", append ctitle("1-1-2 - log core consumption with full set of controls, full `t' sample")label excel keep(t drought_SPI droughtxpost) nocons
+	* 1-2-1 - probit poorPPP without controls, full sample
+	svy: probit poorPPP  t drought_SPI droughtxpost  
+	outreg2 using "${gsdOutput}/DroughtImpact_raw4_`t'.xls", append ctitle("1-2-1 - probit poorPPP without controls, full `t' sample")label excel keep(t drought_SPI droughtxpost) nocons
+	* 1-2-2 - probit poorPPP with controls, full sample
+	svy: probit poorPPP t drought_SPI droughtxpost $controls 
+	outreg2 using "${gsdOutput}/DroughtImpact_raw4_`t'.xls", append ctitle("1-2-2 - probit poorPPP with controls, full `t' sample")label excel keep(t drought_SPI droughtxpost) nocons
+	* 2-1-1 - log core consumption without controls, overlapping sample
+	keep if inlist(reg_pess, 1,3,4,11,12,13,16,17,18)
+	svy: reg ltc_core t drought_SPI droughtxpost
+	outreg2 using "${gsdOutput}/DroughtImpact_raw4_`t'.xls", append ctitle("2-1-1 - log core consumption without controls, overlapping `t' sample")label excel keep(t drought_SPI droughtxpost) nocons
+	* 2-1-2 - log core consumption with full set of controls, overlapping sample
+	svy: reg ltc_core t drought_SPI droughtxpost i.reg_pess $controls
+	outreg2 using "${gsdOutput}/DroughtImpact_raw4_`t'.xls", append ctitle("2-1-2 - log core consumption with full set of controls, overlapping `t' sample")label excel keep(t drought_SPI droughtxpost) nocons
+	* 2-2-1 - probit poorPPP without controls, overlapping sample
+	svy: probit poorPPP t drought_SPI droughtxpost 
+	outreg2 using "${gsdOutput}/DroughtImpact_raw4_`t'.xls", append ctitle("2-2-1 - probit poorPPP without controls, overlapping `t' sample")label excel keep(t drought_SPI droughtxpost) nocons
+	* 2-2-2 - probit poorPPP with controls, overlapping sample
+	svy: probit poorPPP t drought_SPI droughtxpost i.reg_pess $controls
+	outreg2 using "${gsdOutput}/DroughtImpact_raw4_`t'.xls", append ctitle("2-2-2 - probit poorPPP with controls, overlapping `t' sample")label excel keep(t drought_SPI droughtxpost) nocons
+	* 3-1-1 - log core consumption without controls, overlapping sample w/o PLD
+	keep if inlist(reg_pess, 1,3,13,16,17,18)
+	svy: reg ltc_core t drought_SPI droughtxpost
+	outreg2 using "${gsdOutput}/DroughtImpact_raw4_`t'.xls", append ctitle("3-1-1 - log core consumption without controls, overlapping `t' sample w/o PLD")label excel keep(t drought_SPI droughtxpost) nocons
+	* 3-1-2 - log core consumption with full set of controls, overlapping sample w/o PLD
+	svy: reg ltc_core t drought_SPI droughtxpost i.reg_pess $controls
+	outreg2 using "${gsdOutput}/DroughtImpact_raw4_`t'.xls", append ctitle("3-1-2 - log core consumption with full set of controls, overlapping `t' sample w/o PLD")label excel keep(t drought_SPI droughtxpost) nocons
+	* 3-2-1 - probit poorPPP without controls, overlapping sample w/o PLD
+	svy: probit poorPPP t drought_SPI droughtxpost
+	outreg2 using "${gsdOutput}/DroughtImpact_raw4_`t'.xls", append ctitle("3-2-1 - probit poorPPP without controls, overlapping `t' sample w/o PLD")label excel keep(t drought_SPI droughtxpost) nocons
+	* 3-2-2 - probit poorPPP with controls, overlapping sample w/o PLD
+	svy: probit poorPPP t drought_SPI droughtxpost i.reg_pess $controls
+	outreg2 using "${gsdOutput}/DroughtImpact_raw4_`t'.xls", append ctitle("3-2-2 - probit poorPPP with controls, overlapping `t' sample w/o PLD")label excel keep(t drought_SPI droughtxpost) nocons
+	restore
+}
+insheet using "${gsdOutput}/DroughtImpact_raw4_total.txt", clear
+export excel using "${gsdOutput}/DroughtImpact_Figures_v4.xlsx", sheetreplace sheet("Raw_Data_4")
+insheet using "${gsdOutput}/DroughtImpact_raw4_urban.txt", clear
+export excel using "${gsdOutput}/DroughtImpact_Figures_v4.xlsx", sheetmodify sheet("Raw_Data_4") cell(A17)
+insheet using "${gsdOutput}/DroughtImpact_raw4_rural.txt", clear
+export excel using "${gsdOutput}/DroughtImpact_Figures_v4.xlsx", sheetmodify sheet("Raw_Data_4") cell(A33)
+
+
+/* Unconditional values for comparison
 use "${gsdData}/1-CleanInput/hh_all.dta", clear
 merge m:1 team strata ea block hh using "${gsdData}/1-CleanTemp/Wave1_SPI.dta", nogen assert(match)
 merge m:1 team strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hhq-poverty.dta", nogen assert(match master) keepusing(tc_imp)
@@ -380,14 +527,16 @@ tabout drought using "${gsdOutput}/DroughtImpact_raw4_additional.xls", svy sum c
 tabout drought using "${gsdOutput}/DroughtImpact_raw4_additional.xls", svy sum c(mean ltc_imp lb ub) sebnone f(3) h2("Log core consumption & Drought (SPI)") npos(col) append
 tabout drought using "${gsdOutput}/DroughtImpact_raw4_additional.xls", svy sum c(mean tc_imp lb ub) sebnone f(3) h2("Core consumption & Drought (SPI)") npos(col) append
 insheet using "${gsdOutput}/DroughtImpact_raw4_additional.xls", clear
-export excel using "${gsdOutput}/DroughtImpact_Figures_v3.xlsx", sheetreplace sheet("Raw_Data_4_additional") 
-
+export excel using "${gsdOutput}/DroughtImpact_Figures_v4.xlsx", sheetreplace sheet("Raw_Data_4_additional") 
+*/
 * Look at distribution of losses along the spectrum of being exposed to drought
 use "${gsdData}/1-CleanInput/hh_all.dta", clear
-merge m:1 team strata ea block hh using "${gsdData}/1-CleanTemp/Wave1_SPI.dta", nogen assert(match)
-merge m:1 team strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hhq-poverty.dta", nogen assert(match master) keepusing(tc_core)
+merge 1:1 t strata ea block hh using "${gsdData}/1-CleanTemp/SPI_w1w2.dta", assert(match using) keep(match) keepusing(SPI_cat drought_SPI)
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hhq-poverty_all.dta", nogen assert(match master) keepusing(tc_core)
 gen pweight=weight_cons*hhsize
-svyset ea [pweight=pweight], strata(strata)
+svyset ea [pweight=pweight], strata(strata) singleunit(centered)
+drop if type==3
+drop if migr_idp==1
 gen tc_imp1 = tc_imp if t==0
 gen tc_imp2 = tc_imp if t==1
 twoway  (lpolyci tc_imp2 SPI, ciplot(rline)) (lpolyci tc_imp1 SPI, ciplot(rline))
@@ -403,7 +552,7 @@ serset use, clear
 ren (__0000*) (lpolyfit2 SPI low2 high2)
 merge 1:1 SPI using "${gsdTemp}/SPI_tc_imp_lpolyfit1.dta", nogen assert(match)
 order SPI 
-export excel using "${gsdOutput}/DroughtImpact_Figures_v3.xlsx", sheetreplace sheet("Raw_Data_5") firstrow(variables)
+export excel using "${gsdOutput}/DroughtImpact_Figures_v4.xlsx", sheetreplace sheet("Raw_Data_5") firstrow(variables)
 
 use "${gsdData}/1-CleanInput/hh_all.dta", clear
 merge m:1 team strata ea block hh using "${gsdData}/1-CleanTemp/Wave1_SPI.dta", nogen assert(match)
@@ -412,7 +561,7 @@ gen pweight=weight_cons*hhsize
 tabout SPI_cat  using "${gsdOutput}/DroughtImpact_raw5-2.xls" if t==0, svy sum c(mean tc_imp lb ub) sebnone f(3) h2("Drought Cat & consumption - W1") npos(col) replace
 tabout SPI_cat  using "${gsdOutput}/DroughtImpact_raw5-2.xls" if t==1, svy sum c(mean tc_imp lb ub) sebnone f(3) h2("Drought Cat & consumption - W2") npos(col) append
 insheet using "${gsdOutput}/DroughtImpact_raw5-2.xls", clear
-export excel using "${gsdOutput}/DroughtImpact_Figures_v3.xlsx", sheetmodify sheet("Raw_Data_5-2")
+export excel using "${gsdOutput}/DroughtImpact_Figures_v4.xlsx", sheetmodify sheet("Raw_Data_5-2")
 ******************************************************************************** 
 *Education 
 use "${gsdData}/1-CleanInput/hhm_all.dta", clear
@@ -447,7 +596,7 @@ outreg2 using "${gsdOutput}/DroughtImpact_raw6-DID.txt", append ctitle(`r(depvar
 diff enrolled [pw=weight_adj] if gender==0, period(t) treated(drought_SPI) cov(type* region* remit12m hhh_gender educ*)
 outreg2 using "${gsdOutput}/DroughtImpact_raw6-DID.txt", append ctitle(`r(depvar)' - Girls, Population type, regions, HHH edu and gender, remittances controls) addstat(Mean control t(0), r(mean_c0), Mean treated t(0), r(mean_t0), Diff t(0), r(diff0), Mean control t(1), r(mean_c1), Mean treated t(1), r(mean_t1), Diff t(1), r(diff1)) label excel keep(_diff) nocons
 insheet using "${gsdOutput}/DroughtImpact_raw6-DID.txt", clear
-export excel using "${gsdOutput}/DroughtImpact_Figures_v3.xlsx", sheetmodify sheet("Raw_Data_6-DID")
+export excel using "${gsdOutput}/DroughtImpact_Figures_v4.xlsx", sheetmodify sheet("Raw_Data_6-DID")
 
 
 *Access to water and sanitation
@@ -462,13 +611,13 @@ tabout drought1 using "${gsdOutput}/DroughtImpact_raw3.xls", svy sum c(mean hung
 
 
 * Put all created sheets into one excel document
-foreach i of numlist 0/6 {
+foreach i of numlist 1/1 {
 	insheet using "${gsdOutput}/DroughtImpact_raw`i'.xls", clear nonames tab
-	export excel using "${gsdOutput}/DroughtImpact_Figures_v3.xlsx", sheetreplace sheet("Raw_Data_`i'")
+	export excel using "${gsdOutput}/DroughtImpact_Figures_v4.xlsx", sheetreplace sheet("Raw_Data_`i'")
 }
 
 insheet using "${gsdOutput}/DroughtImpact_raw00.xls", clear nonames tab
-export excel using "${gsdOutput}/DroughtImpact_Figures_v3.xlsx", sheetreplace sheet("Raw_Data_00")
+export excel using "${gsdOutput}/DroughtImpact_Figures_v4.xlsx", sheetreplace sheet("Raw_Data_00")
 
 ********************************************************************************
 *************** Simulations ****************************************************

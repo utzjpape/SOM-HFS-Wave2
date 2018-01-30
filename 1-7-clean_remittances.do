@@ -65,6 +65,19 @@ ren supp_som12m_* supp_som_*
 order intremit12m_yn intremit12m intremit12m_amount_kdk intremit12m_amount intremit12m_amount_c intremit12m_usd intremit_pcpd, after(lhood_prev)
 order remit12m_yn remit12m remit12m_amount_kdk remit12m_amount remit12m_amount_c  remit12m_usd remit_pcpd remit12m_usd remit_pcpd, after(intremit_freq)
 order supp_som_usd supp_som_pcpd, after(supp_som_amount_kdk)
+foreach pre in "int" "intl" {
+	la var `pre'remit_mode__1 "Mode: Bank"
+	la var `pre'remit_mode__2 "Mode: Remittances company"
+	la var `pre'remit_mode__3 "Mode: Mail"
+	la var `pre'remit_mode__4 "Mode: Courier"
+	la var `pre'remit_mode__5 "Mode: Internet"
+	la var `pre'remit_mode__6 "Mode: Bank card"
+	la var `pre'remit_mode__7 "Mode: travel of family member"
+	la var `pre'remit_mode__8 "Mode: Bus/Minibus"
+	la var `pre'remit_mode__9 "Mode: Mobile phone"
+	
+}
+
 ********************************************************************
 *Rename to make compatible with Wave 1 data
 ********************************************************************
@@ -77,4 +90,6 @@ la var remit12m "Remittances receipt internal + international (Y/N)"
 la var remit_pcpd "Value of internal + interhnational remittances per capita per day"
 la var remit12m_usd "Internal + international remittances in past 12 month, USD amount"
 order remit*, before(intremit12m_yn) 
+
+
 save "${gsdData}/1-CleanTemp/hh.dta", replace
