@@ -1110,14 +1110,14 @@ replace enum_name = "Mohamed Sheik Abdullahi" if interview__id=="3c4e364c44834bd
 
 *** Pre-war region cleaning
 *tab ea_reg
-*tab ea_reg water_point if substr(today,1,10)=="2018-01-28"
+*tab ea_reg water_point if substr(today,1,10)=="2018-01-29"
 
 *** Generating strata variable to be able to run the pipeline without errors
 g strata = .
 
 *** Water point number cleaning
 *tab water_point
-*tab water_point team_id if substr(today,1,10)=="2018-01-28"
+*tab water_point team_id if substr(today,1,10)=="2018-01-29"
 
 *** Cleaning consent tracking devices
 *21/01/2018
@@ -1191,4 +1191,3 @@ label var duration_itw_min "Duration of interview (minutes)"
 
 *** Saving dataset with manual corrections
 save "${gsdData}/0-RawTemp/hh_manual_cleaning_nomads.dta", replace
-
