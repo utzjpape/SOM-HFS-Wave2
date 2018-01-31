@@ -67,6 +67,7 @@ foreach cat in food nonfood {
 set sortseed 11041925
 foreach cat in food nonfood {
 	use "${gsdTemp}/dataset_`cat'.dta", clear
+    drop if weight>=. 
     drop if mod_opt==.
 	merge m:1 itemid using "${gsdTemp}/shares_`cat'.dta", assert(match) nogen keepusing(share_`cat')
 	merge m:1 strata ea block hh mod_item using "${gsdTemp}/mi_`cat'_collapsed.dta", assert(match) nogen keepusing(mi_cons_`cat') 
@@ -136,6 +137,7 @@ foreach cat in food nonfood {
 *Integrate final dataset for food consumption
 *********************************************************
 use "${gsdData}/1-CleanTemp/food.dta", replace
+drop if weight>=. 
 merge 1:1 strata ea block hh itemid using "${gsdData}/1-CleanTemp/imputed_food_byitem.dta", assert(match using) nogen
 drop if small == 1
 drop cons_usd small
@@ -182,6 +184,7 @@ drop imputed_correct
 save "${gsdData}/1-CleanTemp/imputed_nonfood_byitem.dta", replace
 *integrate into the final dataset for non-food consumption (including 206 hhs)
 use "${gsdData}/1-CleanTemp/nonfood.dta", clear
+drop if weight>=. 
 merge 1:1 strata ea block hh itemid using "${gsdData}/1-CleanTemp/imputed_nonfood_byitem.dta", assert(match using) nogen
 drop if small == 1
 drop pr_usd small
