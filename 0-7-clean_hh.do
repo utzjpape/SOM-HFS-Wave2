@@ -711,6 +711,9 @@ foreach variable in `variables4' {
 	label values `variable' limportantyn
 }
 
+drop intremit_mode_sp
+label define lintremitmode 1 "1st choice" 2 "2nd choice" 3 "3rd choice" 4 "4th choice" 5 "5th choice" 6 "6th choice" 7 "7th choice" 8 "8th choice" 9 "9th choice" .x "Option not chosen", replace
+label values intremit_mode_* lremitmode
 
 * generate cleaned GPS coordinates for HH
 gen double long_x = str_loc__Longitude
@@ -748,7 +751,7 @@ drop strata_name hhr_id_int hhh_id0_int hhm_unite hh_number_original
 drop idp_ea_yn housingtype_s drink_water_spec cook_source spec_water_spec light_sp electricity_price_kdk toilet_ot sewage_spec land_use_disp__1000 land_use_disp__n98 land_use_disp__n99
 drop waste_spec floor_material_sp roof_material_sp land_help_disp_spec housingtype_disp_s land_use_disp_s land_res_reason_disp_spec
 drop land_help_disp land_res_reason_disp drink_source_disp_sp land_unit_spec land_tenure_sp land_unit_spec_disp landag_use_disp_spec social_saf_net_spec lhood_spec lhood_prev_spec
-drop intremit_relation_sp intremit_mode__1000 intremit_mode__n98 intremit_mode__n99 intremit_mode_sp remit12m_loc_sp remit_relation_sp remit_mode__1000 remit_mode__n98 remit_mode__n99 remit_mode_sp supp_somosom__n98 supp_somosom__n99  
+drop intremit_relation_sp intremit_mode__1000 intremit_mode__n98 intremit_mode__n99 remit12m_loc_sp remit_relation_sp remit_mode__1000 remit_mode__n98 remit_mode__n99 remit_mode_sp supp_somosom__n98 supp_somosom__n99  remit12m_before 
 drop rl_raise__1000 rl_other rl_raise_prev_yn__1000 settle_dispute_spec improve_specify agent_specify agent_represent_specify sld taxes_specify__1000 taxes_specify__n98 taxes_specify__n99 taxes_other_specify disp_site_reason_spec 
 drop disp_reason_spec disp_arrive_reason_spec disp_temp_return_reason_s disp_shelterpay_who__1000 disp_shelterpay_who__n98 disp_shelterpay_who__n99 disp_shelterpay_who_spec disp_shelterpay_what_spec move_no_push__1000 move_no_push__n98 
 drop move_no_push__n99 move_no_push_spec move_no_pull__1000 move_no_pull__n98 move_no_pull__n99 move_no_pull_spec move_yes_push__1000 move_yes_push__n98 move_yes_push__n99 move_yes_push_spec move_no_org__1000 move_no_org__n98 move_no_org__n99 move_no_org_spec 
