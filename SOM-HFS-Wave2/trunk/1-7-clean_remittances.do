@@ -65,6 +65,7 @@ ren supp_som12m_* supp_som_*
 order intremit12m_yn intremit12m intremit12m_amount_kdk intremit12m_amount intremit12m_amount_c intremit12m_usd intremit_pcpd, after(lhood_prev)
 order remit12m_yn remit12m remit12m_amount_kdk remit12m_amount remit12m_amount_c  remit12m_usd remit_pcpd remit12m_usd remit_pcpd, after(intremit_freq)
 order supp_som_usd supp_som_pcpd, after(supp_som_amount_kdk)
+rename remit* intlremit*
 foreach pre in "int" "intl" {
 	la var `pre'remit_mode__1 "Mode: Bank"
 	la var `pre'remit_mode__2 "Mode: Remittances company"
@@ -81,7 +82,7 @@ foreach pre in "int" "intl" {
 ********************************************************************
 *Rename to make compatible with Wave 1 data
 ********************************************************************
-rename remit* intlremit*
+
 gen remit12m = (intremit12m_yn==1 | intlremit12m_yn==1)
 la val remit12m lyesno
 gen remit_pcpd = (intremit_pcpd + intlremit_pcpd)
