@@ -39,6 +39,7 @@ recode remit12m (missing=0)
 *Prepare smaller dataset
 rename (mod_opt type) (opt_mod hh_ptype)
 keep region strata ea block hh hhsize weight opt_mod pchild psenior hhempl hhsex hhedu hh_type hh_drinkwater hh_floor hh_ownership hh_hunger remit12m cons_f? cons_nf? cons_d hh_ptype
+drop if weight>=.
 *Prepare consumption variables
 *Make sure missing modules have missing consumption
 forvalues i = 1/4 {
