@@ -547,6 +547,8 @@ replace itw_valid = 0 if interview__id == "a590342a884a468888f2b5640b4c6053"
 replace itw_invalid_reason = 6 if interview__id == "a590342a884a468888f2b5640b4c6053"
 replace itw_valid = 0 if interview__id == "f05387d7c9cc4e55b34d9b0b90a710fe"
 replace itw_invalid_reason = 6 if interview__id == "f05387d7c9cc4e55b34d9b0b90a710fe"
+replace itw_valid = 0 if interview__id == "e8f81054c8cb4f9886418c26dd7c6620"
+replace itw_invalid_reason = 6 if interview__id == "e8f81054c8cb4f9886418c26dd7c6620"
 
 /*-------------------------------------*/ 
 /*    B - SUCCESSFULNESS CRITERIA      */
