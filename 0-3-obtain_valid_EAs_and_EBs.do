@@ -576,7 +576,7 @@ label define wp_status_label 1 "Valid" ///
 	2 "Not sampled nor active replacement" ///
 	3 "Not enough interviews" ///
 	4 "Not balanced in terms of treatment" ///
-	5 "Not completed because not enough interviews could be conducted after 12 days"
+	5 "Not completed for security reasons"
 label values wp_status wp_status_label 
 
 replace wp_status=1 if _merge == 3
@@ -584,6 +584,7 @@ replace wp_status=4 if _merge == 3 & ((nb_valid_success_treat1_wp<2) | (nb_valid
 replace wp_status=3 if _merge == 3 & (nb_valid_success_itws_wp<target_itw_wp)
 replace wp_status=2 if _merge == 3 & (sample_final_wp != 1)
 replace wp_status=2 if _merge == 2
+replace wp_status=5 if id_wp == 1678
 
 *Dummy variable: whether WP is valid or not
 replace wp_valid=(wp_status==1 | wp_status==4 | wp_status==5) 
