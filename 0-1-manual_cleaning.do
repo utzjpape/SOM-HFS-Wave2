@@ -1110,14 +1110,14 @@ replace enum_name = "Mohamed Sheik Abdullahi" if interview__id=="3c4e364c44834bd
 
 *** Pre-war region cleaning
 *tab ea_reg
-*tab ea_reg water_point if substr(today,1,10)=="2018-01-31"
+*tab ea_reg water_point if substr(today,1,10)=="2018-02-01"
 
 *** Generating strata variable to be able to run the pipeline without errors
 g strata = .
 
 *** Water point number cleaning
 *tab water_point
-*tab water_point team_id if substr(today,1,10)=="2018-01-31"
+*tab water_point team_id if substr(today,1,10)=="2018-02-01"
 
 *** Cleaning consent tracking devices
 *21/01/2018
@@ -1135,11 +1135,21 @@ replace consent_tracking = 0 if interview__id=="dd473d064cd2431f864c8c699e04f285
 replace barcode_tracking = . if interview__id=="dd473d064cd2431f864c8c699e04f285"
 replace tracking_phone_yn = . if interview__id=="dd473d064cd2431f864c8c699e04f285"
 replace tracking_phone = . if interview__id=="dd473d064cd2431f864c8c699e04f285"
+replace tracking_phone_yn = 1 if interview__id=="0147445180114401a0f3291ba969dff9"
+replace tracking_phone = 0634268793 if interview__id=="0147445180114401a0f3291ba969dff9"
 *26/01/2018
 replace consent_tracking = 1 if interview__id=="f3c55e5de7f94b5a9e41602762aa5c19"
 replace barcode_tracking = 169566 if interview__id=="f3c55e5de7f94b5a9e41602762aa5c19"
 replace tracking_phone_yn = 1 if interview__id=="f3c55e5de7f94b5a9e41602762aa5c19"
 replace tracking_phone = 0634378404 if interview__id=="f3c55e5de7f94b5a9e41602762aa5c19"
+*28/01/2018
+replace tracking_phone_yn = 1 if interview__id=="71f32abe4b2b4a2f970795f3f0b35dcf"
+replace tracking_phone = 0634064328 if interview__id=="71f32abe4b2b4a2f970795f3f0b35dcf"
+*29/01/2018
+replace consent_tracking = 1 if interview__id=="a7e94387fb974cbf964ea0bd67a40256"
+replace barcode_tracking = 169539 if interview__id=="a7e94387fb974cbf964ea0bd67a40256"
+replace tracking_phone_yn = 1 if interview__id=="a7e94387fb974cbf964ea0bd67a40256"
+replace tracking_phone = 0634695851 if interview__id=="a7e94387fb974cbf964ea0bd67a40256"
 
 *** Missing date cleaning at the beginning and at the end of the interview
 *Correcting when missing date using dates and times in metadata
