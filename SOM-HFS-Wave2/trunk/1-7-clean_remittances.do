@@ -9,30 +9,53 @@ set sortseed 12121955
 *Open and prepare the dataset 
 ********************************************************************
 use "${gsdData}/1-CleanInput/hh.dta", clear
-*obtain exchange rates 
-drop team
-gen team=1 if inlist(strata,6,17,18,19,20,21,44,45,46,47,48,49,50,51)
-replace team=2 if !inlist(strata,6,17,18,19,20,21,44,45,46,47,48,49,50,51)
-merge m:1 team using "${gsdData}/1-CleanInput/HFS Exchange Rate Survey.dta", nogen keepusing(average_er)
-drop team 
 
-ren supp_som_* supp_som12m_*
-gen supp_som12m=1 if supp_som12m_yn==1
 ********************************************************************
 *Introduce corrections related to currency issues
 ********************************************************************
+ren supp_som_* supp_som12m_*
+gen supp_som12m=1 if supp_som12m_yn==1
+* Make sure currency splits are correctly observed
+foreach measure in "intremit" "remit" "supp_som" {
+	* Currency splits
+	* SSH only: ea_reg 2,3,4,5,6,7,8,9,10,11,12,14,15
+	* SLSH only: ea reg 1, 18
+	* Both: 13, 16, 17 
+	* Check that this is true in the data
+	assert `measure'12m_amount_c==4 | `measure'12m_amount_c==5 | `measure'12m_amount_c>=. if inlist(region, 1, 18)
+	assert `measure'12m_amount_c==2 | `measure'12m_amount_c==5 | `measure'12m_amount_c>=. if inlist(region, 2,3,4,5,6,7,8,9,10,11,12,14,15)
+	assert inlist(`measure'12m_amount_c, 2, 4, 5) | `measure'12m_amount_c>=. if inlist(region, 13, 16, 17)
+}	
+
+* Generate zone variable to merge with exchange rates
+* Define whether an observation is in an SLSH or in an SSH area
+cap drop team
+* SLSH 
+gen team = 1 if inlist(region, 1, 18)
+* SSH
+replace team = 2 if inlist(region, 2,3,4,5,6,7,8,9,10,11,12,14,15)
+* Now assign team value
+foreach measure in "intremit" "remit" "supp_som" {
+	replace team = 1 if inlist(region, 13, 16, 17) & (`measure'12m_amount_c==4)   
+	replace team = 2 if inlist(region, 13, 16, 17) & (`measure'12m_amount_c==2) 
+}
+foreach measure in "intremit" "remit" "supp_som" {
+	* we assign team 1 if USD or missing
+	replace team = 1 if inlist(region, 13, 16, 17) & (`measure'12m_amount_c==5 | mi(`measure'12m_amount_c)) & mi(team) 
+	*assert !(team==1 & `measure'12m_amount_c==2)
+	*assert !(team==2 & `measure'12m_amount_c==4)
+}
+
+
 foreach type_remit in "intremit" "remit" "supp_som"{
-	*Cleaning rule: replace Somaliland shillings for Somali shillings, as they should not be used outside of Somaliland
-	*Note that strata 47 was able to respond in both Somali and Somalilan Shillings
-	replace `type_remit'12m_amount_c=4 if `type_remit'12m_amount_c==2 & inlist(strata,6,17,18,19,20,21,44,45,46,48,49,50,51)
-	replace `type_remit'12m_amount_c=2 if `type_remit'12m_amount_c==4 & !inlist(strata,6,17,18,19,20,21,44,45,46,48,49,50,51)
-	*Cleaning rule: change USD to local currency (for each zone) when the price is equal or greater than 1,000
-	replace `type_remit'12m_amount_c=4 if `type_remit'12m_amount>= 10000 & `type_remit'12m_amount<. & `type_remit'12m_amount_c==5 & inlist(strata,6,17,18,19,20,21,44,45,46,48,49,50,51)
-	replace `type_remit'12m_amount_c=2 if `type_remit'12m_amount>= 10000 & `type_remit'12m_amount<. & `type_remit'12m_amount_c==5 & !inlist(strata,6,17,18,19,20,21,44,45,46,48,49,50,51) 
+	*Cleaning rule: change USD to local currency (for each zone) when the price is equal or greater than 10,000
+	replace `type_remit'12m_amount_c=4 if `type_remit'12m_amount>= 10000 & `type_remit'12m_amount<. & `type_remit'12m_amount_c==5 & team==1
+	replace `type_remit'12m_amount_c=2 if `type_remit'12m_amount>= 10000 & `type_remit'12m_amount<. & `type_remit'12m_amount_c==5 & inlist(team,2,3) 
 	*Cleaning rule: change local currency larger than 500,000 (divide by 10)
 	replace `type_remit'12m_amount=`type_remit'12m_amount/10 if `type_remit'12m_amount>500000 & `type_remit'12m_amount<.
 }
-
+merge m:1 team using "${gsdData}/1-CleanInput/HFS Exchange Rate Survey.dta", nogen keepusing(average_er)
+drop team 
 
 ********************************************************************
 *Convert to USD and introduce cleaning rules

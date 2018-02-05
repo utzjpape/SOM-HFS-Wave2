@@ -29,6 +29,7 @@ merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", assert(matc
 order weight, after(hh)
 drop cons_q_kdk ownprod pr_kdk free free_q free_main
 rename mod_item opt_mod 
+
 *Cleaning rule: convert to positive negative values (potential issue with CAPI)
 foreach var in cons_q purc_q pr {
 	replace `var'=-1*`var' if `var'<0
@@ -348,17 +349,38 @@ replace purc_q_kg=purc_q_kg*100 if purc_q_kg<=.0011
 ********************************************************************
 *Introduce corrections related to currency issues
 ********************************************************************
-*Cleaning rule: replace Somaliland shillings for Somali shillings, as they should not be used outside of Somaliland
-*Note that strata 47 was able to respond in both Somali and Somalilan Shillings
-replace pr_c=4 if pr_c==2 & inlist(strata,6,17,18,19,20,21,44,45,46,48,49,50,51)
-replace pr_c=2 if pr_c==4 & !inlist(strata,6,17,18,19,20,21,44,45,46,48,49,50,51)
-assert pr_c==4 | pr_c==5 | pr_c==.z if inlist(strata,6,17,18,19,20,21,44,45,46,48,49,50,51)
-assert pr_c==2 | pr_c==5 | pr_c==.z if !inlist(strata,6,17,18,19,20,21,44,45,46,47,48,49,50,51)
+* Currency splits
+* SSH only: region 2,3,4,5,6,7,8,9,10,11,12,14,15
+* SLSH only: region 1, 18
+* Both: region 13, 16, 17 
+* Check that this is true in the data
+* we have one case in which there is an entry for SSH in SLD 
+* this cannot be, so we change it to SLSH
+replace pr_c=4 if pr_c==2 & inlist(region, 1, 18)
+assert pr_c==2 | pr_c==5 | pr_c>=. if inlist(region, 2,3,4,5,6,7,8,9,10,11,12,14,15)
+assert inlist(pr_c, 2, 4, 5) | pr_c>=. if inlist(region, 13, 16, 17)
+* Define whether an observation is in an SLSH or in an SSH area
+cap drop team
+* SLSH 
+gen team = 1 if inlist(region, 1, 18)
+* SSH
+replace team = 2 if inlist(region, 2,3,5,6,7,8,9,10,14,15)
+replace team = 2 if inlist(region, 4,11,12)
+
+* Now the situations where both currencies are possible to select 
+replace team = 1 if inlist(region, 13, 16, 17) & pr_c==4   
+replace team = 2 if inlist(region, 13, 16, 17) & pr_c==2  
+* we assign team 1 if USD or missing
+replace team = 1 if inlist(region, 13, 16, 17) & (pr_c==5 | mi(pr_c)) & mi(team) 
+assert !mi(team)
+*assert !(team==1 & pr_c==2) 
+*assert !(team==2 & pr_c==4) 
+
 *Cleaning rule: change USD to local currency (for each zone) when the price is equal or greater than 1,000
-replace pr_c=4 if pr >= 1000 & pr<. & pr_c==5 & inlist(strata,6,17,18,19,20,21,44,45,46,48,49,50,51)
-replace pr_c=2 if pr >= 1000 & pr<. & pr_c==5 & !inlist(strata,6,17,18,19,20,21,44,45,46,48,49,50,51)
-*Cleaning rule: change local currency larger than 500,000 (divide by 10)
-replace pr=pr/10 if pr>500000 & pr<.
+replace pr_c=4 if pr >= 1000 & pr<. & pr_c==5 & team==1
+replace pr_c=2 if pr >= 1000 & pr<. & pr_c==5 & inlist(team,2,3)
+*Cleaning rule: change local currency larger than 10,000, divide by 1,000 (respondents probably meant Shillings not thousands of shillings)
+replace pr = pr/1000 if pr>10000 & pr<.
 
 
 ********************************************************************
@@ -410,9 +432,6 @@ drop prelim_* xq_cons xq_purc purc_q_kg_ea_count purc_q_kg_strata_count purc_q_k
 *Obtain unit prices and identify issues
 ********************************************************************
 *Include the exchange rate for each zone
-drop team
-gen team=1 if inlist(strata,6,17,18,19,20,21,44,45,46,47,48,49,50,51)
-replace team=2 if !inlist(strata,6,17,18,19,20,21,44,45,46,47,48,49,50,51)
 merge m:1 team using "${gsdData}/1-CleanInput/HFS Exchange Rate Survey.dta", nogen keepusing(average_er)
 *obtain a price in USD
 gen pr_usd=pr if pr_c==5

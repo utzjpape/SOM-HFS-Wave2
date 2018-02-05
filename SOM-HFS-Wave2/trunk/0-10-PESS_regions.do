@@ -49,7 +49,7 @@ save "${gsdData}/1-CleanInput/PESS_population.dta", replace
 ********************************************************************
 *Include the files from Wave 1 into 1-CleanInput 
 ********************************************************************
-foreach dataset in "hh" "hhm" "food" "nonfood" "assets" "hhq-poverty" {
+foreach dataset in "hhm" "food" "nonfood" "assets" "hhq-poverty" {
 	use "${gsdDataRaw}/Wave_1/`dataset'.dta", clear
 	cap ren reg_pess reg_pess_old
 	cap recode reg_pess_old (1=1 "Awdal") (2=3 "Banadir") (3=4 "Bari") (4=11 "Mudug") (5=12 "Nugal") (6=13 "Sanaag") (7=16 "Sool") (8=17 "Togdheer") (9=18 "Woqooyi Galbeed"), gen(reg_pess)
@@ -57,4 +57,19 @@ foreach dataset in "hh" "hhm" "food" "nonfood" "assets" "hhq-poverty" {
 	cap drop reg_pess_old
 	save "${gsdData}/1-CleanInput/SHFS2016/`dataset'.dta", replace
 }
+use "${gsdDataRaw}/Wave_1/hh.dta", clear 
+cap ren reg_pess reg_pess_old
+cap recode reg_pess_old (1=1 "Awdal") (2=3 "Banadir") (3=4 "Bari") (4=11 "Mudug") (5=12 "Nugal") (6=13 "Sanaag") (7=16 "Sool") (8=17 "Togdheer") (9=18 "Woqooyi Galbeed"), gen(reg_pess)
+cap label reg_pess "Region (PESS)"
+cap drop reg_pess_old
+gen ind_profile=6 if astrata==3
+replace ind_profile=5 if astrata==22
+replace ind_profile=4 if astrata==21
+replace ind_profile=3 if astrata==14 | astrata==15
+replace ind_profile=2 if astrata==12 | astrata==13 
+replace ind_profile=1 if astrata==11
+label define lind_profile 1 "Mogadishu (Urban)" 2 "North-east Urban (Nugaal,Bari,Mudug)" 3 "North-west Urban (Woqooyi G,Awdal,Sanaag,Sool,Togdheer)" 4 "North-east Rural (Bari,Mudug,Nugaal)" 5 "North-west Rural (Awdal,Sanaag,Sool,Togdheer,Woqooyi)" 6 "IDP Settlements"
+label values ind_profile lind_profile
+label var ind_profile "Indicator: Mogadishu, North-East urban/rural, North-West urban/rural & IDPs"
+save "${gsdData}/1-CleanInput/SHFS2016/hh.dta", replace
 

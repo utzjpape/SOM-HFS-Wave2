@@ -101,6 +101,9 @@ foreach r in Mogadishu NE-Urban NW-Urban NE-Rural NW-Rural {
 	keep if ind_profile=="`r'"
 	la def lt 0 "Wave 1 - `r'" 1 "Wave 2 - `r'", replace
 	la val t lt
+	* focus on adult literacy
+	replace literacy = . if age<15
+	la var literacy "Adult literacy (15+)"
 	global vars_hhm literacy age gender dependent
 	foreach v of varlist $vars_hhm {
 		su `v'
@@ -146,4 +149,45 @@ foreach r in Mogadishu NE-Urban NW-Urban NE-Rural NW-Rural {
 	restore
 }
 
+** Temporary: look into number of items consumed
+use "${gsdData}/1-CleanOutput/food.dta", clear
+* count number of core items consumed per household
+*keep if mod_item==0
+gen x = cons_q>0 & cons_q<.
+collapse (sum) no_items = x (mean) av_cons_q = cons_q_kg, by(strata ea block hh weight hhsize)
+replace no_items = no_items/hhsize
+la var no_items "Items consumed p.c."
+replace av_cons_q = av_cons_q / hhsize
+la var av_cons_q "Average quantity per capita"
 
+
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanOutput/hh.dta", keep(match) keepusing(ind_profile)
+gen pw = weight*hhsize
+svyset ea [pweight=pw], strata(strata)
+
+svy: mean no_items, over(ind_profile)
+svy: mean av_cons_q, over(ind_profile)
+
+save "${gsdData}/1-CleanTemp/food_cons.dta", replace
+
+use "${gsdData}/1-CleanInput/SHFS2016/food.dta", clear
+* count number of core items consumed per household
+*keep if mod_item==0
+gen x = cons_q>0 & cons_q<.
+collapse (sum) no_items = x (mean) av_cons_q = cons_q_kg, by(strata ea block hh weight hhsize)
+replace no_items = no_items/hhsize
+la var no_items "Items consumed p.c."
+replace av_cons_q = av_cons_q / hhsize
+la var av_cons_q "Average quantity per capita"
+
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hh.dta", keep(match) keepusing(ind_profile)
+gen pw = weight*hhsize
+svyset ea [pweight=pw], strata(strata)
+
+svy: mean no_items, over(ind_profile)
+svy: mean av_cons_q, over(ind_profile)
+
+append using "${gsdData}/1-CleanTemp/food_cons.dta", gen(t)
+
+svy: mean no_items, over(ind_profile t)
+svy: mean av_cons_q, over(ind_profile t)
