@@ -132,3 +132,8 @@ qui foreach file in `files' {
     save "${gsdData}/0-RawTemp/`file'_valid_successful_complete.dta", replace
 }
 
+*Identify valid, successufl and complete submissions from Nomads
+use "${gsdData}/0-RawTemp/hh_valid_successful_complete.dta", clear
+keep if nomad==.
+keep interview__id
+save "${gsdData}/0-RawTemp/hh_valid_successful_nomads.dta", replace
