@@ -16,7 +16,7 @@ use "${gsdData}/1-CleanTemp/hh.dta", clear
 merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_fcons.dta", keepusing(cons*) nogen assert(match) keep(match)
 merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_nfcons.dta", keepusing(cons*) nogen assert(match) keep(match)
 merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_durables.dta", keepusing(cons_d) nogen assert(match)
-merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhm-hh.dta", keepusing(pchild psenior hhsex hhempl hhedu) nogen assert(match)
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhm-hh.dta", keepusing(pchild psenior hhsex hhempl hhedu hhh_literacy) nogen assert(match)
 *Ensure core food consumption
 assert cons_f0 > 0 | missing(cons_f0) 
 foreach v of var cons_f1 cons_f2 cons_f3 cons_f4 cons_nf? cons_d {
@@ -28,6 +28,11 @@ drop if missing(cons_f0)
 replace hhempl = 0 if missing(hhempl)
 replace hhsex = 1 if missing(hhsex)
 replace hhedu = 0 if missing(hhedu)
+
+*Replace education for literacy for the household head 
+drop hhedu 
+rename hhh_literacy hhedu
+
 *Clean variables for model
 recode housingtype (1/2=1 "Apartament") (3/4=2 "House") (5/6=3 "Hut") (7/max=4 "Other") (missing=4), gen(hh_type) label(lhh_type)
 recode drink_water (1/3=1 "Piped") (4=2 "Tap") (5/9=3 "Tap or well") (10/max=4 "Delivered") (missing=4), gen(hh_drinkwater) label(lhh_drinkwater)

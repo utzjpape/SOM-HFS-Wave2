@@ -124,7 +124,7 @@ merge 1:m itemid using "${gsdData}/1-CleanInput/COICOP_Codes.dta", keep(match) n
 *Collapse given that we have sometimes multiple HFS / COICOP items with the same code
 collapse (sum) ?share, by(coicop)
 *Add prices
-merge 1:m coicop using "${gsdData}/1-CleanInput/Prices_FSNAU.dta", nogen assert(master match) 
+merge 1:m coicop using "${gsdData}/1-CleanInput/Prices_FSNAU.dta", nogen keep(master match) 
 *Average over regions
 collapse (mean) av_2011 av_2012 dec17 (max) ?share, by(coicop)
 

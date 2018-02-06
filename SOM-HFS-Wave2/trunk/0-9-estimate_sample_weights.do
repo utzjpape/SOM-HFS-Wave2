@@ -120,8 +120,9 @@ keep if (type==1 | type==2) & type_idp_host>=.
 egen exclude_structures=rowtotal(n_str_no_success__*) 
 gen tot_n_str=n_str - exclude_structures
 *Impute the median number of structures to missings and zero structures
-sum tot_n_str, d
-replace tot_n_str=r(p50) if tot_n_str>=. | tot_n_str==0
+bysort strata ea: egen prelim_ea_median=median(tot_n_str) 
+bysort strata ea: egen ea_median=max(prelim_ea_median) 
+replace tot_n_str=ea_median if tot_n_str>=. | tot_n_str==0
 keep interview__id tot_n_str
 save "${gsdTemp}\sweights_3_urban_rural.dta", replace
 
@@ -132,8 +133,9 @@ keep if (type==1 | type==2) & type_idp_host>=.
 egen exclude_hhs=rowtotal(n_hh_no_success__*) 
 gen tot_n_hhs=n_hh - exclude_hhs
 *Impute the median number of households to missings and zero households
-sum tot_n_hhs, d
-replace tot_n_hhs=r(p50) if tot_n_hhs>=. | tot_n_hhs==0
+bysort strata ea: egen prelim_ea_median=median(tot_n_hhs) 
+bysort strata ea: egen ea_median=max(prelim_ea_median) 
+replace tot_n_hhs=ea_median if tot_n_hhs>=. | tot_n_hhs==0
 keep interview__id tot_n_hhs
 save "${gsdTemp}\sweights_4_urban_rural.dta", replace
 
@@ -328,8 +330,9 @@ keep if type_idp_host==2
 egen exclude_structures=rowtotal(n_str_no_success__*) 
 gen tot_n_str=n_str - exclude_structures
 *Impute the median number of structures to missings and zero structures
-sum tot_n_str, d
-replace tot_n_str=r(p50) if tot_n_str>=. | tot_n_str==0
+bysort strata ea: egen prelim_ea_median=median(tot_n_str) 
+bysort strata ea: egen ea_median=max(prelim_ea_median) 
+replace tot_n_str=ea_median if tot_n_str>=. | tot_n_str==0
 keep interview__id tot_n_str
 save "${gsdTemp}\sweights_3_host.dta", replace
 
@@ -340,8 +343,9 @@ keep if type_idp_host==2
 egen exclude_hhs=rowtotal(n_hh_no_success__*) 
 gen tot_n_hhs=n_hh - exclude_hhs
 *Impute the median number of households to missings and zero households
-sum tot_n_hhs, d
-replace tot_n_hhs=r(p50) if tot_n_hhs>=. | tot_n_hhs==0
+bysort strata ea: egen prelim_ea_median=median(tot_n_hhs) 
+bysort strata ea: egen ea_median=max(prelim_ea_median) 
+replace tot_n_hhs=ea_median if tot_n_hhs>=. | tot_n_hhs==0
 keep interview__id tot_n_hhs
 save "${gsdTemp}\sweights_4_host.dta", replace
 
@@ -503,8 +507,9 @@ keep if type==3
 egen exclude_structures=rowtotal(n_str_no_success__*) 
 gen tot_n_str=n_str - exclude_structures
 *Impute the median number of structures to missings and zero structures
-sum tot_n_str, d
-replace tot_n_str=r(p50) if tot_n_str>=. | tot_n_str==0
+bysort strata ea: egen prelim_ea_median=median(tot_n_str) 
+bysort strata ea: egen ea_median=max(prelim_ea_median) 
+replace tot_n_str=ea_median if tot_n_str>=. | tot_n_str==0
 keep interview__id tot_n_str
 save "${gsdTemp}\sweights_4_idp.dta", replace
 
@@ -515,8 +520,9 @@ keep if type==3
 egen exclude_hhs=rowtotal(n_hh_no_success__*) 
 gen tot_n_hhs=n_hh - exclude_hhs
 *Impute the median number of households to missings and zero households
-sum tot_n_hhs, d
-replace tot_n_hhs=r(p50) if tot_n_hhs>=. | tot_n_hhs==0
+bysort strata ea: egen prelim_ea_median=median(tot_n_hhs) 
+bysort strata ea: egen ea_median=max(prelim_ea_median) 
+replace tot_n_hhs=ea_median if tot_n_hhs>=. | tot_n_hhs==0
 keep interview__id tot_n_hhs
 save "${gsdTemp}\sweights_5_idp.dta", replace
 
@@ -579,14 +585,17 @@ save "${gsdTemp}\sweights_idp.dta", replace
 	P2= LSSr/Lr
 	P3= HSr / Hr
 	
+	However, since all the listing rounds were always selected, then P2=1
+	
+	
 	Thus, the variables needed to estimate the sampling weights are:
 	
 	1.1 Number of selected water points in strata j (WSj)
 	1.2 Number of water points in strata j(Wj)
-	2.1 Number of selected listing rounds r (LSr)
-	2.2 Number of listing rounds r (Lr)
 	3.1 Number of households selected in listing round r(HSr)
 	3.2 Number of households listed in round r (Hr)
+	
+	
 
 */
 
@@ -602,17 +611,6 @@ use "${gsdData}\0-RawTemp\master_nomads.dta", clear
 gen n_tot_wp_strata=1
 collapse (sum) n_tot_wp_strata, by(strata_id)
 save "${gsdTemp}\sweights_1.2_nomads.dta", replace
-
-*2.1 Number of selected listing rounds r (LSr)
-*2.2 Number of listing rounds r (Lr)
-use "${gsdData}\0-RawOutput\hh_clean.dta", clear
-keep if type==4
-keep ea listing_day listing_round 
-duplicates drop
-*Obtain the total number of listing rounds
-collapse (max) listing_round, by(ea listing_day )
-rename ea psu_id
-save "${gsdTemp}\sweights_2_nomads.dta", replace
 
 *3.1 Number of households selected in listing round r(HSr)
 *3.2 Number of households listed in round r (Hr)
@@ -635,16 +633,12 @@ merge m:1 strata_id using "${gsdTemp}\sweights_1.1_nomads.dta", nogen keep(match
 merge m:1 strata_id using "${gsdTemp}\sweights_1.2_nomads.dta", nogen keep(match)
 gen p1=n_sel_wp_strata/n_tot_wp_strata
 
-*Estimate P2
-merge m:1 psu_id listing_day using "${gsdTemp}\sweights_2_nomads.dta", nogen keep(match)
-gen p2=1/listing_round
-
 *Estimate P3
 merge 1:1 interview__id using "${gsdTemp}\sweights_3_nomads.dta", nogen keep(match)
 gen p3=n_sel / n_eligible
 
 *Estimate Probability of selection and sampling weights 
-gen prob_sel=p1*p2*p3
+gen prob_sel=p1*1*p3
 gen weight_temp=1/prob_sel
 keep interview__id weight_temp
 save "${gsdTemp}\sweights_nomads.dta", replace

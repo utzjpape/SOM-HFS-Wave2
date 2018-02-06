@@ -267,7 +267,7 @@ lab var price "Item Price"
 lab var exchrate "Exchange Rate"
 lab var name "Item Name"
 lab var coicop "COICOP"
-rename id itemid
+drop id
 save "${gsdData}/0-RawTemp/Commodity_Prices.dta", replace 
 
 
@@ -347,7 +347,14 @@ save "${gsdData}/1-CleanInput/Prices_FSNAU.dta", replace
 ********************************************************************
 *Save a file matching itemid and COICOP codes
 ********************************************************************
-use "${gsdData}/0-RawTemp/Commodity_Prices.dta", clear
-keep itemid coicop
-duplicates drop 
+import excel "${gsdDataRaw}/Match_Items_COICOP.xlsx", sheet("W2_Food") firstrow case(lower) clear
+drop name 
+rename code itemid
+save "${gsdTemp}/COICOP_food.dta", replace 
+import excel "${gsdDataRaw}/Match_Items_COICOP.xlsx", sheet("W2_Nonfood") firstrow case(lower) clear
+drop name 
+rename code itemid
+save "${gsdTemp}/COICOP_nonfood.dta", replace 
+use "${gsdTemp}/COICOP_food.dta", clear
+append using "${gsdTemp}/COICOP_nonfood.dta"
 save "${gsdData}/1-CleanInput/COICOP_Codes.dta", replace 
