@@ -169,7 +169,7 @@ save "${gsdData}\0-RawTemp\master_sample.dta", replace
 import excel "${gsdDataRaw}\Inputs Waterpoints.xls", sheet("Input_List WPs") firstrow case(lower) clear
 save "${gsdData}\0-RawTemp\master_nomads.dta", replace
 *Listing for the nomads
-use "${gsdDownloads}\Nomads - Listing\Nomad listing form - Fieldwork.dta", clear
+use "${gsdData}\0-RawTemp\nomads_listing.dta", clear
 *==============================
 *Identify unique cases 
 *(temporary fix for the code to work until we have manual correction from Altia)

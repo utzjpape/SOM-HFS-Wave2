@@ -1264,3 +1264,88 @@ label var duration_itw_min "Duration of interview (minutes)"
 
 *** Saving dataset with manual corrections
 save "${gsdData}/0-RawTemp/hh_manual_cleaning_nomads.dta", replace
+
+
+
+***** PART 3: LISTING FOR NOMADS 
+
+*Importing listing forms
+use "${gsdDownloads}/Nomads - Listing/Nomad listing form - Fieldwork", clear
+
+*Cleaning duplicates in terms of waterpoint, listing day and listing round
+*WP 749
+replace listing_day=4 if interview__id=="bcdd2915581d4ea5a648e88be85e7711"
+*WP 809
+replace listing_round=2 if interview__id=="46c3f24b559d4895839f77a238f20717"
+*WP 1844
+replace listing_day=1 if interview__id=="47294f4701874d2db8e5a99bfd4e4e06"
+*WP 3170
+replace listing_day=2 if interview__id=="ff2718cf5f8146fa87bb3d48ce5fce00"
+replace listing_round=2 if interview__id=="a4d1edd184e94bd9833beecab15078f8"
+replace listing_round=3 if interview__id=="4bf3028dd24042cebf1e0142167a500d"
+*WP 3191
+replace listing_round=2 if interview__id=="ae7d441862a14e67a2fe312fef5bee56"
+replace listing_round=3 if interview__id=="2b315e2a169243c5b333e12225a7d501"
+replace listing_round=4 if interview__id=="72b308530b2c40e183871707c405c415"
+replace listing_round=5 if interview__id=="cbfb47e325814f0fa15f9a4c06ea8885"
+replace listing_round=6 if interview__id=="149763115722468e91c1344462aeaec8"
+replace listing_round=3 if interview__id=="35ad4288e0fe4c9b842c9760070ffdde"
+replace listing_round=4 if interview__id=="ab374d9b76d74892a904d969e816fbb0"
+*WP 3733
+replace listing_day=2 if interview__id=="931c68af5339478ca40d2dd8b373da2c"
+replace listing_round=1 if interview__id=="5b6c720d39d649e18420404ea5df59b8"
+*WP 4100
+replace listing_round=2 if interview__id=="f63c6fe2bfe94948bc6389c2087ece4c"
+
+
+***Cleaning of listing day, listing round and household ID in the database
+*Corrections were applied only where the name and the phone number of the repondent matched those of a household selected through the listing forms but for which we did not have any record yet
+
+*Importing questionnaire
+use "${gsdData}/0-RawTemp/hh_manual_cleaning_nomads.dta", clear
+
+*Cleaning database
+*WP 273
+replace hhid_nomad=1 if interview__id=="d74ba219b232465dadfc7ed920985f9f"
+replace hhid_nomad=2 if interview__id=="d54016c7c79040ab87be3faeded923d8"
+replace hhid_nomad=3 if interview__id=="deed8fe88a744ebb81b5025abc02e005"
+replace hhid_nomad=1 if interview__id=="b487ec9f646840ae914ad3871b216ea9"
+replace hhid_nomad=2 if interview__id=="961008cfa5164b7f8adcf6de6ec8b828"
+replace hhid_nomad=3 if interview__id=="43873380cd274d769caebfbe6c78f86d"
+replace hhid_nomad=1 if interview__id=="b780047608474289847b180df2526e78"
+replace hhid_nomad=2 if interview__id=="fb16d8e9a7154fff8f2ee32694960999"
+replace hhid_nomad=3 if interview__id=="7d84f2804d21441f8faad0f54347c893"
+*WP 809
+replace hhid_nomad=2 if interview__id=="819634f9f3284eca855062d346f42285"
+*WP 869
+replace hhid_nomad=1 if interview__id=="9e6d8f6abc2e4c239d0ae8ef2a199bb5"
+*WP 3159
+replace hhid_nomad=7 if interview__id=="0d006906cdd248ebb5904e8cceb8a73e"
+replace hhid_nomad=10 if interview__id=="1056bec3763740919d0e4b88792661e2"
+*WP 3170
+replace hhid_nomad=4 if interview__id=="e788ddcc77974f4aaea1abc0a5cfd91b"
+*WP 3183
+replace hhid_nomad=2 if interview__id=="4b21a627f1d645b5b835c3239287f089"
+*WP 3191
+replace listing_round=6 if interview__id=="d961d542f6154f3289da43e32b4af331"
+replace listing_round=4 if interview__id=="b41725020ef642069753def6be3a62ef"
+replace listing_round=3 if interview__id=="ab8700d7481d4d728800d6db43668376"
+replace hhid_nomad=4 if interview__id=="ab8700d7481d4d728800d6db43668376"
+*WP 3313
+replace hhid_nomad=3 if interview__id=="b5b98a62c86241c0a9a85d83ace28bbc"
+*WP 3578
+replace hhid_nomad=2 if interview__id=="abcb86be73114f14805e801d688c13e7"
+*WP 3669
+replace listing_round=3 if interview__id=="bd3731e6094d426b897326aa872ee627"
+replace hhid_nomad=3 if interview__id=="b150ef8dee184a4399e5e608e39b2d76"
+replace listing_day=1 if interview__id=="9200c1fb61784a3d9b4b89dd5d695348"
+*WP 4029
+replace hhid_nomad=1 if interview__id=="34b747d6177e4f48b9ad1811caa906f6"
+*WP 4100
+replace listing_round=1 if interview__id=="a39e7e4e74d348a499b4e8d0b5464d27"
+*WP 1801038
+replace hhid_nomad=1 if interview__id=="5e48b4f7f4024dbf84a3c5ed324b56cf"
+replace hhid_nomad=1 if interview__id=="19579943ea244cda9c4cb77b5f7f1694"
+replace listing_round=2 if interview__id=="a513001d5e754df79cfbbcc32a528086"
+
+save "${gsdData}\0-RawTemp\nomads_listing.dta", replace
