@@ -219,15 +219,17 @@ save "${gsdData}/1-CleanTemp/hhm.dta", replace
 ren region reg_pess
 la var reg_pess "Region (PESS)"
 save "${gsdData}/1-CleanOutput/hhm.dta", replace
+
 *Prepare household member dataset for imputation
 use "${gsdData}/1-CleanOutput/hhm.dta", clear
+gen hhh_literacy=literacy if ishead
 gen nchild = age<15 if !missing(age)
 gen nsenior = age>64 if !missing(age)
 gen hhsex = gender if ishead
 gen hhedu = hhm_edu_ever if ishead
 merge 1:1 strata ea block hh hhmid using "${gsdData}/1-CleanTemp/hhm.dta", nogen assert(match) keepusing(active_12m_imp)
 gen hhempl=active_12m_imp if ishead
-collapse (sum) nchild nsenior (min) hhsex hhempl hhedu (count) hhsize = hhmid, by(strata ea block hh)
+collapse (sum) nchild nsenior hhh_literacy (min) hhsex hhempl hhedu (count) hhsize = hhmid, by(strata ea block hh)
 gen pchild = nchild / hhsize
 gen psenior = nsenior / hhsize
 drop nchild nsenior
