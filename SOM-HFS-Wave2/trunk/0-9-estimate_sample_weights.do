@@ -133,9 +133,9 @@ keep if (type==1 | type==2) & type_idp_host>=.
 egen exclude_hhs=rowtotal(n_hh_no_success__*) 
 gen tot_n_hhs=n_hh - exclude_hhs
 *Impute the median number of households to missings and zero households
-bysort strata ea: egen prelim_ea_median=median(tot_n_hhs) 
-bysort strata ea: egen ea_median=max(prelim_ea_median) 
-replace tot_n_hhs=ea_median if tot_n_hhs>=. | tot_n_hhs==0
+bysort strata: egen prelim_ea_median=median(tot_n_hhs) 
+bysort strata: egen ea_median=max(prelim_ea_median) 
+replace tot_n_hhs=ea_median if (tot_n_hhs>=. | tot_n_hhs==0) & ea_median>=0
 keep interview__id tot_n_hhs
 save "${gsdTemp}\sweights_4_urban_rural.dta", replace
 
@@ -622,6 +622,7 @@ merge m:1 water_point listing_day listing_round using "${gsdData}\0-RawTemp\mast
 keep interview__id n_eligible n_sel
 *Correct missing values 
 replace n_eligible=n_sel if n_eligible>=.
+replace n_eligible=1 if n_eligible==0
 save "${gsdTemp}\sweights_3_nomads.dta", replace
 
 *Estimate P1

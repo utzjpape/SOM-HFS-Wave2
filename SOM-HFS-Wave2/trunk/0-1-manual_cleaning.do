@@ -1296,6 +1296,7 @@ replace listing_day=2 if interview__id=="931c68af5339478ca40d2dd8b373da2c"
 replace listing_round=1 if interview__id=="5b6c720d39d649e18420404ea5df59b8"
 *WP 4100
 replace listing_round=2 if interview__id=="f63c6fe2bfe94948bc6389c2087ece4c"
+save "${gsdData}\0-RawTemp\nomads_listing.dta", replace
 
 
 ***Cleaning of listing day, listing round and household ID in the database
@@ -1368,4 +1369,4 @@ replace hhid_nomad=1 if interview__id=="71f32abe4b2b4a2f970795f3f0b35dcf"
 *WP 1802019
 replace listing_round=2 if interview__id=="fe154df3f02f44ca897fd7f733daa679"
 
-save "${gsdData}\0-RawTemp\nomads_listing.dta", replace
+save "${gsdData}/0-RawTemp/hh_manual_cleaning_nomads.dta", replace

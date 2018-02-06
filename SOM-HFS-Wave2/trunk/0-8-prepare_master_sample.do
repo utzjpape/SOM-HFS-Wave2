@@ -168,26 +168,7 @@ save "${gsdData}\0-RawTemp\master_sample.dta", replace
 ********************************************************************
 import excel "${gsdDataRaw}\Inputs Waterpoints.xls", sheet("Input_List WPs") firstrow case(lower) clear
 save "${gsdData}\0-RawTemp\master_nomads.dta", replace
-*Listing for the nomads
+*Listing for the nomads for valid and successul submissions
 use "${gsdData}\0-RawTemp\nomads_listing.dta", clear
-*==============================
-*Identify unique cases 
-*(temporary fix for the code to work until we have manual correction from Altia)
-*==============================
-bys water_point listing_day listing_round:  gen dup = cond(_N==1,0,_n)
-*br interview__id water_point listing_day listing_round  if dup>0
-drop if interview__id=="8764e84e03644a30a07efd5fe0e46af2"
-drop if interview__id=="fb34056979544b5297d5085c8e72dd71"
-drop if interview__id=="d48ec2d887114353b6eaa0c548f49480"
-drop if interview__id=="ff2718cf5f8146fa87bb3d48ce5fce00"
-drop if interview__id=="a4d1edd184e94bd9833beecab15078f8"
-drop if interview__id=="149763115722468e91c1344462aeaec8"
-drop if interview__id=="cbfb47e325814f0fa15f9a4c06ea8885"
-drop if interview__id=="2b315e2a169243c5b333e12225a7d501"
-drop if interview__id=="04955fb883dc4dc8993908f675458696"
-drop if interview__id=="72b308530b2c40e183871707c405c415"
-drop if interview__id=="e6ab874202a343248128d30b8028bef2"
-drop if interview__id=="931c68af5339478ca40d2dd8b373da2c"
-drop if interview__id=="f63c6fe2bfe94948bc6389c2087ece4c"
 keep n_eligible n_main water_point listing_day listing_round hh1_nomad hh2_nomad hh3_nomad hh4_nomad hh5_nomad hh6_nomad hh7_nomad hh8_nomad hh9_nomad hh10_nomad hh11_nomad hh12_nomad hh13_nomad hh14_nomad hh15_nomad hh16_nomad hh17_nomad hh18_nomad hh19_nomad hh20_nomad hh21_nomad hh22_nomad hh23_nomad hh24_nomad hh25_nomad
 save "${gsdData}\0-RawTemp\master_nomads_listing.dta", replace
