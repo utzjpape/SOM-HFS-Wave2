@@ -1299,7 +1299,7 @@ replace listing_round=2 if interview__id=="f63c6fe2bfe94948bc6389c2087ece4c"
 
 
 ***Cleaning of listing day, listing round and household ID in the database
-*Corrections were applied only where the name and the phone number of the repondent matched those of a household selected through the listing forms but for which we did not have any record yet
+*Corrections were applied only where the name and the phone number of the repondent matched those of a household selected through the listing form but for which we did not have any record yet.
 
 *Importing questionnaire
 use "${gsdData}/0-RawTemp/hh_manual_cleaning_nomads.dta", clear
@@ -1322,23 +1322,30 @@ replace hhid_nomad=1 if interview__id=="9e6d8f6abc2e4c239d0ae8ef2a199bb5"
 *WP 3159
 replace hhid_nomad=7 if interview__id=="0d006906cdd248ebb5904e8cceb8a73e"
 replace hhid_nomad=10 if interview__id=="1056bec3763740919d0e4b88792661e2"
+replace listing_round=2 if interview__id=="259f74488d8f46b2af48547c52e64bfa"
+replace hhid_nomad=1 if interview__id=="79942876465a4214bae96d2e4c19bccc"
+replace hhid_nomad=4 if interview__id=="59888e303cff4e4994cc2750cf303a50"
+replace hhid_nomad=6 if interview__id=="9ab92d4becee465493c03b0506ac39b9"
 *WP 3170
 replace hhid_nomad=4 if interview__id=="e788ddcc77974f4aaea1abc0a5cfd91b"
+replace listing_round=3 if interview__id=="d241d67cff25484bb3db6cfe6859b542"
 *WP 3183
 replace hhid_nomad=2 if interview__id=="4b21a627f1d645b5b835c3239287f089"
-*WP 3191
-replace listing_round=6 if interview__id=="d961d542f6154f3289da43e32b4af331"
-replace listing_round=4 if interview__id=="b41725020ef642069753def6be3a62ef"
-replace listing_round=3 if interview__id=="ab8700d7481d4d728800d6db43668376"
-replace hhid_nomad=4 if interview__id=="ab8700d7481d4d728800d6db43668376"
 *WP 3313
 replace hhid_nomad=3 if interview__id=="b5b98a62c86241c0a9a85d83ace28bbc"
 *WP 3578
 replace hhid_nomad=2 if interview__id=="abcb86be73114f14805e801d688c13e7"
+replace listing_day=3 if interview__id=="2094ebaefe4e4273885ef62d9483fd27"
+replace listing_round=1 if interview__id=="2094ebaefe4e4273885ef62d9483fd27"
+replace hhid_nomad=2 if interview__id=="2094ebaefe4e4273885ef62d9483fd27"
+*WP 3634
+replace hhid_nomad=1 if interview__id=="efc6fa8c03334fa598ddb42921ea6ba7"
 *WP 3669
 replace listing_round=3 if interview__id=="bd3731e6094d426b897326aa872ee627"
 replace hhid_nomad=3 if interview__id=="b150ef8dee184a4399e5e608e39b2d76"
 replace listing_day=1 if interview__id=="9200c1fb61784a3d9b4b89dd5d695348"
+*WP 3960
+replace hhid_nomad=4 if interview__id=="0885b765c5614e87b2d52600c6bc7fd0"
 *WP 4029
 replace hhid_nomad=1 if interview__id=="34b747d6177e4f48b9ad1811caa906f6"
 *WP 4100
@@ -1347,5 +1354,16 @@ replace listing_round=1 if interview__id=="a39e7e4e74d348a499b4e8d0b5464d27"
 replace hhid_nomad=1 if interview__id=="5e48b4f7f4024dbf84a3c5ed324b56cf"
 replace hhid_nomad=1 if interview__id=="19579943ea244cda9c4cb77b5f7f1694"
 replace listing_round=2 if interview__id=="a513001d5e754df79cfbbcc32a528086"
-
-save "${gsdData}\0-RawTemp\nomads_listing.dta", replace
+*WP 3191
+replace listing_round=6 if interview__id=="d961d542f6154f3289da43e32b4af331"
+replace listing_round=4 if interview__id=="b41725020ef642069753def6be3a62ef"
+replace listing_round=3 if interview__id=="ab8700d7481d4d728800d6db43668376"
+replace hhid_nomad=4 if interview__id=="ab8700d7481d4d728800d6db43668376"
+*WP 1203072
+replace listing_day=7 if interview__id=="0cc0b0c5ee75485fbe0418bf153ee38b"
+replace listing_round=2 if interview__id=="0cc0b0c5ee75485fbe0418bf153ee38b"
+replace hhid_nomad=2 if interview__id=="0cc0b0c5ee75485fbe0418bf153ee38b"
+replace listing_round=2 if interview__id=="71f32abe4b2b4a2f970795f3f0b35dcf"
+replace hhid_nomad=1 if interview__id=="71f32abe4b2b4a2f970795f3f0b35dcf"
+*WP 1802019
+replace listing_round=2 if interview__id=="fe154df3f02f44ca897fd7f733daa679"
