@@ -12,13 +12,11 @@ use "${gsdData}/0-RawTemp/hh_valid_successful_complete.dta", clear
 rename ea psu_id
 merge m:1 psu_id using "${gsdDataRaw}/List_Strata_EAs.dta", nogen keep(master match) keepusing(strata_name_list strata_id_list)
 rename psu_id ea
-*assert strata_id== strata_id_list
 labmask strata_id, values(strata_name)
 drop strata strata_name_list strata_id_list
 rename strata_id strata
 order strata strata_name type_pop, after(loc_check_barcode)
-
-*Include nomads
+label define strata_id 8 "Nomad: Central Regions" 9 "Nomad: Galmudug" 10 "Nomad: Jubaland" 12 "Nomad: Puntland" 13 "Nomad: Somaliland" 14 "Nomad: South West", modify
 
 ********************************************************************
 *Include the correct type of population 

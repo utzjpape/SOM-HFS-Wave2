@@ -10,8 +10,9 @@ if "${gsdData}"=="" {
 *Decide which parts of the pipeline should be run
 local runimport = 0
 
-*API Download of data for Urban, Rural and IDP households
+*API Download of data 
 if (`runimport'==1) {
+	*Urban, Rural and IDP households
 	run "${gsdDo}/api_download.do"
 	api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(1) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}") curl("${gsdBin}") 
 	api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(2) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/v2") curl("${gsdBin}") 
@@ -20,15 +21,11 @@ if (`runimport'==1) {
 	api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(9) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/v9") curl("${gsdBin}") 
 	api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(10) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/v10") curl("${gsdBin}") 
 	api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(11) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/v11") curl("${gsdBin}") 
-}
-
-*API Download of data for Nomads (only from Gonzalo's or Philip's computer)
-if (inlist("${suser}","wb484006","WB484006","WB499706","wb499706")) {
-	run "${gsdDo}/api_download.do"
+	*Nomads
 	api_download wbhfssom, quid(a539b55e361e41e9b8b549402c6e54d2) quv(1) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/Nomads - v1") curl("${gsdBin}") 
 	api_download wbhfssom, quid(a539b55e361e41e9b8b549402c6e54d2) quv(2) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/Nomads - v2") curl("${gsdBin}") 
 	api_download wbhfssom, quid(a539b55e361e41e9b8b549402c6e54d2) quv(4) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/Nomads - v4") curl("${gsdBin}") 
-    *Listing form
+    *Listing form 
 	api_download wbhfssom, quid(22c77f1a675547ccb9eb878812bfe1ab) quv(1) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/Nomads - Listing") curl("${gsdBin}") 
 }
 
@@ -98,7 +95,7 @@ run "${gsdDo}/1-7-clean_remittances.do"
 run "${gsdDo}/1-8-1-consaggr_deflator.do"
 run "${gsdDo}/1-8-2-consaggr_imputation.do"
 run "${gsdDo}/1-8-3-include_imputed_shares.do"
-*run "${gsdDo}/1-8-4-consaggr_test.do"
+run "${gsdDo}/1-8-4-consaggr_test.do"
 
 *Clean household level dataset, integrate aggregates from previous cleaning files
 run "${gsdDo}/1-9-clean_hh.do" 
