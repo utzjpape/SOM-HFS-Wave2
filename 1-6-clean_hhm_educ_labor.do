@@ -274,6 +274,8 @@ foreach var of local collapselist_min {
 * Collapse without weights since "count" command will create sum of weights in household; weights come in when merging this with hh.dta
 collapse (mean) penrol=enrol penrol_p=enrol_p penrol_s=enrol_s pgender=gender pworking_age=working_age no_children no_adults no_old_age pliteracy=literacy page_cat_broad_1=age_cat_broad_1 page_cat_broad_2=age_cat_broad_2 page_cat_broad_3=age_cat_broad_3 page_cat_broad_4=age_cat_broad_4 (count) hhsize=hhmid (min) hhh_gender hhh_age hhh_edu (max) lfp_7d_hh=lfp_7d emp_7d_hh=emp_7d, by(strata ea block hh)
 
+replace lfp_7d_hh=0 if lfp_7d_hh==.
+replace emp_7d_hh=0 if emp_7d_hh==.
 
 *Reapply labels - min
 foreach var of local collapselist_min  {
