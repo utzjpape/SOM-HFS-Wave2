@@ -18,7 +18,6 @@ local files hh_roster_separated hhroster_age motor ra_assets ra_assets_prev rf_f
 	rnf_nonfood shocks
 qui foreach file in `files' {
     use "${gsdData}/0-RawTemp/`file'_manual_cleaning.dta", clear
-	gen nomads=0
 	append using "${gsdData}/0-RawTemp/`file'_manual_cleaning_nomads.dta", force
 	save "${gsdData}/0-RawTemp/`file'_manual_cleaning_all.dta", replace
 }
