@@ -732,6 +732,10 @@ replace lat_y = loc_retry__Latitude if mi(lat_y)
 replace lat_y=. if lat_y<-1000
 la var lat_y "Latitude HH"
 
+* Fix ID of household head
+replace hhh_id = hhh_id0 if mi(hhh_id)
+replace hhh_id=1 if hhh_id0==.
+
 ********************************************************************
 *Drop administrative info & specify questions
 ********************************************************************
@@ -741,7 +745,7 @@ drop ea_list ea_list_confirm loc_list__Latitude loc_list__Longitude loc_list__Ac
 drop ea_barcode_int original_block original_str original_hh visit_n blid_seg1ret1 strid_seg1ret1 hhid_seg1ret1 loc_hhid_seg1ret1__Latitude loc_hhid_seg1ret1__Longitude loc_hhid_seg1ret1__Accuracy loc_hhid_seg1ret1__Altitude loc_hhid_seg1ret1__Timestamp loc_hhid_check
 drop enum_offset block bl_replace bl_replace_reason bl_replace1 bl_replace_reason1 bl_replace2 bl_replace_reason2 bl_replace3 bl_replace_reason3 bl_replace4 bl_replace_reason4 chosen_block bl_success 
 drop random_draw int_bl_rep* rep* seg_str_prev1 str_loc_check hh_success strc* seg_str seg_hh_prev1 str_loc__Latitude str_loc__Longitude str_loc__Accuracy str_loc__Altitude str_loc__Timestamp
-drop hhid_seg1ret0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 hh8 hh9 hh10 hh11 hh12 hh13 hh14 hh15 hh16 hh17 hh18 hh19 hh20 hh_list__0 hh_list__1 hh_list__2 hh_list__3 hh_list__4 hh_list__5 hh_list__6 hh_list__7 hh_list__8 hh_list__9 hh_list__10 hh_list__11 hh_list__12 hh_list__13 hh_list__14 hhh_id1 hhh_id1_int hhh_name hhh_id hh_list_separated__*
+drop hhid_seg1ret0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 hh8 hh9 hh10 hh11 hh12 hh13 hh14 hh15 hh16 hh17 hh18 hh19 hh20 hh_list__0 hh_list__1 hh_list__2 hh_list__3 hh_list__4 hh_list__5 hh_list__6 hh_list__7 hh_list__8 hh_list__9 hh_list__10 hh_list__11 hh_list__12 hh_list__13 hh_list__14 hhh_id1 hhh_id1_int hhh_name hhh_id0 hh_list_separated__*
 drop aa cook_source_sp electricity_fee_spec rf_lowcons1 check1 check2 check3 check4
 drop contact_info phone_number follow_up_yn testimonial testimonial_consent share_phone_agencies loc_retry__Latitude loc_retry__Longitude loc_retry__Accuracy loc_retry__Altitude loc_retry__Timestamp loc_check2 enum1 int_break enum2 enum2_1 enum3__0 enum3__1 enum3__2 enum3__3 enum3__4 enum3__5 enum3__6 enum3__7 enum3__8 enum3__9 enum3__10 enum3__11 enum3__12 enum3__13 enum3__14 enum3__1000 enum4 enum5 enum6__0 enum6__1 enum6__2 enum6__3 enum6__4 enum6__5 enum6__6 enum6__7 enum6__8 enum6__9 enum6__10 enum6__11 enum6__12 enum6__13 enum6__14 enum6__1000 enum7 enum8__2 enum8__3 enum8__4 enum8__5 enum8__6 enum8__7 enum8__8 enum8__9 enum8__10 enum8__11 enum8__12 enum8__13 enum8__14 enum8__15 enum9 today_end ssSys_IRnd interview__key
 drop has__errors interview__status start_time end_time duration_itw_min date_stata date itw_valid itw_invalid_reason latitude longitude accuracy latitude_str longitude_str accuracy_str gps_coord_y_n lon_min lon_max lat_min lat_max not_within_EA id_ea id_block id_structure id_household block_number_original str_number_original previous_visit_exists previous_visit_valid GPS_pair latitude_pr longitude_pr accuracy_pr distance_meters dist_previous_visit_check successful successful_valid index treat1 treat2 treat3 treat4 val1 val2 val3 val4 succ1 succ2 succ3 succ4 val_succ1 val_succ2 val_succ3 val_succ4
@@ -762,7 +766,6 @@ drop fishing_gear_used__n98 fishing_gear_used__n99 fishing_equipment__n98 fishin
 ********************************************************************
 *Further tidy and save
 ********************************************************************
-replace hhh_id0=1 if hhh_id0==.
 rename ea_reg region
 label var region "Somali region"
 sort strata interview__id

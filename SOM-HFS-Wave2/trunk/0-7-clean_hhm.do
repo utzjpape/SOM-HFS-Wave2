@@ -30,13 +30,13 @@ order emp_7d_hours_kdk, before(emp_7d_hours)
 order emp_prev_hours_kdk, before (emp_prev_hours)
 
 *Clean some variables
-merge m:1 interview__id  using "${gsdData}/0-RawOutput/hh_clean.dta", assert(match) nogen keepusing(hhh_id0 migr_idp hhr_id)
-replace hhm_relation=1 if hhroster_age__id==hhh_id0 & hhh_id0<.
+merge m:1 interview__id  using "${gsdData}/0-RawOutput/hh_clean.dta", assert(match) nogen keepusing(hhh_id migr_idp hhr_id)
+replace hhm_relation=1 if hhroster_age__id==hhh_id & hhh_id<.
 *Assing household head 
 replace hhm_gender=1 if hhroster_age__id==1 & interview__id=="a285a77c94db45c79aec91e4fd401b53"
 replace hhm_relation=1 if hhroster_age__id==1 & interview__id=="a285a77c94db45c79aec91e4fd401b53"
 label define hhm_relation 1 "Household Head" .a "Don't know" .b "Refused to respond" .z "Not administered", modify
-drop hhh_id0
+
 
 *Introduce skip patterms 
 replace hhm_parent=.z if hhm_relation==3 | hhm_age>=18
