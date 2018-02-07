@@ -154,7 +154,7 @@ foreach r in Mogadishu NE-Urban NE-Rural NW-Urban NW-Rural IDP {
 	merge 1:1 v1 using "${gsdTemp}/W1W2-comparison_raw2_`r'.dta", nogen
 	sort n
 	drop n
-	export excel using "${gsdOutput}/W1W2-comparison_v1.xlsx", sheet("Raw_`r'") sheetmodify cell(B3) first(varlabels)
+	export excel using "${gsdOutput}/W1W2-comparison_v2.xlsx", sheet("Raw_`r'") sheetmodify cell(B3) first(varlabels)
 	restore
 }
 
@@ -220,7 +220,7 @@ foreach r in Nomad Central-Urban Central-Rural Jubbaland-Urban Jubbaland-Rural S
 		
 	}
 	drop if v1=="`r'"
-	export excel using "${gsdOutput}/W1W2-comparison_v1.xlsx", sheet("Raw_`r'") sheetmodify cell(B3) first(varlabels)
+	export excel using "${gsdOutput}/W1W2-comparison_v2.xlsx", sheet("Raw_`r'") sheetmodify cell(B3) first(varlabels)
 	restore
 }
 
@@ -335,7 +335,7 @@ lab var flag_md "Flag - Median value"
 drop ind_profile hh_no_items_mn_imp hh_no_items_md_w1
 order urban, last
 
-export excel using "${gsdOutput}/W1W2-comparison_v1.xlsx", sheet("Raw_Food_1") sheetmodify cell(B3) firstrow(variables)
+export excel using "${gsdOutput}/W1W2-comparison_v2.xlsx", sheet("Raw_Food_1") sheetmodify cell(B3) firstrow(variables)
 
 
 *Consumption in Kg per person per day     
@@ -415,7 +415,7 @@ lab var flag_md "Flag - Median value"
 
 drop ind_profile
 
-export excel using "${gsdOutput}/W1W2-comparison_v1.xlsx", sheet("Raw_Food_2") sheetmodify cell(B3) firstrow(variables)
+export excel using "${gsdOutput}/W1W2-comparison_v2.xlsx", sheet("Raw_Food_2") sheetmodify cell(B3) firstrow(variables)
 
 
 
@@ -531,7 +531,7 @@ lab var flag_md "Flag - Median value"
 drop ind_profile hh_no_items_mn_imp hh_no_items_md_w1
 order urban, last
 
-export excel using "${gsdOutput}/W1W2-comparison_v1.xlsx", sheet("Raw_NonFood_2") sheetmodify cell(B3) firstrow(variables)
+export excel using "${gsdOutput}/W1W2-comparison_v2.xlsx", sheet("Raw_NonFood_2") sheetmodify cell(B3) firstrow(variables)
 
 
 
@@ -644,7 +644,7 @@ lab var flag_md "Flag - Median value"
 drop ind_profile hh_no_items_mn_imp hh_no_items_md_w1
 order urban, last
 
-export excel using "${gsdOutput}/W1W2-comparison_v1.xlsx", sheet("Raw_Assets_1") sheetmodify cell(B3) firstrow(variables)
+export excel using "${gsdOutput}/W1W2-comparison_v2.xlsx", sheet("Raw_Assets_1") sheetmodify cell(B3) firstrow(variables)
 
 
 * Consumption flow for each durable good
@@ -721,7 +721,7 @@ lab var flag_mn "Flag - Mean value"
 lab var flag_md "Flag - Median value"
 
 drop ind_profile
-export excel using "${gsdOutput}/W1W2-comparison_v1.xlsx", sheet("Raw_Assets_2") sheetmodify cell(B3) firstrow(variables)
+export excel using "${gsdOutput}/W1W2-comparison_v2.xlsx", sheet("Raw_Assets_2") sheetmodify cell(B3) firstrow(variables)
 
 
 * Median depreciation rates for each durable good
@@ -797,4 +797,4 @@ lab var flag_mn "Flag - Mean value"
 lab var flag_md "Flag - Median value"
 
 drop ind_profile
-export excel using "${gsdOutput}/W1W2-comparison_v1.xlsx", sheet("Raw_Assets_3") sheetmodify cell(B3) firstrow(variables)
+export excel using "${gsdOutput}/W1W2-comparison_v2.xlsx", sheet("Raw_Assets_3") sheetmodify cell(B3) firstrow(variables)
