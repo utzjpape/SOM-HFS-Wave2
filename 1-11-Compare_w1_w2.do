@@ -4,12 +4,15 @@ set more off
 set seed 23081980 
 set sortseed 11041955
 
+
 * open combined data set
 use "${gsdData}/1-CleanTemp/hh_all.dta", clear
 gen pweight=weight_cons*hhsize
 svyset ea [pweight=pweight], strata(strata) singleunit(centered)
 
+*=====================================================================
 * 1 - Prepare variables of interest that aren't yet in the right format
+*=====================================================================
 * Housingtype: make wave 2 comparable to wave 1
 tab house_type, gen(house_type__)
 * cooking source
@@ -34,7 +37,9 @@ local a: subinstr local a "==" ": "
 label var `i' "`a'"
 }
 
+*=====================================================================
 * 2 - Prepare data set for analysis
+*=====================================================================
 * generate indicator variable
 * for wave 1 
 cap drop ind_profile
@@ -66,7 +71,9 @@ replace ind_profile="SouthWest-Rural" if strata==53 | strata==55 |  strata==56
 save "${gsdTemp}/hh_w1w2_comparison.dta", replace
 
 
+*=====================================================================
 * 3- Analysis (regions covered in both waves) outputs, indicator by indicator
+*=====================================================================
 use "${gsdTemp}/hh_w1w2_comparison.dta", clear
 * Set worksheets
 foreach r in Mogadishu NE-Urban NE-Rural NW-Urban NW-Rural IDP {
@@ -151,7 +158,11 @@ foreach r in Mogadishu NE-Urban NE-Rural NW-Urban NW-Rural IDP {
 	restore
 }
 
+
+
+*=====================================================================
 * 4- Analysis (regions only in Wave 2) outputs, indicator by indicator
+*=====================================================================
 use "${gsdTemp}/hh_w1w2_comparison.dta", clear
 * Set worksheets
 foreach r in Nomad Central-Urban Central-Rural Jubbaland-Urban Jubbaland-Rural SouthWest-Urban SouthWest-Rural {
@@ -223,47 +234,567 @@ foreach r in Nomad Central-Urban Central-Rural Jubbaland-Urban Jubbaland-Rural S
 
 }
 
-/*
 
-** Temporary: look into number of items consumed
-use "${gsdData}/1-CleanOutput/food.dta", clear
-* count number of core items consumed per household
-*keep if mod_item==0
-gen x = cons_q>0 & cons_q<.
-collapse (sum) no_items = x (mean) av_cons_q = cons_q_kg, by(strata ea block hh weight hhsize)
-replace no_items = no_items/hhsize
-la var no_items "Items consumed p.c."
-replace av_cons_q = av_cons_q / hhsize
-la var av_cons_q "Average quantity per capita"
+*=====================================================================
+*5 Checks to food consumption
+*=====================================================================
+* List of items in Waves 1 and 2
+use itemid using "${gsdData}/1-CleanInput/SHFS2016/food.dta", clear
+duplicates drop
+decode itemid, gen(item_name)
+ren itemid itemid_w1
+gen item_name_w1 = item_name
+tempfile item_list_w1
+save `item_list_w1', replace 
+use itemid using  "${gsdData}/1-CleanOutput/food.dta", clear
+duplicates drop
+decode itemid, gen(item_name)
+ren itemid itemid_w2
+gen item_name_w2 = item_name
+tempfile item_list_w2
+save `item_list_w2', replace 
+
+* List of items - Wave 1 & 2
+use `item_list_w1', clear
+*merge 1:1 item_name using `item_list_w2', keep(match)
+merge 1:1 item_name using `item_list_w2'
+sort item_name
+tempfile item_list
+save `item_list', replace 
 
 
-merge 1:1 strata ea block hh using "${gsdData}/1-CleanOutput/hh.dta", keep(match) keepusing(ind_profile)
-gen pw = weight*hhsize
-svyset ea [pweight=pw], strata(strata)
-
-svy: mean no_items, over(ind_profile)
-svy: mean av_cons_q, over(ind_profile)
-
-save "${gsdData}/1-CleanTemp/food_cons.dta", replace
-
+*Number of items consumed per household   
+* Wave 1 Data
 use "${gsdData}/1-CleanInput/SHFS2016/food.dta", clear
-* count number of core items consumed per household
-*keep if mod_item==0
-gen x = cons_q>0 & cons_q<.
-collapse (sum) no_items = x (mean) av_cons_q = cons_q_kg, by(strata ea block hh weight hhsize)
-replace no_items = no_items/hhsize
-la var no_items "Items consumed p.c."
-replace av_cons_q = av_cons_q / hhsize
-la var av_cons_q "Average quantity per capita"
+gen ind_profile=6 if astrata==3
+replace ind_profile=5 if astrata==22
+replace ind_profile=4 if astrata==21
+replace ind_profile=3 if astrata==14 | astrata==15
+replace ind_profile=2 if astrata==12 | astrata==13 
+replace ind_profile=1 if astrata==11
+label define lind_profile 1 "Mogadishu (Urban)" 2 "North-east Urban (Nugaal,Bari,Mudug)" 3 "North-west Urban (Woqooyi G,Awdal,Sanaag,Sool,Togdheer)" 4 "North-east Rural (Bari,Mudug,Nugaal)" 5 "North-west Rural (Awdal,Sanaag,Sool,Togdheer,Woqooyi)" 6 "IDP Settlements"
+label values ind_profile lind_profile
+label var ind_profile "Indicator: Mogadishu, North-East urban/rural, North-West urban/rural & IDPs"
 
-merge 1:1 strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hh.dta", keep(match) keepusing(ind_profile)
-gen pw = weight*hhsize
-svyset ea [pweight=pw], strata(strata)
+* Dummy for a item consumed by a household
+gen item_cons = (cons_usd_org >0 & cons_usd_org < .)
+* Number of items consumed per household
+bys strata ea block hh  : egen hh_no_items = total (item_cons)
+* Number of items consumed per region
+collapse (mean) hh_no_items_mn = hh_no_items (median) hh_no_items_md = hh_no_items, by (ind_profile)
+ren (hh_no_items_mn hh_no_items_md) (hh_no_items_mn_w1 hh_no_items_md_w1)
+decode ind_profile, gen(ind_profile_d)
+order ind_profile_d, after(ind_profile)
 
-svy: mean no_items, over(ind_profile)
-svy: mean av_cons_q, over(ind_profile)
+tempfile hh_no_items_w1
+save `hh_no_items_w1', replace 
 
-append using "${gsdData}/1-CleanTemp/food_cons.dta", gen(t)
+* Wave 2 Data
+use "${gsdData}/1-CleanOutput/food.dta", clear
+merge m:1 strata ea block hh using "${gsdData}/1-CleanOutput/hh.dta", nogen assert(match) keepusing(ind_profile)
 
-svy: mean no_items, over(ind_profile t)
-svy: mean av_cons_q, over(ind_profile t)
+* Dummy for a item consumed by a household
+gen item_cons = (cons_usd_org >0 & cons_usd_org < .)
+* Number of items consumed per household
+bys strata ea block hh  : egen hh_no_items = total (item_cons)
+* Number of items consumed per region
+collapse (mean) hh_no_items_mn = hh_no_items (median) hh_no_items_md = hh_no_items, by (ind_profile)
+ren (hh_no_items_mn hh_no_items_md) (hh_no_items_mn_w2 hh_no_items_md_w2)
+decode ind_profile, gen(ind_profile_d)
+order ind_profile_d, after(ind_profile)
+tempfile hh_no_items_w2
+save `hh_no_items_w2', replace 
+
+*Merge Wave 1 and 2
+use `hh_no_items_w1', clear
+merge 1:1 ind_profile using `hh_no_items_w2', nogen
+
+* Dummy for Urban/Rural
+gen urban = 1 if strpos(ind_profile_d, "Urban")
+replace urban = 0 if strpos(ind_profile_d, "Rural")
+lab def urban 1 "Urban" 0 "Rural"
+lab val urban urban 
+
+* Impute values for missing values in Wave 1
+* Mean and median excluding the region itself
+rangestat (mean) hh_no_items_mn_imp=hh_no_items_mn_w2 (median) hh_no_items_md_imp=hh_no_items_md_w2, excludeself int(ind_profile . .) by(urban)
+replace hh_no_items_mn_w1 = hh_no_items_mn_imp if mi(hh_no_items_mn_w1)
+replace hh_no_items_md_w1 = hh_no_items_md_imp if mi(hh_no_items_md_w1)
+
+* Flag where change between waves 1 and 2 is greater than 25%
+gen flag_mn = abs(((hh_no_items_mn_w2 - hh_no_items_mn_w1)/ hh_no_items_mn_w1)*100) > 25
+gen flag_md = abs(((hh_no_items_md_w2 - hh_no_items_md_w1)/ hh_no_items_md_w1)*100) > 25
+
+lab var hh_no_items_mn_w1 "Number of items consumed - Mean - Wave 1"
+lab var hh_no_items_md_w1 "Number of items consumed - Median - Wave 1"
+lab var hh_no_items_mn_w2 "Number of items consumed - Mean - Wave 2"
+lab var hh_no_items_md_w2 "Number of items consumed - Median - Wave 2"
+lab var flag_mn "Flag - Mean value"
+lab var flag_md "Flag - Median value"
+
+drop ind_profile hh_no_items_mn_imp hh_no_items_md_w1
+order urban, last
+
+export excel using "${gsdOutput}/W1W2-comparison_v1.xlsx", sheet("Raw_Food_1") sheetmodify cell(B3) firstrow(variables)
+
+
+*Consumption in Kg per person per day     
+* Wave 1 Data
+use "${gsdData}/1-CleanInput/SHFS2016/food.dta", clear
+merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hh.dta", nogen assert(match using) keepusing(hhsize)
+gen ind_profile=6 if astrata==3
+replace ind_profile=5 if astrata==22
+replace ind_profile=4 if astrata==21
+replace ind_profile=3 if astrata==14 | astrata==15
+replace ind_profile=2 if astrata==12 | astrata==13 
+replace ind_profile=1 if astrata==11
+label values ind_profile lind_profile
+label var ind_profile "Indicator: Mogadishu, North-East urban/rural, North-West urban/rural & IDPs"
+decode itemid, gen(item_name)
+merge m:1 item_name using `item_list', nogen keep(match)
+
+gen cons_kg_pers_day = cons_q_kg / (7* hhsize)
+collapse (mean) cons_kg_mn = cons_kg_pers_day (median) cons_kg_md = cons_kg_pers_day, by (ind_profile item_name)
+ren (cons_kg_mn cons_kg_md) (cons_kg_mn_w1 cons_kg_md_w1)
+
+decode ind_profile, gen(ind_profile_d)
+order ind_profile_d, after(ind_profile)
+
+lab var cons_kg_mn_w1 "Consumption in Kg per person per day - Mean - Wave 1"
+lab var cons_kg_md_w1 "Consumption in Kg per person per day - Median - Wave 1"
+
+tempfile cons_kg_w1
+save `cons_kg_w1', replace
+
+
+* Wave 2 Data
+use "${gsdData}/1-CleanOutput/food.dta", clear
+merge m:1 strata ea block hh using "${gsdData}/1-CleanOutput/hh.dta", nogen assert(match) keepusing(ind_profile hhsize)
+decode itemid, gen(item_name)
+merge m:1 item_name using `item_list', nogen keep(match)
+
+gen cons_kg_pers_day = cons_q_kg / (7* hhsize)
+collapse (mean) cons_kg_mn = cons_kg_pers_day (median) cons_kg_md = cons_kg_pers_day, by (ind_profile item_name)
+ren (cons_kg_mn cons_kg_md) (cons_kg_mn_w2 cons_kg_md_w2)
+
+decode ind_profile, gen(ind_profile_d)
+order ind_profile_d, after(ind_profile)
+
+lab var cons_kg_mn_w2 "Consumption in Kg per person per day - Mean - Wave 2"
+lab var cons_kg_md_w2 "Consumption in Kg per person per day - Median - Wave 2"
+
+tempfile cons_kg_w2
+save `cons_kg_w2', replace
+
+
+*Merge Wave 1 and 2
+use `cons_kg_w2', clear
+merge 1:1 ind_profile item_name using `cons_kg_w1', nogen
+
+order *w2, last
+
+* Dummy for Urban/Rural
+gen urban = 1 if strpos(ind_profile_d, "Urban")
+replace urban = 0 if strpos(ind_profile_d, "Rural")
+lab def urban 1 "Urban" 0 "Rural"
+lab val urban urban 
+
+* Impute values for missing values in Wave 1
+* Mean and median excluding the region itself
+rangestat (mean) cons_kg_mn_imp=cons_kg_mn_w2 (median) cons_kg_md_imp=cons_kg_md_w2, excludeself int(ind_profile . .) by(urban)
+replace cons_kg_mn_w1 = cons_kg_mn_imp if mi(cons_kg_mn_w1)
+replace cons_kg_md_w1 = cons_kg_md_imp if mi(cons_kg_md_w1)
+
+
+* Flag where change between waves 1 and 2 is greater than 25%
+gen flag_mn = abs(((cons_kg_mn_w2 - cons_kg_mn_w1)/ cons_kg_mn_w1)*100) > 25
+gen flag_md = abs(((cons_kg_md_w2 - cons_kg_md_w1)/ cons_kg_md_w1)*100) > 25
+
+lab var flag_mn "Flag - Mean value"
+lab var flag_md "Flag - Median value"
+
+drop ind_profile
+
+export excel using "${gsdOutput}/W1W2-comparison_v1.xlsx", sheet("Raw_Food_2") sheetmodify cell(B3) firstrow(variables)
+
+
+
+
+*=====================================================================
+* 6 non-food consumption
+*=====================================================================
+
+* List of items in Waves 1 and 2
+* List of items - Wave 1
+use itemid using "${gsdData}/1-CleanInput/SHFS2016/nonfood.dta", clear
+duplicates drop
+*decode itemid, gen(item_name_w1)
+decode itemid, gen(item_name)
+ren itemid itemid_w1
+gen item_name_w1 = item_name
+tempfile item_list_w1
+save `item_list_w1', replace 
+
+* List of items - Wave 2
+use itemid using "${gsdData}/1-CleanOutput/nonfood.dta", clear
+duplicates drop
+*decode itemid, gen(item_name_w2)
+decode itemid, gen(item_name)
+ren itemid itemid_w2
+gen item_name_w2 = item_name
+tempfile item_list_w2
+save `item_list_w2', replace 
+
+* List of items - Wave 1 & 2
+use `item_list_w1', clear
+*merge 1:1 item_name using `item_list_w2', keep(match)
+merge 1:1 item_name using `item_list_w2'
+sort item_name
+tempfile item_list
+save `item_list', replace 
+
+* Number of items consumed per household   
+* Wave 1 Data
+use "${gsdData}/1-CleanInput/SHFS2016/nonfood.dta", clear
+gen ind_profile=6 if astrata==3
+replace ind_profile=5 if astrata==22
+replace ind_profile=4 if astrata==21
+replace ind_profile=3 if astrata==14 | astrata==15
+replace ind_profile=2 if astrata==12 | astrata==13 
+replace ind_profile=1 if astrata==11
+label define lind_profile 1 "Mogadishu (Urban)" 2 "North-east Urban (Nugaal,Bari,Mudug)" 3 "North-west Urban (Woqooyi G,Awdal,Sanaag,Sool,Togdheer)" 4 "North-east Rural (Bari,Mudug,Nugaal)" 5 "North-west Rural (Awdal,Sanaag,Sool,Togdheer,Woqooyi)" 6 "IDP Settlements"
+label values ind_profile lind_profile
+label var ind_profile "Indicator: Mogadishu, North-East urban/rural, North-West urban/rural & IDPs"
+
+* Dummy for a item consumed by a household
+gen item_cons = (purc == 1)
+* Number of items consumed per household
+bys strata ea block hh  : egen hh_no_items = total (item_cons)
+
+* Number of items consumed per region
+collapse (mean) hh_no_items_mn = hh_no_items (median) hh_no_items_md = hh_no_items, by (ind_profile)
+ren (hh_no_items_mn hh_no_items_md) (hh_no_items_mn_w1 hh_no_items_md_w1)
+
+decode ind_profile, gen(ind_profile_d)
+order ind_profile_d, after(ind_profile)
+
+tempfile hh_no_items_w1
+save `hh_no_items_w1', replace 
+
+
+* Wave 2 Data
+use "${gsdData}/1-CleanOutput/nonfood.dta", clear
+merge m:1 strata ea block hh using "${gsdData}/1-CleanOutput/hh.dta", nogen assert(match) keepusing(ind_profile)
+
+* Dummy for a item consumed by a household
+gen item_cons = (purc == 1)
+* Number of items consumed per household
+bys strata ea block hh  : egen hh_no_items = total (item_cons)
+
+* Number of items consumed per region
+collapse (mean) hh_no_items_mn = hh_no_items (median) hh_no_items_md = hh_no_items, by (ind_profile)
+ren (hh_no_items_mn hh_no_items_md) (hh_no_items_mn_w2 hh_no_items_md_w2)
+
+decode ind_profile, gen(ind_profile_d)
+order ind_profile_d, after(ind_profile)
+
+tempfile hh_no_items_w2
+save `hh_no_items_w2', replace 
+
+*Merge Wave 1 and 2
+use `hh_no_items_w1', clear
+merge 1:1 ind_profile using `hh_no_items_w2', nogen
+
+* Dummy for Urban/Rural
+gen urban = 1 if strpos(ind_profile_d, "Urban")
+replace urban = 0 if strpos(ind_profile_d, "Rural")
+lab def urban 1 "Urban" 0 "Rural"
+lab val urban urban 
+
+* Impute values for missing values in Wave 1
+* Mean and median excluding the region itself
+rangestat (mean) hh_no_items_mn_imp=hh_no_items_mn_w2 (median) hh_no_items_md_imp=hh_no_items_md_w2, excludeself int(ind_profile . .) by(urban)
+replace hh_no_items_mn_w1 = hh_no_items_mn_imp if mi(hh_no_items_mn_w1)
+replace hh_no_items_md_w1 = hh_no_items_md_imp if mi(hh_no_items_md_w1)
+
+* Flag where change between waves 1 and 2 is greater than 25%
+gen flag_mn = abs(((hh_no_items_mn_w2 - hh_no_items_mn_w1)/ hh_no_items_mn_w1)*100) > 25
+gen flag_md = abs(((hh_no_items_md_w2 - hh_no_items_md_w1)/ hh_no_items_md_w1)*100) > 25
+
+lab var hh_no_items_mn_w1 "Number of items consumed - Mean - Wave 1"
+lab var hh_no_items_md_w1 "Number of items consumed - Median - Wave 1"
+lab var hh_no_items_mn_w2 "Number of items consumed - Mean - Wave 2"
+lab var hh_no_items_md_w2 "Number of items consumed - Median - Wave 2"
+lab var flag_mn "Flag - Mean value"
+lab var flag_md "Flag - Median value"
+
+drop ind_profile hh_no_items_mn_imp hh_no_items_md_w1
+order urban, last
+
+export excel using "${gsdOutput}/W1W2-comparison_v1.xlsx", sheet("Raw_NonFood_2") sheetmodify cell(B3) firstrow(variables)
+
+
+
+*=====================================================================
+* 7 durables
+*=====================================================================
+* List of items in Waves 1 and 2
+* List of items - Wave 1
+use itemid using "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
+duplicates drop
+decode itemid, gen(item_name)
+ren itemid itemid_w1
+gen item_name_w1 = item_name
+tempfile item_list_w1
+save `item_list_w1', replace 
+
+* List of items - Wave 2
+use itemid using "${gsdData}/1-CleanOutput/assets.dta", clear
+duplicates drop
+decode itemid, gen(item_name)
+ren itemid itemid_w2
+gen item_name_w2 = item_name
+tempfile item_list_w2
+save `item_list_w2', replace 
+
+* List of items - Wave 1 & 2
+use `item_list_w1', clear
+*merge 1:1 item_name using `item_list_w2', keep(match)
+merge 1:1 item_name using `item_list_w2'
+sort item_name
+tempfile item_list
+save `item_list', replace 
+
+
+* Number of items owned per household
+* Wave 1 Data
+use "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
+gen ind_profile=6 if astrata==3
+replace ind_profile=5 if astrata==22
+replace ind_profile=4 if astrata==21
+replace ind_profile=3 if astrata==14 | astrata==15
+replace ind_profile=2 if astrata==12 | astrata==13 
+replace ind_profile=1 if astrata==11
+label define lind_profile 1 "Mogadishu (Urban)" 2 "North-east Urban (Nugaal,Bari,Mudug)" 3 "North-west Urban (Woqooyi G,Awdal,Sanaag,Sool,Togdheer)" 4 "North-east Rural (Bari,Mudug,Nugaal)" 5 "North-west Rural (Awdal,Sanaag,Sool,Togdheer,Woqooyi)" 6 "IDP Settlements"
+label values ind_profile lind_profile
+label var ind_profile "Indicator: Mogadishu, North-East urban/rural, North-West urban/rural & IDPs"
+
+* Dummy for a item owned by a household
+gen item_own = (own == 1)
+* Number of items owned per household
+bys strata ea block hh  : egen hh_no_items = total (item_own)
+
+* Number of items owned per region
+collapse (mean) hh_no_items_mn = hh_no_items (median) hh_no_items_md = hh_no_items, by (ind_profile)
+ren (hh_no_items_mn hh_no_items_md) (hh_no_items_mn_w1 hh_no_items_md_w1)
+
+decode ind_profile, gen(ind_profile_d)
+order ind_profile_d, after(ind_profile)
+
+tempfile hh_no_items_w1
+save `hh_no_items_w1', replace 
+
+
+* Wave 2 Data
+use "${gsdData}/1-CleanOutput/assets.dta", clear
+merge m:1 strata ea block hh using "${gsdData}/1-CleanOutput/hh.dta", nogen assert(match) keepusing(ind_profile)
+
+* Dummy for a item owned by a household
+gen item_own = (own == 1)
+* Number of items owned per household
+bys strata ea block hh  : egen hh_no_items = total (item_own)
+
+* Number of items owned per region
+collapse (mean) hh_no_items_mn = hh_no_items (median) hh_no_items_md = hh_no_items, by (ind_profile)
+ren (hh_no_items_mn hh_no_items_md) (hh_no_items_mn_w2 hh_no_items_md_w2)
+
+decode ind_profile, gen(ind_profile_d)
+order ind_profile_d, after(ind_profile)
+
+tempfile hh_no_items_w2
+save `hh_no_items_w2', replace 
+
+*Merge Wave 1 and 2
+use `hh_no_items_w1', clear
+merge 1:1 ind_profile using `hh_no_items_w2', nogen
+
+* Dummy for Urban/Rural
+gen urban = 1 if strpos(ind_profile_d, "Urban")
+replace urban = 0 if strpos(ind_profile_d, "Rural")
+lab def urban 1 "Urban" 0 "Rural"
+lab val urban urban 
+
+* Impute values for missing values in Wave 1
+* Mean and median excluding the region itself
+rangestat (mean) hh_no_items_mn_imp=hh_no_items_mn_w2 (median) hh_no_items_md_imp=hh_no_items_md_w2, excludeself int(ind_profile . .) by(urban)
+replace hh_no_items_mn_w1 = hh_no_items_mn_imp if mi(hh_no_items_mn_w1)
+replace hh_no_items_md_w1 = hh_no_items_md_imp if mi(hh_no_items_md_w1)
+
+* Flag where change between waves 1 and 2 is greater than 25%
+gen flag_mn = abs(((hh_no_items_mn_w2 - hh_no_items_mn_w1)/ hh_no_items_mn_w1)*100) > 25
+gen flag_md = abs(((hh_no_items_md_w2 - hh_no_items_md_w1)/ hh_no_items_md_w1)*100) > 25
+
+lab var hh_no_items_mn_w1 "Number of items owned - Mean - Wave 1"
+lab var hh_no_items_md_w1 "Number of items owned - Median - Wave 1"
+lab var hh_no_items_mn_w2 "Number of items owned - Mean - Wave 2"
+lab var hh_no_items_md_w2 "Number of items owned - Median - Wave 2"
+lab var flag_mn "Flag - Mean value"
+lab var flag_md "Flag - Median value"
+
+drop ind_profile hh_no_items_mn_imp hh_no_items_md_w1
+order urban, last
+
+export excel using "${gsdOutput}/W1W2-comparison_v1.xlsx", sheet("Raw_Assets_1") sheetmodify cell(B3) firstrow(variables)
+
+
+* Consumption flow for each durable good
+* Wave 1 Data
+use "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
+gen ind_profile=6 if astrata==3
+replace ind_profile=5 if astrata==22
+replace ind_profile=4 if astrata==21
+replace ind_profile=3 if astrata==14 | astrata==15
+replace ind_profile=2 if astrata==12 | astrata==13 
+replace ind_profile=1 if astrata==11
+label define lind_profile 1 "Mogadishu (Urban)" 2 "North-east Urban (Nugaal,Bari,Mudug)" 3 "North-west Urban (Woqooyi G,Awdal,Sanaag,Sool,Togdheer)" 4 "North-east Rural (Bari,Mudug,Nugaal)" 5 "North-west Rural (Awdal,Sanaag,Sool,Togdheer,Woqooyi)" 6 "IDP Settlements"
+label values ind_profile lind_profile
+label var ind_profile "Indicator: Mogadishu, North-East urban/rural, North-West urban/rural & IDPs"
+
+decode itemid, gen(item_name)
+merge m:1 item_name using `item_list', nogen keep(match)
+
+collapse (mean) cons_flow_mn = cons_flow (median) cons_flow_md = cons_flow, by (ind_profile item_name)
+ren (cons_flow_mn cons_flow_md) (cons_flow_mn_w1 cons_flow_md_w1)
+
+decode ind_profile, gen(ind_profile_d)
+order ind_profile_d, after(ind_profile)
+
+lab var cons_flow_mn_w1 "Consumption flow - Mean - Wave 1"
+lab var cons_flow_md_w1 "Consumption flow - Median - Wave 1"
+
+tempfile cons_flow_w1
+save `cons_flow_w1', replace
+
+
+* Wave 2 Data
+use "${gsdData}/1-CleanOutput/assets.dta", clear
+merge m:1 strata ea block hh using "${gsdData}/1-CleanOutput/hh.dta", nogen assert(match) keepusing(ind_profile)
+decode itemid, gen(item_name)
+merge m:1 item_name using `item_list', nogen keep(match)
+
+collapse (mean) cons_flow_mn = cons_flow (median) cons_flow_md = cons_flow, by (ind_profile item_name)
+ren (cons_flow_mn cons_flow_md) (cons_flow_mn_w2 cons_flow_md_w2)
+
+decode ind_profile, gen(ind_profile_d)
+order ind_profile_d, after(ind_profile)
+
+lab var cons_flow_mn_w2 "Consumption flow - Mean - Wave 2"
+lab var cons_flow_md_w2 "Consumption flow - Median - Wave 2"
+
+tempfile cons_flow_w2
+save `cons_flow_w2', replace
+
+
+*Merge Wave 1 and 2
+use `cons_flow_w2', clear
+merge 1:1 ind_profile item_name using `cons_flow_w1', nogen
+
+order *w2, last
+
+* Dummy for Urban/Rural
+gen urban = 1 if strpos(ind_profile_d, "Urban")
+replace urban = 0 if strpos(ind_profile_d, "Rural")
+lab def urban 1 "Urban" 0 "Rural"
+lab val urban urban 
+
+* Impute values for missing values in Wave 1
+* Mean and median excluding the region itself
+rangestat (mean) cons_flow_mn_imp=cons_flow_mn_w2 (median) cons_flow_md_imp=cons_flow_md_w2, excludeself int(ind_profile . .) by(urban)
+replace cons_flow_mn_w1 = cons_flow_mn_imp if mi(cons_flow_mn_w1)
+replace cons_flow_md_w1 = cons_flow_md_imp if mi(cons_flow_md_w1)
+
+* Flag where change between waves 1 and 2 is greater than 25%
+gen flag_mn = abs(((cons_flow_mn_w2 - cons_flow_mn_w1)/ cons_flow_mn_w1)*100) > 25
+gen flag_md = abs(((cons_flow_md_w2 - cons_flow_md_w1)/ cons_flow_md_w1)*100) > 25
+
+lab var flag_mn "Flag - Mean value"
+lab var flag_md "Flag - Median value"
+
+drop ind_profile
+export excel using "${gsdOutput}/W1W2-comparison_v1.xlsx", sheet("Raw_Assets_2") sheetmodify cell(B3) firstrow(variables)
+
+
+* Median depreciation rates for each durable good
+* Wave 1 Data
+use "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
+gen ind_profile=6 if astrata==3
+replace ind_profile=5 if astrata==22
+replace ind_profile=4 if astrata==21
+replace ind_profile=3 if astrata==14 | astrata==15
+replace ind_profile=2 if astrata==12 | astrata==13 
+replace ind_profile=1 if astrata==11
+label define lind_profile 1 "Mogadishu (Urban)" 2 "North-east Urban (Nugaal,Bari,Mudug)" 3 "North-west Urban (Woqooyi G,Awdal,Sanaag,Sool,Togdheer)" 4 "North-east Rural (Bari,Mudug,Nugaal)" 5 "North-west Rural (Awdal,Sanaag,Sool,Togdheer,Woqooyi)" 6 "IDP Settlements"
+label values ind_profile lind_profile
+label var ind_profile "Indicator: Mogadishu, North-East urban/rural, North-West urban/rural & IDPs"
+
+decode itemid, gen(item_name)
+merge m:1 item_name using `item_list', nogen keep(match)
+
+collapse (mean) drate_median_mn = drate_median (median) drate_median_md = drate_median, by (ind_profile item_name)
+ren (drate_median_mn drate_median_md) (drate_median_mn_w1 drate_median_md_w1)
+
+decode ind_profile, gen(ind_profile_d)
+order ind_profile_d, after(ind_profile)
+
+lab var drate_median_mn_w1 "Unit Price - Mean - Wave 1"
+lab var drate_median_md_w1 "Unit Price - Median - Wave 1"
+
+tempfile drate_median_w1
+save `drate_median_w1', replace
+
+* Wave 2 Data
+use "${gsdData}/1-CleanOutput/assets.dta", clear
+merge m:1 strata ea block hh using "${gsdData}/1-CleanOutput/hh.dta", nogen assert(match) keepusing(ind_profile)
+decode itemid, gen(item_name)
+merge m:1 item_name using `item_list', nogen keep(match)
+
+collapse (mean) drate_median_mn = drate_median (median) drate_median_md = drate_median, by (ind_profile item_name)
+ren (drate_median_mn drate_median_md) (drate_median_mn_w2 drate_median_md_w2)
+
+decode ind_profile, gen(ind_profile_d)
+order ind_profile_d, after(ind_profile)
+
+lab var drate_median_mn_w2 "Unit Price - Mean - Wave 2"
+lab var drate_median_md_w2 "Unit Price - Median - Wave 2"
+
+tempfile drate_median_w2
+save `drate_median_w2', replace
+
+
+*Merge Wave 1 and 2
+use `drate_median_w2', clear
+merge 1:1 ind_profile item_name using `drate_median_w1', nogen
+
+order *w2, last
+
+* Dummy for Urban/Rural
+gen urban = 1 if strpos(ind_profile_d, "Urban")
+replace urban = 0 if strpos(ind_profile_d, "Rural")
+lab def urban 1 "Urban" 0 "Rural"
+lab val urban urban 
+
+* Impute values for missing values in Wave 1
+* Mean and median excluding the region itself
+rangestat (mean) drate_median_mn_imp=drate_median_mn_w2 (median) drate_median_md_imp=drate_median_md_w2, excludeself int(ind_profile . .) by(urban)
+replace drate_median_mn_w1 = drate_median_mn_imp if mi(drate_median_mn_w1)
+replace drate_median_md_w1 = drate_median_md_imp if mi(drate_median_md_w1)
+
+* Flag where change between waves 1 and 2 is greater than 25%
+gen flag_mn = abs(((drate_median_mn_w2 - drate_median_mn_w1)/ drate_median_mn_w1)*100) > 25
+gen flag_md = abs(((drate_median_md_w2 - drate_median_md_w1)/ drate_median_md_w1)*100) > 25
+
+lab var flag_mn "Flag - Mean value"
+lab var flag_md "Flag - Median value"
+
+drop ind_profile
+export excel using "${gsdOutput}/W1W2-comparison_v1.xlsx", sheet("Raw_Assets_3") sheetmodify cell(B3) firstrow(variables)
