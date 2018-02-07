@@ -111,8 +111,8 @@ foreach r in Mogadishu NE-Urban NE-Rural NW-Urban NW-Rural IDP {
 	la def lt 0 "Wave 1 - `r'" 1 "Wave 2 - `r'", replace
 	la val t lt
 	* focus on adult literacy
-	replace literacy = . if age<15
-	la var literacy "Adult literacy (15+)"
+	replace literacy = . if age<40
+	la var literacy "Adult literacy (40+)"
 	global vars_hhm literacy age gender dependent
 	foreach v of varlist $vars_hhm {
 		su `v'
@@ -192,8 +192,8 @@ foreach r in Nomad Central-Urban Central-Rural Jubbaland-Urban Jubbaland-Rural S
 	la def lt 0 "Wave 1 - `r'" 1 "Wave 2 - `r'", replace
 	la val t lt
 	* focus on adult literacy
-	replace literacy = . if age<15
-	la var literacy "Adult literacy (15+)"
+	replace literacy = . if age<40
+	la var literacy "Adult literacy (40+)"
 	global vars_hhm literacy age gender dependent
 	foreach v of varlist $vars_hhm {
 		su `v'
@@ -798,3 +798,60 @@ lab var flag_md "Flag - Median value"
 
 drop ind_profile
 export excel using "${gsdOutput}/W1W2-comparison_v2.xlsx", sheet("Raw_Assets_3") sheetmodify cell(B3) firstrow(variables)
+
+
+
+*=====================================================================
+* 8 share of food and non-food
+*=====================================================================
+use "${gsdData}/1-CleanTemp/hh_all.dta", clear
+gen pweight=weight_cons*hhsize
+svyset ea [pweight=pweight], strata(strata) singleunit(centered)
+replace tc_imp=tc_imp*7*hhsize
+gen share_food=tc_imp_f/tc_imp
+gen share_nfood=tc_imp_nf/tc_imp
+gen ratio_f_nf=share_food/share_nfood
+
+preserve 
+keep if t==0
+collapse (median) ratio_f_nf, by(ind_profile)
+export excel using "${gsdOutput}/W1W2-comparison_v2.xlsx", sheet("Raw_Share_Cons") sheetmodify cell(B3) firstrow(variables)
+restore
+
+keep if t==1
+collapse (median) ratio_f_nf, by(ind_profile)
+export excel using "${gsdOutput}/W1W2-comparison_v2.xlsx", sheet("Raw_Share_Cons") sheetmodify cell(D3) firstrow(variables)
+
+
+
+
+*=====================================================================
+* 9 Non-monetary indicators
+*=====================================================================
+use "${gsdData}/1-CleanOutput/hh.dta", clear
+gen pweight=weight*hhsize
+svyset ea [pweight=pweight], strata(strata) singleunit(centered)
+
+*Literacy 
+qui tabout ind_profile using "${gsdOutput}/Prelim_Analysis_1.xls", svy sum c(mean pliteracy se lb ub) format (2c) sebnone h2(Proprtion literate in hh) replace
+*Enrolment
+qui tabout ind_profile using "${gsdOutput}/Prelim_Analysis_1.xls", svy sum c(mean penrol se lb ub) format (2c) sebnone h2(Proprtion enrolled (6-17)) append
+*Household has at least one economically active member
+qui tabout ind_profile using "${gsdOutput}/Prelim_Analysis_1.xls", svy sum c(mean lfp_7d_hh se lb ub) format (2c) sebnone h2(HH has at least one economically active member) append
+*Household has at least one employed member
+qui tabout ind_profile using "${gsdOutput}/Prelim_Analysis_1.xls", svy sum c(mean emp_7d_hh se lb ub) format (2c) sebnone h2(HH has at least one employed member) append
+*Electricity 
+qui tabout ind_profile using "${gsdOutput}/Prelim_Analysis_1.xls", svy sum c(mean electricity se lb ub) format (2c) sebnone h2(HH has electricity) append
+*Improved sanitation
+gen improved_sanitaiton=1 if inlist(toilet,1,2,3,4,5)
+replace improved_sanitaiton=0 if improved_sanitaiton==.
+qui tabout ind_profile using "${gsdOutput}/Prelim_Analysis_1.xls", svy sum c(mean improved_sanitaiton se lb ub) format (2c) sebnone h2(HH has access to improved sanitation) append
+*Improved water
+gen piped_water = water
+replace piped_water= 1 if inlist(water,1,2)
+replace piped_water=0 if inlist(water,3,4,5,.,.a,.b)
+qui tabout ind_profile using "${gsdOutput}/Prelim_Analysis_1.xls", svy sum c(mean piped_water se lb ub) format (2c) sebnone h2(HH has access to piped water) append
+
+insheet using "${gsdOutput}/Prelim_Analysis_1.xls", clear nonames tab
+export excel using "${gsdOutput}/W1W2-comparison_v2.xlsx", sheet("Raw_Multi_Deprivation") sheetmodify cell(D3) firstrow(variables)
+erase "${gsdOutput}/Prelim_Analysis_1.xls"
