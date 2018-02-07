@@ -1362,7 +1362,7 @@ replace listing_round=3 if interview__id=="ab8700d7481d4d728800d6db43668376"
 replace hhid_nomad=4 if interview__id=="ab8700d7481d4d728800d6db43668376"
 *WP 1203072
 replace listing_day=7 if interview__id=="0cc0b0c5ee75485fbe0418bf153ee38b"
-replace listing_round=2 if interview__id=="0cc0b0c5ee75485fbe0418bf153ee38b"
+replace listing_round=1 if interview__id=="0cc0b0c5ee75485fbe0418bf153ee38b"
 replace hhid_nomad=2 if interview__id=="0cc0b0c5ee75485fbe0418bf153ee38b"
 replace listing_round=2 if interview__id=="71f32abe4b2b4a2f970795f3f0b35dcf"
 replace hhid_nomad=1 if interview__id=="71f32abe4b2b4a2f970795f3f0b35dcf"
