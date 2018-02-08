@@ -85,6 +85,7 @@ local model = "i.pmi_cons_f0 i.pmi_cons_nf0 i.pmi_cons_d `model'"
 save "${gsdData}/1-CleanTemp/mi-pre.dta", replace
 *Run imputation
 use "${gsdData}/1-CleanTemp/mi-pre.dta", clear
+xtset, clear
 mi set wide
 mi register imputed mi_cons_f1 mi_cons_f2 mi_cons_f3 mi_cons_f4 mi_cons_nf1 mi_cons_nf2 mi_cons_nf3 mi_cons_nf4
 mi register regular hh* mi_cons_f0 mi_cons_nf0 mi_cons_d
@@ -167,6 +168,7 @@ label define lpoorPPP_vulnerable_20 0 "Non-poor" 1 "Poor"
 label values poorPPP_vulnerable_20 lpoorPPP_vulnerable_20
 drop global_er gg
 *Estimate poverty figures 
+mi xtset, clear
 mi svyset ea [pweight=hhweight], strata(strata)
 mi estimate: mean poorPPP [pweight=hhweight]
 mi estimate: mean poorPPP125 [pweight=hhweight]

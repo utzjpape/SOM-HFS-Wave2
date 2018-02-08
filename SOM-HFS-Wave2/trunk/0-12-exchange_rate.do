@@ -33,7 +33,7 @@ keep if wBegin>=td(`start') & wBegin<=td(`end')
 recode team (3=2)
 collapse (mean) mp, by(team)
 ren mp average_er
-egen x = mean(average_er)
+egen x = mean(average_er) if team!=1
 egen global_er = max(x)
 label var average_er "Local currency exchange rate to 1 USD"
 label var global_er "Global exchange rate to 1 USD"

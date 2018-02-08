@@ -50,7 +50,7 @@ run "${gsdDo}/0-6-completeness_submissions.do"
 run "${gsdDo}/0-7-clean.do"
 
 *Prepare the master sample 
-run "${gsdDo}/0-8-prepare_master_sample.do"
+*run "${gsdDo}/0-8-prepare_master_sample.do"
 /*
 capture confirm file "${gsdData}\0-RawTemp\master_sample.dta"
 scalar define check=_rc
@@ -75,7 +75,7 @@ run "${gsdDo}/0-11-anonymize_dataset.do"
 run "${gsdDo}/0-12-exchange_rate.do"
 
 *Prepare FSNAU prices with COICOP codes
-run "${gsdDo}/0-13-COICOP_FSNAU_prices.do"
+run "${gsdDo}/0-13-COICOP_MPS.do"
 
 *Clean the consumption datasets
 run "${gsdDo}/1-2-clean_fcons.do"
