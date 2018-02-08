@@ -67,11 +67,6 @@ replace team = 2 if inlist(region, 13, 16, 17) & (pr_c==2 | val_c==2)
 * we assign team 1 if USD or missing
 replace team = 1 if inlist(region, 13, 16, 17) & (pr_c==5 | mi(pr_c)) & mi(team) 
 assert !mi(team)
-*assert !(team==1 & pr_c==2) 
-*assert !(team==1 & val_c==2) 
-*assert !(team==2 & pr_c==4) 
-*assert !(team==2 & val_c==4) 
-
 
 foreach measure in pr val {
 	*cleaning rule: change USD to local currency (for each zone) when the price is equal or greater than 1,000

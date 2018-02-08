@@ -120,13 +120,12 @@ gen gshare = cons_tshare/xshare
 label var gshare "Share for general deflator"
 keep itemid fshare gshare
 *Bring in the COICOP code and prices 
-merge 1:m itemid using "${gsdData}/1-CleanInput/COICOP_Codes.dta", keep(match) nogen 
+merge 1:m itemid using "${gsdData}/1-CleanTemp/coicop_item.dta", keep(match) nogen keepusing(coicop)
 *Collapse given that we have sometimes multiple HFS / COICOP items with the same code
 collapse (sum) ?share, by(coicop)
+destring coicop, replace
 *Add prices
-merge 1:m coicop using "${gsdData}/1-CleanInput/Prices_FSNAU.dta", nogen keep(master match) 
-*Average over regions
-collapse (mean) av_2011 av_2012 dec17 (max) ?share, by(coicop)
+merge 1:m coicop using "${gsdData}/1-CleanTemp/mps_prices.dta", nogen keep(match) 
 
 
 ********************************************************************
@@ -137,15 +136,19 @@ foreach k of local lis {
 	egen x`k' = sum(`k'share)
 	replace `k'share = `k'share / x`k'
 	drop x`k'
-	gen d`k'2011 = av_2011 * `k'share
-	gen d`k'2012 = av_2012 * `k'share
+	gen d`k'2016 = feb16 * `k'share
 	gen d`k'2017 = dec17 * `k'share
 }
 gen team= 1
 collapse (sum) d?201?, by(team)
 *get inflation
-gen gg = dg2017/dg2011
-gen gf = df2017/df2011
+gen gg_1617 = dg2017/dg2016
+gen gf_1617 = df2017/df2016
+* bring in 2011 to 2016 inflation
+merge 1:1 team using "${gsdData}/1-CleanInput/SHFS2016/inflation.dta", keepusing(gg gf) nogen
+replace gg = gg*gg_1617
+replace gf = gf*gf_1617
+drop *_1617 df* dg*
 label var gg "Food and non-food CPI inflation between 2011 and Dec 2017"
 label var gf "Food CPI inflation between 2011 and Dec 2017"
 save "${gsdData}/1-CleanTemp/inflation.dta", replace

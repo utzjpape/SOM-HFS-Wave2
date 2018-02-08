@@ -4,6 +4,13 @@ set more off
 set seed 23081580 
 set sortseed 11041555
 
+* nonfood
+use "${gsdDataRaw}/nonfood_units_bands.dta", clear
+ren LB_ex_6 v_min 
+ren UB_ex_7 v_max
+ren itemid2 nfoodid
+keep nfoodid v_min v_max itemlabel2
+save "${gsdTemp}/nonfood_bands.dta", replace
 
 ********************************************************************
 *Open the food dataset and prepare the file
@@ -78,17 +85,35 @@ assert !mi(team)
 *Cleaning rule: change USD to local currency (for each zone) when the price is equal or greater than 1,000
 replace pr_c=4 if pr >= 1000 & pr<. & pr_c==5 & team==1
 replace pr_c=2 if pr >= 1000 & pr<. & pr_c==5 & inlist(team,2,3)
-*Cleaning rule: change local currency larger than 10,000, divide by 1,000 (respondents probably meant Shillings not thousands of shillings)
-replace pr = pr/1000 if pr>10000 & pr<.
 
-
-
-********************************************************************
-*Obtain price in USD and identify issues
-********************************************************************
-*Include the exchange rate for each zone
+*Include exchange rates and constraints for each zone to assess currency errors
 merge m:1 team using "${gsdData}/1-CleanInput/HFS Exchange Rate Survey.dta", nogen keepusing(average_er)
+merge m:1 nfoodid using "${gsdTemp}/nonfood_bands.dta", nogen assert(match) keepusing(v_min v_max)
+
 *Obtain a price in USD
+gen pr_usd=pr if pr_c==5
+replace pr_usd=pr/(average_er/1000) if pr_c==2 | pr_c==4
+* see how many unit prices are out of bounds
+gen out_ub = pr_usd>v_max if !mi(pr_usd)
+gen out_lb = pr_usd<v_min if !mi(pr_usd)
+gen out_b = pr_usd>v_max | pr_usd<v_min if !mi(pr_usd)
+
+* Cleaning rule: divide currency larger than 1,000 by 1,000 as this is most likely a currency error - respondents meant Shillings not thousands of shillings
+* apply this this rule only if price outside of upper bound and if the change doesn't push it outside the lower bound
+gen tag_curr_change = 1 if pr>=1000 & out_ub==1
+replace pr = pr/1000 if pr>=1000 & out_ub==1 
+* now change back prices that this way have dropped below lower bound
+drop pr_usd out_lb out_ub
+gen pr_usd=pr if pr_c==5
+replace pr_usd=pr/(average_er/1000) if pr_c==2 | pr_c==4
+gen out_lb = pr_usd<v_min if !mi(pr_usd)
+replace pr = pr*1000 if out_lb==1 & tag_curr_change==1
+drop team out_lb out_b pr_usd v_min v_max 
+
+********************************************************************
+* Identify price issues
+********************************************************************
+*Obtain a corrected price in USD
 gen pr_usd=pr if pr_c==5
 replace pr_usd=pr/(average_er/1000) if pr_c==2 | pr_c==4
 drop average_er
@@ -127,6 +152,7 @@ bys nfoodid: egen pr_01=max(y)
 drop x y 
 replace purc_tag=1 if pr_usd<pr_01
 replace purc_tag=1 if pr_usd>pr_95 & pr_usd<.
+
 
 
 ********************************************************************
@@ -204,13 +230,14 @@ foreach var in purc pr_kdk pr pr_c free free_main {
 	replace `var'=.z  if purc>=.
 }
 *Label variables and save the cleaned version by item
-drop purc_original team recall_d
+drop purc_original recall_d
 label var pr_usd "Purchase value in current USD per 7 days"
 label var purc_tag "Entry flagged: Issues w/prices"
 rename nfoodid itemid
 order region strata ea block hh enum weight mod_opt mod_item itemid recall
 order pr_usd, after(purc_tag)
 save "${gsdData}/1-CleanTemp/nonfood.dta", replace
+
 *Now the data is collapsed at the household level and converted into wide format 
 collapse (sum) pr_usd, by(strata ea block hh mod_opt mod_item)
 reshape wide pr_usd, i(strata ea block hh mod_opt) j(mod_item)

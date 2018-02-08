@@ -3,7 +3,13 @@
 set more off
 set seed 23081960 
 set sortseed 11041965
-
+**********************************************************
+* Prepare constraints data for food consumption
+************************************************************
+use "${gsdDataRaw}/food_units_bands.dta", clear
+collapse (mean) v_min=LB_ex_6 v_max=UB_ex_7, by(itemid2 itemlabel2)
+ren itemid2 foodid
+save "${gsdTemp}/food_bands.dta", replace
 
 ********************************************************************
 *Open the food dataset and prepare the file
@@ -34,6 +40,8 @@ rename mod_item opt_mod
 foreach var in cons_q purc_q pr {
 	replace `var'=-1*`var' if `var'<0
 }
+
+
 *Include conversion factors to Kg
 qui foreach s in "cons" "purc" {
 	gen conv_`s'_kg=.
@@ -347,43 +355,6 @@ replace purc_q_kg=purc_q_kg*100 if purc_q_kg<=.0011
 
 
 ********************************************************************
-*Introduce corrections related to currency issues
-********************************************************************
-* Currency splits
-* SSH only: region 2,3,4,5,6,7,8,9,10,11,12,14,15
-* SLSH only: region 1, 18
-* Both: region 13, 16, 17 
-* Check that this is true in the data
-* we have one case in which there is an entry for SSH in SLD 
-* this cannot be, so we change it to SLSH
-replace pr_c=4 if pr_c==2 & inlist(region, 1, 18)
-assert pr_c==2 | pr_c==5 | pr_c>=. if inlist(region, 2,3,4,5,6,7,8,9,10,11,12,14,15)
-assert inlist(pr_c, 2, 4, 5) | pr_c>=. if inlist(region, 13, 16, 17)
-* Define whether an observation is in an SLSH or in an SSH area
-cap drop team
-* SLSH 
-gen team = 1 if inlist(region, 1, 18)
-* SSH
-replace team = 2 if inlist(region, 2,3,5,6,7,8,9,10,14,15)
-replace team = 2 if inlist(region, 4,11,12)
-
-* Now the situations where both currencies are possible to select 
-replace team = 1 if inlist(region, 13, 16, 17) & pr_c==4   
-replace team = 2 if inlist(region, 13, 16, 17) & pr_c==2  
-* we assign team 1 if USD or missing
-replace team = 1 if inlist(region, 13, 16, 17) & (pr_c==5 | mi(pr_c)) & mi(team) 
-assert !mi(team)
-*assert !(team==1 & pr_c==2) 
-*assert !(team==2 & pr_c==4) 
-
-*Cleaning rule: change USD to local currency (for each zone) when the price is equal or greater than 1,000
-replace pr_c=4 if pr >= 1000 & pr<. & pr_c==5 & team==1
-replace pr_c=2 if pr >= 1000 & pr<. & pr_c==5 & inlist(team,2,3)
-*Cleaning rule: change local currency larger than 10,000, divide by 1,000 (respondents probably meant Shillings not thousands of shillings)
-replace pr = pr/1000 if pr>10000 & pr<.
-
-
-********************************************************************
 *Deal items consumed without information on quantities
 ********************************************************************
 *Tag records that reported to have consumed/purchased the item but do not report a quantity 
@@ -427,18 +398,74 @@ tab foodid if purc_q_tag==1 & purc_q_kg_item_count<5
 tab foodid if cons_q_tag==1 & cons_q_kg_item_count<5
 drop prelim_* xq_cons xq_purc purc_q_kg_ea_count purc_q_kg_strata_count purc_q_kg_item_count cons_q_kg_ea_count cons_q_kg_strata_count cons_q_kg_item_count cons_q_kg_ea_median purc_q_kg_ea_median cons_q_kg_strata_median purc_q_kg_strata_median cons_q_kg_item_median purc_q_kg_item_median
 
+********************************************************************
+*Introduce corrections related to currency issues
+********************************************************************
+* Currency splits
+* SSH only: region 2,3,4,5,6,7,8,9,10,11,12,14,15
+* SLSH only: region 1, 18
+* Both: region 13, 16, 17 
+* Check that this is true in the data
+* we have one case in which there is an entry for SSH in SLD 
+* this cannot be, so we change it to SLSH
+replace pr_c=4 if pr_c==2 & inlist(region, 1, 18)
+assert pr_c==2 | pr_c==5 | pr_c>=. if inlist(region, 2,3,4,5,6,7,8,9,10,11,12,14,15)
+assert inlist(pr_c, 2, 4, 5) | pr_c>=. if inlist(region, 13, 16, 17)
+* Define whether an observation is in an SLSH or in an SSH area
+cap drop team
+* SLSH 
+gen team = 1 if inlist(region, 1, 18)
+* SSH
+replace team = 2 if inlist(region, 2,3,5,6,7,8,9,10,14,15)
+replace team = 2 if inlist(region, 4,11,12)
 
-********************************************************************
-*Obtain unit prices and identify issues
-********************************************************************
+* Now the situations where both currencies are possible to select 
+replace team = 1 if inlist(region, 13, 16, 17) & pr_c==4   
+replace team = 2 if inlist(region, 13, 16, 17) & pr_c==2  
+* we assign team 1 if USD or missing
+replace team = 1 if inlist(region, 13, 16, 17) & (pr_c==5 | mi(pr_c)) & mi(team) 
+assert !mi(team)
+
 *Include the exchange rate for each zone
 merge m:1 team using "${gsdData}/1-CleanInput/HFS Exchange Rate Survey.dta", nogen keepusing(average_er)
 *obtain a price in USD
 gen pr_usd=pr if pr_c==5
 replace pr_usd=pr/(average_er/1000) if pr_c==2 | pr_c==4
-drop average_er team
 *obtain unit price (USD) per kilo
 gen unit_price=pr_usd/purc_q_kg
+
+*Cleaning rule: change USD to local currency (for each zone) when the price is equal or greater than 1,000
+replace pr_c=4 if pr >= 1000 & pr<. & pr_c==5 & team==1
+replace pr_c=2 if pr >= 1000 & pr<. & pr_c==5 & inlist(team,2,3)
+* Now import constraints as a way to judge currency errors
+merge m:1 foodid using "${gsdTemp}/food_bands.dta", nogen assert(match) keepusing(v_min v_max)
+* see how many unit prices are out of bounds
+gen out_ub = unit_price>v_max if !mi(unit_price)
+gen out_lb = unit_price<v_min if !mi(unit_price)
+gen out_b = unit_price>v_max | unit_price<v_min if !mi(unit_price)
+
+* Cleaning rule: divide currency larger than 1,000 by 1,000 as this is most likely a currency error - respondents meant Shillings not thousands of shillings
+* apply this this rule only if price outside of upper bound and if the change doesn't push it outside the lower bound
+gen tag_curr_change = 1 if pr>=1000 & out_ub==1
+replace pr = pr/1000 if pr>=1000 & out_ub==1 
+* now change back prices that this way have dropped below lower bound
+drop pr_usd unit_price out_lb
+gen pr_usd=pr if pr_c==5
+replace pr_usd=pr/(average_er/1000) if pr_c==2 | pr_c==4
+*obtain adjusted unit price (USD) per kilo
+gen unit_price=pr_usd/purc_q_kg
+gen out_lb = unit_price<v_min if !mi(unit_price)
+replace pr = pr*1000 if out_lb==1 & tag_curr_change==1
+drop team out_lb out_ub out_b pr_usd unit_price v_min v_max
+
+********************************************************************
+*Price issues
+********************************************************************
+* obtain updated usd and per unit price
+gen pr_usd=pr if pr_c==5
+replace pr_usd=pr/(average_er/1000) if pr_c==2 | pr_c==4
+gen unit_price=pr_usd/purc_q_kg
+drop average_er
 *tag records that reported 1) to have purchased the item but do not report a price; 2) a quantity consumed but not purchased; or 3) a price equal to zero 
 gen purc_p_tag=1 if purc_q_kdk==1 & pr>=.
 replace purc_p_tag=1 if cons==1 & purc_q_kdk!=1

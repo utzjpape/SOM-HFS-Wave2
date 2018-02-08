@@ -49,7 +49,7 @@ save "${gsdData}/1-CleanInput/PESS_population.dta", replace
 ********************************************************************
 *Include the files from Wave 1 into 1-CleanInput 
 ********************************************************************
-foreach dataset in "hhm" "food" "nonfood" "assets" "hhq-poverty" {
+foreach dataset in "hhm" "food" "nonfood" "assets" "hhq-poverty"  {
 	use "${gsdDataRaw}/Wave_1/`dataset'.dta", clear
 	cap ren reg_pess reg_pess_old
 	cap recode reg_pess_old (1=1 "Awdal") (2=3 "Banadir") (3=4 "Bari") (4=11 "Mudug") (5=12 "Nugal") (6=13 "Sanaag") (7=16 "Sool") (8=17 "Togdheer") (9=18 "Woqooyi Galbeed"), gen(reg_pess)
@@ -72,4 +72,8 @@ label define lind_profile 1 "Mogadishu (Urban)" 2 "North-east Urban (Nugaal,Bari
 label values ind_profile lind_profile
 label var ind_profile "Indicator: Mogadishu, North-East urban/rural, North-West urban/rural & IDPs"
 save "${gsdData}/1-CleanInput/SHFS2016/hh.dta", replace
+use "${gsdDataRaw}/Wave_1/inflation.dta", clear 
+keep gg gf 
+gen team=1
+save "${gsdData}/1-CleanInput/SHFS2016/inflation.dta", replace
 
