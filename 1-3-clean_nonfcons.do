@@ -70,21 +70,21 @@ cap drop team
 * SLSH 
 gen team = 1 if inlist(region, 1, 18)
 * SSH
-replace team = 2 if inlist(region, 2,3,5,6,7,8,9,10,14,15)
-replace team = 2 if inlist(region, 4,11,12)
-
+replace team = 2 if inlist(region, 3)
+replace team = 3 if inlist(region, 4,11,12)
+replace team = 4 if inlist(region, 8, 6, 14)
+replace team = 5 if inlist(region, 7, 10)
+replace team = 6 if inlist(region, 5, 2, 15)
 * Now the situations where both currencies are possible to select 
 replace team = 1 if inlist(region, 13, 16, 17) & pr_c==4   
-replace team = 2 if inlist(region, 13, 16, 17) & pr_c==2  
+replace team = 3 if inlist(region, 13, 16, 17) & pr_c==2  
 * we assign team 1 if USD or missing
 replace team = 1 if inlist(region, 13, 16, 17) & (pr_c==5 | mi(pr_c)) & mi(team) 
 assert !mi(team)
-*assert !(team==1 & pr_c==2) 
-*assert !(team==2 & pr_c==4) 
 
 *Cleaning rule: change USD to local currency (for each zone) when the price is equal or greater than 1,000
 replace pr_c=4 if pr >= 1000 & pr<. & pr_c==5 & team==1
-replace pr_c=2 if pr >= 1000 & pr<. & pr_c==5 & inlist(team,2,3)
+replace pr_c=2 if pr >= 1000 & pr<. & pr_c==5 & team!=1
 
 *Include exchange rates and constraints for each zone to assess currency errors
 merge m:1 team using "${gsdData}/1-CleanInput/HFS Exchange Rate Survey.dta", nogen keepusing(average_er)
@@ -216,8 +216,8 @@ save "${gsdTemp}/nfood_clean_byitem.dta", replace
 merge 1:1 strata ea block hh nfoodid using "${gsdTemp}/nfood_hhs_fulldataset.dta"
 assert purc_original==purc if _merge==3
 *Include relevant info to differentiate between zero and items not administered
-drop region weight enum mod_opt mod_item _merge
-merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", assert(match) nogen keepusing(region weight enum mod_opt)
+drop region weight enum mod_opt mod_item _merge astrata
+merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", assert(match) nogen keepusing(region weight enum mod_opt astrata)
 merge m:m nfoodid using "${gsdData}/1-CleanInput/nfood.dta", nogen keep(master match) keepusing(mod_item)
 *Introduce zero consumption 
 replace purc=0 if purc_original>=. & (mod_item==0 | mod_opt==mod_item)

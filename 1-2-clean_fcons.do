@@ -416,12 +416,14 @@ cap drop team
 * SLSH 
 gen team = 1 if inlist(region, 1, 18)
 * SSH
-replace team = 2 if inlist(region, 2,3,5,6,7,8,9,10,14,15)
-replace team = 2 if inlist(region, 4,11,12)
-
+replace team = 2 if inlist(region, 3)
+replace team = 3 if inlist(region, 4,11,12)
+replace team = 4 if inlist(region, 8, 6, 14)
+replace team = 5 if inlist(region, 7, 10)
+replace team = 6 if inlist(region, 5, 2, 15)
 * Now the situations where both currencies are possible to select 
 replace team = 1 if inlist(region, 13, 16, 17) & pr_c==4   
-replace team = 2 if inlist(region, 13, 16, 17) & pr_c==2  
+replace team = 3 if inlist(region, 13, 16, 17) & pr_c==2  
 * we assign team 1 if USD or missing
 replace team = 1 if inlist(region, 13, 16, 17) & (pr_c==5 | mi(pr_c)) & mi(team) 
 assert !mi(team)
@@ -436,7 +438,7 @@ gen unit_price=pr_usd/purc_q_kg
 
 *Cleaning rule: change USD to local currency (for each zone) when the price is equal or greater than 1,000
 replace pr_c=4 if pr >= 1000 & pr<. & pr_c==5 & team==1
-replace pr_c=2 if pr >= 1000 & pr<. & pr_c==5 & inlist(team,2,3)
+replace pr_c=2 if pr >= 1000 & pr<. & pr_c==5 & team!=1
 * Now import constraints as a way to judge currency errors
 merge m:1 foodid using "${gsdTemp}/food_bands.dta", nogen assert(match) keepusing(v_min v_max)
 * see how many unit prices are out of bounds
@@ -592,16 +594,16 @@ label var cons_q_tag "Entry flagged: issues w/quantity in consumption"
 label var purc_q_tag "Entry flagged: issues w/quantity in purchase"
 label var purc_p_tag "Entry flagged: issues w/prices"
 *Include the key variables for all the records
-drop region weight enum mod_opt mod_item
-merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", assert(match) nogen keepusing(region weight enum mod_opt)
+drop region weight enum mod_opt mod_item astrata
+merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", assert(match) nogen keepusing(region weight enum mod_opt astrata)
 merge m:m foodid using "${gsdData}/1-CleanInput/food.dta", nogen keep(master match) keepusing(mod_item)
 rename foodid itemid
 order region strata ea block hh enum weight mod_opt mod_item
 save "${gsdData}/1-CleanTemp/food.dta", replace
 *Now the data is collapsed at the household level and converted into wide format 
 use "${gsdData}/1-CleanTemp/food.dta", clear
-collapse (sum) cons_usd, by(strata ea block hh mod_opt mod_item)
-reshape wide cons_usd, i(strata ea block hh mod_opt) j(mod_item)
+collapse (sum) cons_usd, by(astrata strata ea block hh mod_opt mod_item)
+reshape wide cons_usd, i(astrata strata ea block hh mod_opt) j(mod_item)
 ren cons_usd* cons_f* 
 *Then we includes zero values for optional modules without consumption and correct naming of missing values
 forval i=1/4 {

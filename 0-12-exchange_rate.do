@@ -18,9 +18,9 @@ foreach v of varlist _all {
 ********************************************************************
 *Keep the valid dates and define currencies
 ********************************************************************
-*December 4th to 31st 
+*December 4th to Jan 15 
 local start 04Dec2017
-local end 31Dec2017
+local end 15Jan2018
 *=============================
 *============UPDATE END DATE AND INPUT DATASET WITH THE LATEST==========
 keep if wBegin>=td(`start') & wBegin<=td(`end')
@@ -29,8 +29,12 @@ keep if wBegin>=td(`start') & wBegin<=td(`end')
 ********************************************************************
 *Obtain the mean exchange rate 
 ********************************************************************
-*Consider two different exchange rates (SL vs. SC and PL teams)
-recode team (3=2)
+*Consider different exchange rates by different regions
+replace team = 4 if inlist(location, 119, 120, 121)
+replace team = 5 if inlist(location, 123)
+replace team = 6 if inlist(location, 122)
+label define lteam 1 "SL" 2 "Mog" 3 "PL" 4 "Central" 5 "JL" 6 "SW", replace
+label values team lteam
 collapse (mean) mp, by(team)
 ren mp average_er
 egen x = mean(average_er) if team!=1
