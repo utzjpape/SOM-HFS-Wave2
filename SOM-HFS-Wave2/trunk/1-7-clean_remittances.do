@@ -33,11 +33,15 @@ cap drop team
 * SLSH 
 gen team = 1 if inlist(region, 1, 18)
 * SSH
-replace team = 2 if inlist(region, 2,3,4,5,6,7,8,9,10,11,12,14,15)
-* Now assign team value
+replace team = 2 if inlist(region, 3)
+replace team = 3 if inlist(region, 4,11,12)
+replace team = 4 if inlist(region, 8, 6, 14)
+replace team = 5 if inlist(region, 7, 10)
+replace team = 6 if inlist(region, 5, 2, 15)
+* Now the situations where both currencies are possible to select 
 foreach measure in "intremit" "remit" "supp_som" {
 	replace team = 1 if inlist(region, 13, 16, 17) & (`measure'12m_amount_c==4)   
-	replace team = 2 if inlist(region, 13, 16, 17) & (`measure'12m_amount_c==2) 
+	replace team = 3 if inlist(region, 13, 16, 17) & (`measure'12m_amount_c==2) 
 }
 foreach measure in "intremit" "remit" "supp_som" {
 	* we assign team 1 if USD or missing
@@ -50,7 +54,7 @@ foreach measure in "intremit" "remit" "supp_som" {
 foreach type_remit in "intremit" "remit" "supp_som"{
 	*Cleaning rule: change USD to local currency (for each zone) when the price is equal or greater than 10,000
 	replace `type_remit'12m_amount_c=4 if `type_remit'12m_amount>= 10000 & `type_remit'12m_amount<. & `type_remit'12m_amount_c==5 & team==1
-	replace `type_remit'12m_amount_c=2 if `type_remit'12m_amount>= 10000 & `type_remit'12m_amount<. & `type_remit'12m_amount_c==5 & inlist(team,2,3) 
+	replace `type_remit'12m_amount_c=2 if `type_remit'12m_amount>= 10000 & `type_remit'12m_amount<. & `type_remit'12m_amount_c==5 & team!=1 
 	*Cleaning rule: change local currency larger than 500,000 (divide by 10)
 	replace `type_remit'12m_amount=`type_remit'12m_amount/10 if `type_remit'12m_amount>500000 & `type_remit'12m_amount<.
 }

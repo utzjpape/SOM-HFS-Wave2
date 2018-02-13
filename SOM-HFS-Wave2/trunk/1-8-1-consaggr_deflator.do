@@ -22,8 +22,8 @@ foreach cat of local lis {
 		gen uprice = cons_value
 	}
 	ren mod_opt mod_hh
-	local lj = "Central_Regions_idp Galgaduud_idp Jubaland_idp Mogadishu_idp Puntland_idp Somaliland_idp South_West_idp Hiraan_nomad Middle_Shabelle_nomad Galgaduud_nomad Gedo_nomad Lower_Juba_nomad Middle_Juba_nomad Bari_nomad Mudug_nomad Nugaal_nomad Awdal_nomad Sanaag_nomad Sool_nomad Toghdeer_nomad Woqooyi_Galbeed_nomad Bakool_nomad Bay_nomad Lower_Shabelle_nomad Hiraan_rural Hiraan_urban Middle_Shabelle_rural Middle_Shabelle_urban Galgaduud_rural Galgaduud_urban Lower_Juba_urban Gedo_rural Gedo_urban Lower_Juba_rural Middle_Juba_rural Middle_Juba_urban Banadir_urban Bari_rural Bari_urban Mudug_rural Mudug_urban Nugaal_rural Nugaal_urban Awdal_rural Awdal_urban Sanaag_urban_rural Sool_urban_rural Toghdeer_rural Toghdeer_urban Woqooyi_Galbeed_rural Woqooyi_Galbeed_urban Bay_urban Bakool_rural Bakool_urban Bay_rural Lower_Shabelle_rural Lower_Shabelle_urban"
-	keep strata ea block hh weight mod_item mod_hh itemid cons_value uprice 
+	local lj = "IDP Nomadic (u):Banadir (u):Nugaal (u):Bari+Mudug (u):Woqooyi_Galbeed (u):Awdal+Sanaag+Sool+Togdheer (u):Hiraan+MiddleShabelle+Galgaduud (u):Gedo+LowerJuba+MiddleJuba (u):Bay+Bakool+LowerShabelle (r):Bari+Mudug+Nugaal (r):Awdal+Togdheer+Woqooyi (r):Hiraan+MiddleShabelle+Galgaduud (r):Gedo+LowerJuba+MiddleJuba (r):Bay+Bakool+LowerShabelle"
+	keep strata ea block hh weight mod_item mod_hh itemid cons_value uprice astrata
 	*calculate core and optional module consumption per hh
 	bys strata ea block hh: egen tcore = total(cons_value) if mod_item==0
 	bys strata ea block hh: egen topt = total(cons_value) if mod_item==mod_hh
@@ -74,16 +74,16 @@ foreach cat of local lis {
 	*national for missing
 	bysort itemid: egen up_all_med = median(uprice)
 	bysort itemid: egen up_all_avg = mean(uprice)
-	collapse (median) uprice_med = uprice (mean) uprice_avg = uprice [pweight=weight], by(strata itemid up_all_*)
+	collapse (median) uprice_med = uprice (mean) uprice_avg = uprice [pweight=weight], by(astrata itemid up_all_*)
 	replace uprice_med = up_all_med if missing(uprice_med)
 	replace uprice_avg = up_all_avg if missing(uprice_avg)
 	drop up_all_*
 	*make one line per item with columns for strata
-	reshape wide uprice_med uprice_avg, i(itemid) j(strata)
-	*label
-		forvalues j = 1/57 {
-			capture: label var uprice_med`j' "Med Price `: word `j' of `lj''"
-			capture: label var uprice_avg`j' "Avg Price `: word `j' of `lj''"
+	reshape wide uprice_med uprice_avg, i(itemid) j(astrata)
+	*label	
+	foreach j of numlist 1/15 {
+		capture: label var uprice_med`j' "Med Price `: word `j' of `lj''"
+		capture: label var uprice_avg`j' "Avg Price `: word `j' of `lj''"
 	}
 	*add share
 	merge 1:1 itemid using "${gsdTemp}/`cat'-weights.dta", nogen assert(match) keepusing(cons_?share)
@@ -94,13 +94,13 @@ foreach cat of local lis {
 	
 	*construct deflator
 	keep itemid cons_tshare uprice_med*
-	reshape long uprice_med, i(itemid) j(strata)
+	reshape long uprice_med, i(itemid) j(astrata)
 	gen deflator = cons_tshare * uprice_med
-	collapse (sum) deflator, by(strata)
+	collapse (sum) deflator, by(astrata)
 	*normalize to 1 by using the average
 	egen x = mean(deflator)
 	replace deflator = deflator / x
-	label var strata "Strata"
+	label var astrata "Analytical strata"
 	label var deflator "`cat' deflator"
 	drop x
 	save "${gsdData}/1-CleanTemp/`cat'-deflator.dta", replace
@@ -109,7 +109,7 @@ foreach cat of local lis {
 
 
 ********************************************************************
-*Calculate CPI using prices from FSNAU
+*Calculate CPI using prices from MPS
 ********************************************************************
 use "${gsdTemp}/food-weights.dta", clear
 append using "${gsdTemp}/nonfood-weights.dta", gen(nonfood)

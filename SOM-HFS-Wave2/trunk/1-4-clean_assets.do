@@ -55,28 +55,31 @@ cap drop team
 * SLSH 
 gen team = 1 if inlist(region, 1, 18)
 * SSH
-replace team = 2 if inlist(region, 2,3,5,6,7,8,9,10,14,15)
-replace team = 2 if inlist(region, 4,11,12)
+replace team = 2 if inlist(region, 3)
+replace team = 3 if inlist(region, 4,11,12)
+replace team = 4 if inlist(region, 8, 6, 14)
+replace team = 5 if inlist(region, 7, 10)
+replace team = 6 if inlist(region, 5, 2, 15)
 * Now the situations where both currencies are possible to select: we want to assign one team for each observation depending on whether...
 * ... it is in SLSH or SSH. To be able to assign a unique team value, we need to ensure that there are no cases in which `pr' is in a different ...
 * ... currency than 'val':
 assert !((pr_c==4 & val_c==2) | (pr_c==2 & val_c==4)) if inlist(region, 13, 16, 17)
 * Now assign team value
 replace team = 1 if inlist(region, 13, 16, 17) & (pr_c==4 | val_c==4)   
-replace team = 2 if inlist(region, 13, 16, 17) & (pr_c==2 | val_c==2) 
+replace team = 3 if inlist(region, 13, 16, 17) & (pr_c==2 | val_c==2) 
 * we assign team 1 if USD or missing
 replace team = 1 if inlist(region, 13, 16, 17) & (pr_c==5 | mi(pr_c)) & mi(team) 
-assert !mi(team)
+
 
 foreach measure in pr val {
 	*cleaning rule: change USD to local currency (for each zone) when the price is equal or greater than 1,000
 	replace `measure'_c=4 if `measure' >= 1000 & `measure'<. & `measure'_c==5 & team==1
-	replace `measure'_c=2 if `measure' >= 1000 & `measure'<. & `measure'_c==5 & inlist(team, 2, 3) 
+	replace `measure'_c=2 if `measure' >= 1000 & `measure'<. & `measure'_c==5 & team!=1 
 	*Cleaning rule: change local currency larger than 10,000, divide by 1,000 (respondents probably meant Shillings not thousands of shillings)
 	replace `measure' = `measure'/1000 if `measure'>10000 & `measure'<.
 }
 
-
+assert !mi(team)
 ********************************************************************
 *Obtain price and value in USD and identify issues
 ********************************************************************

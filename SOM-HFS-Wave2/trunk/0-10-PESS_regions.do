@@ -29,6 +29,8 @@ label define lind_profile 1 "Mogadishu (Urban)" 2 "North-east Urban (Nugaal,Bari
 label values ind_profile lind_profile
 label var ind_profile "Indicator of regional breakdown"
 order ind_profile, after(weight)
+* fix region variable
+replace region = 15 if inlist(strata, 56, 57)
 save "${gsdData}/0-RawTemp/hh_for_anon.dta", replace
 
 

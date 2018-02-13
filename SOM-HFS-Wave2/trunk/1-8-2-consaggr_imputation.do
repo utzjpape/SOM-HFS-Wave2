@@ -43,7 +43,7 @@ recode type (4=1)
 recode remit12m (missing=0)
 *Prepare smaller dataset
 rename (mod_opt type) (opt_mod hh_ptype)
-keep region strata ea block hh hhsize weight opt_mod pchild psenior hhempl hhsex hhedu hh_type hh_drinkwater hh_floor hh_ownership hh_hunger remit12m cons_f? cons_nf? cons_d hh_ptype
+keep region astrata strata ea block hh hhsize weight opt_mod pchild psenior hhempl hhsex hhedu hh_type hh_drinkwater hh_floor hh_ownership hh_hunger remit12m cons_f? cons_nf? cons_d hh_ptype
 drop if weight>=.
 *Prepare consumption variables
 *Make sure missing modules have missing consumption
@@ -100,7 +100,7 @@ save "${gsdTemp}/mi.dta", replace
 ********************************************************************
 use "${gsdTemp}/mi.dta", clear
 *prepare variables to merge
-merge m:1 strata using "${gsdData}/1-CleanTemp/food-deflator.dta", nogen assert(match) keep(match)
+merge m:1 astrata using "${gsdData}/1-CleanTemp/food-deflator.dta", nogen assert(match) keep(match)
 gen hhweight = weight * hhsize
 *iterate over modules
 foreach cat in f nf {
@@ -131,10 +131,8 @@ label var tc_imp "Total real Dec 2017 consumption based on imputation pc pd curr
 *Include the poverty line and obtain the poverty status
 ********************************************************************
 *Add exchange rate
-gen team=1 if inlist(strata,6,17,18,19,20,21,44,45,46,47,48,49,50,51)
-replace team=2 if !inlist(strata,6,17,18,19,20,21,44,45,46,47,48,49,50,51)
-merge m:1 team using "${gsdData}/1-CleanInput/HFS Exchange Rate Survey.dta", nogen keepusing(average_er global_er)
-replace team=1 if team==2
+gen team=1 
+merge m:1 team using "${gsdData}/1-CleanInput/HFS Exchange Rate Survey.dta", nogen keepusing(global_er) assert(match using) keep(match)
 merge m:1 team using "${gsdData}/1-CleanTemp/inflation.dta", nogen keepusing(gg) assert(match using) keep(match)
 drop team
 *Poverty line 1.90 USD in USD PPP (2011) using private consumption PPP conversion factor
@@ -147,8 +145,8 @@ gen plinePPP = 10731 * gg * 1.9 / global_er
 gen plinePPP125 = 10731 * gg * 1.25 / global_er
 gen plinePPP_vulnerable_10 =plinePPP*1.1 
 gen plinePPP_vulnerable_20 =plinePPP*1.2
-label var plinePPP "2011 PPP 1.90 USD Poverty Line in 2016 USD Somalia"
-label var plinePPP125 "2011 PPP 1.25 USD Poverty Line in 2016 USD Somalia"
+label var plinePPP "2011 PPP 1.90 USD Poverty Line in 2017 USD Somalia"
+label var plinePPP125 "2011 PPP 1.25 USD Poverty Line in 2017 USD Somalia"
 label var plinePPP_vulnerable_10 "Poverty Line corresponding to shock to consumption equal to (1-1/1.1)"
 label var plinePPP_vulnerable_20 "Poverty Line corresponding to shock to consumption equal to (1-1/1.2)"
 *Calculate poverty
