@@ -947,6 +947,7 @@ label var duration_itw_min "Duration of interview (minutes)"
 save "${gsdData}/0-RawTemp/hh_manual_cleaning.dta", replace
 
 
+
 ***** PART 2: NOMADS
 
 *** Importing questionnaire
@@ -1127,6 +1128,7 @@ replace consent_tracking = 0 if interview__id=="05ffa1152ec44bcfba36eea2ee5f5fff
 replace barcode_tracking = . if interview__id=="05ffa1152ec44bcfba36eea2ee5f5fff"
 replace tracking_phone_yn = . if interview__id=="05ffa1152ec44bcfba36eea2ee5f5fff"
 replace tracking_phone = . if interview__id=="05ffa1152ec44bcfba36eea2ee5f5fff"
+replace tracking_phone = 0615808715 if interview__id=="c908f36a90af41dfabb0fa4086afd6e9"
 *22/01/2018
 replace barcode_tracking = 169583 if interview__id=="2094ebaefe4e4273885ef62d9483fd27"
 replace consent_tracking = 0 if interview__id=="7153776b33fc4db9b9df5aa5bfe1fdb2"
@@ -1139,14 +1141,31 @@ replace tracking_phone_yn = . if interview__id=="dd473d064cd2431f864c8c699e04f28
 replace tracking_phone = . if interview__id=="dd473d064cd2431f864c8c699e04f285"
 replace tracking_phone_yn = 1 if interview__id=="0147445180114401a0f3291ba969dff9"
 replace tracking_phone = 0634268793 if interview__id=="0147445180114401a0f3291ba969dff9"
+replace consent_tracking = 1 if interview__id=="1d4c41d3c0994df9b3ab2245b8392452"
+replace barcode_tracking = 169612 if interview__id=="1d4c41d3c0994df9b3ab2245b8392452"
+replace tracking_phone_yn = 1 if interview__id=="1d4c41d3c0994df9b3ab2245b8392452"
+replace tracking_phone = 0618760797 if interview__id=="1d4c41d3c0994df9b3ab2245b8392452"
+replace consent_tracking = 1 if interview__id=="706759fadd854fdeb26953c2b04036bf"
+replace barcode_tracking = 169642 if interview__id=="706759fadd854fdeb26953c2b04036bf"
+replace tracking_phone_yn = 1 if interview__id=="706759fadd854fdeb26953c2b04036bf"
+replace tracking_phone = 0615609598 if interview__id=="706759fadd854fdeb26953c2b04036bf"
+*23/01/2018
+replace tracking_phone = 0634303010 if interview__id=="af99f6cd046942298cce852f050afafe"
+replace tracking_phone = 0612171018 if interview__id=="8dfd03955bab4a14bac578dc34414c24"
+replace tracking_phone = 0618073878 if interview__id=="2524570b12ab448090d1867d92a5714f"
 *26/01/2018
 replace consent_tracking = 1 if interview__id=="f3c55e5de7f94b5a9e41602762aa5c19"
 replace barcode_tracking = 169566 if interview__id=="f3c55e5de7f94b5a9e41602762aa5c19"
 replace tracking_phone_yn = 1 if interview__id=="f3c55e5de7f94b5a9e41602762aa5c19"
 replace tracking_phone = 0634378404 if interview__id=="f3c55e5de7f94b5a9e41602762aa5c19"
+*27/01/2018
+replace tracking_phone_yn = 1 if interview__id=="751e11775b68409d84c07dc16c816612"
+replace tracking_phone = 0616727236 if interview__id=="751e11775b68409d84c07dc16c816612"
 *28/01/2018
+replace consent_tracking = 1 if interview__id=="71f32abe4b2b4a2f970795f3f0b35dcf"
+replace barcode_tracking = 169562 if interview__id=="71f32abe4b2b4a2f970795f3f0b35dcf"
 replace tracking_phone_yn = 1 if interview__id=="71f32abe4b2b4a2f970795f3f0b35dcf"
-replace tracking_phone = 0634064328 if interview__id=="71f32abe4b2b4a2f970795f3f0b35dcf"
+replace tracking_phone = 0634382910 if interview__id=="71f32abe4b2b4a2f970795f3f0b35dcf"
 *29/01/2018
 replace consent_tracking = 1 if interview__id=="a7e94387fb974cbf964ea0bd67a40256"
 replace barcode_tracking = 169539 if interview__id=="a7e94387fb974cbf964ea0bd67a40256"
@@ -1210,9 +1229,9 @@ replace barcode_tracking = 169608 if interview__id=="6b5c8dbc016b4b68abd1297654d
 replace tracking_phone_yn = 1 if interview__id=="6b5c8dbc016b4b68abd1297654d8a09f"
 replace tracking_phone = 0617046505 if interview__id=="6b5c8dbc016b4b68abd1297654d8a09f"
 replace consent_tracking = 1 if interview__id=="c9eadcb033964693b5628e174a22cdd6"
-replace barcode_tracking = 169 if interview__id=="c9eadcb033964693b5628e174a22cdd6"
+replace barcode_tracking = 169719 if interview__id=="c9eadcb033964693b5628e174a22cdd6"
 replace tracking_phone_yn = 1 if interview__id=="c9eadcb033964693b5628e174a22cdd6"
-replace tracking_phone = 06 if interview__id=="c9eadcb033964693b5628e174a22cdd6"
+replace tracking_phone = 0615198201 if interview__id=="c9eadcb033964693b5628e174a22cdd6"
 
 *** Missing date cleaning at the beginning and at the end of the interview
 *Correcting when missing date using dates and times in metadata
@@ -1327,6 +1346,7 @@ replace listing_round=2 if interview__id=="259f74488d8f46b2af48547c52e64bfa"
 replace hhid_nomad=1 if interview__id=="79942876465a4214bae96d2e4c19bccc"
 replace hhid_nomad=4 if interview__id=="59888e303cff4e4994cc2750cf303a50"
 replace hhid_nomad=6 if interview__id=="9ab92d4becee465493c03b0506ac39b9"
+replace hhid_nomad=3 if interview__id=="c3df8a49cc1044969ab54b833baa6d30"
 *WP 3170
 replace hhid_nomad=4 if interview__id=="e788ddcc77974f4aaea1abc0a5cfd91b"
 replace listing_round=3 if interview__id=="d241d67cff25484bb3db6cfe6859b542"
@@ -1363,7 +1383,7 @@ replace hhid_nomad=4 if interview__id=="ab8700d7481d4d728800d6db43668376"
 *WP 1203072
 replace listing_day=7 if interview__id=="0cc0b0c5ee75485fbe0418bf153ee38b"
 replace listing_round=1 if interview__id=="0cc0b0c5ee75485fbe0418bf153ee38b"
-replace hhid_nomad=2 if interview__id=="0cc0b0c5ee75485fbe0418bf153ee38b"
+replace hhid_nomad=1 if interview__id=="0cc0b0c5ee75485fbe0418bf153ee38b"
 replace listing_round=2 if interview__id=="71f32abe4b2b4a2f970795f3f0b35dcf"
 replace hhid_nomad=1 if interview__id=="71f32abe4b2b4a2f970795f3f0b35dcf"
 *WP 1802019
