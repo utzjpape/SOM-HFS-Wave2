@@ -60,8 +60,11 @@ svyset ea [pweight=hhweight], strata(strata)
 ******************************************
 preserve
 ***Estimate the strutural model for NW and Mogadishu and obtain predicted poverty
+*replace tc_core=ln(tc_core)
 svy: reg tc_core mog_dummy type hhsize hhh_gender hhh_age i.hhh_edu pgender pworking_age pdependent pliteracy lfp_7d_hh emp_7d_hh i.house_type_cat i.water i.treated_water i.cook i.toilet_type i.hh_floor i.hh_roof i.hh_ownership remit12m i.hh_hunger if (ind_profile!=2 & ind_profile!=4 & ind_profile!=6), nocons
 predict tc_core_imp
+*replace tc_core_imp=exp(tc_core_imp)
+*replace tc_core=exp(tc_core)
 sum tc_imp [weight=hhweight]
 gen tc_imp_mean=r(mean)
 sum tc_core [weight=hhweight] 
@@ -105,8 +108,12 @@ mean poorPPP_prob_imp [pweight=hhweight], over(ind_profile)
 save "${gsdTemp}/poor_structural_w1_analysis.dta", replace
 
 *Create all the set of poverty indicators
-*gen poorPPP_imp = poorPPP_prob_imp > .55
-*poorPPP_vulnerable_10_prob poorPPP_vulnerable_20_prob quintiles_tc tc_imp tc_imp_f tc_imp_nf tc_imp_d pgi pseverity
+gen poorPPP_imp = poorPPP_prob_imp > .55
+
+poorPPP_prob 
+poorPPP_vulnerable_10_prob poorPPP_vulnerable_20_prob quintiles_tc tc_imp tc_imp_f tc_imp_nf tc_imp_d pgi pseverity
+poorPPP_vulnerable_10_prob poorPPP_vulnerable_20_prob quintiles_tc 
+tc_imp tc_imp_f tc_imp_nf tc_imp_d pgi pseverity cons_f0_org cons_f1_org cons_f2_org cons_f3_org cons_f4_org cons_nf0_org cons_nf1_org cons_nf2_org cons_nf3_org cons_nf4_org cons_d_org
 
 *Save results 
 keep strata ea block hh ind_profile poorPPP_prob_imp
@@ -275,8 +282,11 @@ svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
 ******************************************
 preserve
 ***Estimate the strutural model for NW and Mogadishu and obtain predicted poverty
+*replace tc_core=ln(tc_core)
 svy: reg tc_core i.dummy_region i.type host hhsize hhh_gender hhh_age hhh_literacy pgender pworking_age pdependent pliteracy lfp_7d_hh emp_7d_hh i.house_type_cat i.water i.treated_water i.hh_cook i.hh_toilet i.hh_floor i.hh_roof i.hh_ownership i.hh_hunger remit12m migr_disp if !inlist(ind_profile,2,4,6,9,10,13), nocons
 predict tc_core_imp
+*replace tc_core_imp=exp(tc_core_imp)
+*replace tc_core=exp(tc_core)
 sum tc_imp [weight=hhweight]
 gen tc_imp_mean=r(mean)
 sum tc_core [weight=hhweight] 
