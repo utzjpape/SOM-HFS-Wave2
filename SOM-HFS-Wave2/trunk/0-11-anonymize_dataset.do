@@ -117,6 +117,7 @@ foreach x in "nfood" "shocks" "food" "livestock" "livestock_pre" "motor" "assets
 	save "${gsdData}/1-CleanInput/`x'.dta", replace
 }
 
+
 *********************************************************************
 * Save correspondence tables with GPS 
 **********************************************************************
@@ -134,9 +135,11 @@ drop interview__id lat_y long_x n_str str_no_success n_str_no_success__* n_hh hh
 drop n_bl n_ints int_no return EAs_toinclude Nb_itwstobeconducted Nb_blocks_EA Dummy_oneblock id_wp water_point water_point_confirm loc_wp__Latitude loc_wp__Longitude loc_wp__Accuracy loc_wp__Altitude loc_wp__Timestamp loc_wp_check hhid_nomad listing_round listing_day res_name phone original_hhid_nomad original_listing_round original_listing_day phone_to_call consent_tracking barcode_tracking tracking_phone_yn tracking_phone enum_name status_wp WPs_toinclude not_within_WP id_listing_day id_listing_round listing_day_original listing_round_original main_wp rank_rep_wp sample_initial_wp sample_final_wp o_wp o_wp_2 o_wp_3 r_wp final_main_wp final_rep_wp final_rank_rep_wp target_itw_wp nb_val_succ_itw_wp wp_status wp_valid nb_interviews_wp nb_treat1_wp nb_treat2_wp nb_treat3_wp nb_treat4_wp nb_valid_interviews_wp nb_valid_treat1_wp nb_valid_treat2_wp nb_valid_treat3_wp nb_valid_treat4_wp nb_success_interviews_wp nb_success_treat1_wp nb_success_treat2_wp nb_success_treat3_wp nb_success_treat4_wp nb_valid_success_itws_wp nb_valid_success_treat1_wp nb_valid_success_treat2_wp nb_valid_success_treat3_wp nb_valid_success_treat4_wp
 save "${gsdData}/1-CleanInput/hh.dta", replace
 
+
 **********************************************************************
 * Take care of sharing data 
 **********************************************************************
+/*
 * data export for sharing
 cap mkdir "${gsdData}/0-RawOutput/SharedRawAnonymized"
 drop weight
@@ -164,6 +167,3 @@ foreach x in "hhm" "hhm_separated" "nfood" "shocks" "food" "livestock" "livestoc
 	
 cd "${gsdData}/0-RawOutput/SharedRawAnonymized"
 zipfile *.csv, saving(SHFSw2_RawData)
-
-
-

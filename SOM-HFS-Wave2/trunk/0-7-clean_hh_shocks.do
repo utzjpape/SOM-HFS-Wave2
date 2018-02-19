@@ -9,7 +9,7 @@ set sortseed 11041956
 *Clean and prepare the shocks data
 ********************************************************************
 use "${gsdData}/0-RawTemp/shocks_valid_successful_complete.dta", clear
-drop shresp1_sp interview__key shresp1__1000 shresp1__n98 shresp1__n99 shocks__id
+drop shresp1_sp interview__key shresp1__1000 shresp1__n98 shresp1__n99 
 order interview__id 
 
 *Categorise missing values: "Don't know": -98 --> .a, "Refused to respond": -99 --> .b
@@ -33,4 +33,7 @@ forval i=0/18 {
 	label values shock_resp_`i' limportant
 }
 
+drop if shock_affect_1==. & shock_affect_2==. & shock_affect_3==. & shock_affect_4==. & shock_affect_5==. & shock_resp_0==. &  shock_resp_1==. & shock_resp_2==. & 	shock_resp_3==. & shock_resp_4==. & shock_resp_5==. & shock_resp_6==. & shock_resp_7==. & shock_resp_8==. & shock_resp_9==. & shock_resp_10==. & shock_resp_11==. & shock_resp_12==. & shock_resp_13==. & shock_resp_14==. & shock_resp_15==. & shock_resp_16==. & shock_resp_17==. & shock_resp_18==. 																							
+rename shocks__id shock_id
+label var shock_id "ID of shock"
 save "${gsdData}/0-RawOutput/hh_shocks_clean.dta", replace

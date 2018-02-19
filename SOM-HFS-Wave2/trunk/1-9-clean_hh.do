@@ -100,37 +100,37 @@ save "${gsdTemp}/hh_pre_final.dta", replace
 *********************************************************
 use "${gsdData}/1-CleanInput/assets_prev.dta", clear
 merge m:1  strata ea block hh using "${gsdTemp}/hh_pre_final.dta", nogen keep(match) keepusing(weight) 
-order region strata ea block hh enum weight
+order region strata ea block hh enum weight astrata
 drop team
 save "${gsdData}/1-CleanOutput/assets_prev.dta", replace
 
 use "${gsdData}/1-CleanInput/hhm_separated.dta", clear
 merge m:1  strata ea block hh using "${gsdTemp}/hh_pre_final.dta", nogen keep(match) keepusing(weight) 
-order region strata ea block hh enum weight
+order region strata ea block hh enum weight 
 drop team
 save "${gsdData}/1-CleanOutput/hhm_separated.dta", replace
 
 use "${gsdData}/1-CleanInput/livestock.dta", clear
 merge m:1  strata ea block hh using "${gsdTemp}/hh_pre_final.dta", nogen keep(match) keepusing(weight) 
-order region strata ea block hh enum weight
+order region strata ea block hh enum weight astrata
 drop team
 save "${gsdData}/1-CleanOutput/livestock.dta", replace
 
 use "${gsdData}/1-CleanInput/livestock_pre.dta", clear
 merge m:1  strata ea block hh using "${gsdTemp}/hh_pre_final.dta", nogen keep(match) keepusing(weight) 
-order region strata ea block hh enum weight
+order region strata ea block hh enum weight astrata
 drop team
 save "${gsdData}/1-CleanOutput/livestock_pre.dta", replace
 
 use "${gsdData}/1-CleanInput/motor.dta", clear
 merge m:1  strata ea block hh using "${gsdTemp}/hh_pre_final.dta", nogen keep(match) keepusing(weight) 
-order region strata ea block hh enum weight
+order region strata ea block hh enum weight astrata
 drop team
 save "${gsdData}/1-CleanOutput/motor.dta", replace
 
 use "${gsdData}/1-CleanInput/shocks.dta", clear
 merge m:1  strata ea block hh using "${gsdTemp}/hh_pre_final.dta", nogen keep(match) keepusing(weight) 
-order region strata ea block hh enum weight
+order region strata ea block hh enum weight astrata
 drop team
 save "${gsdData}/1-CleanOutput/shocks.dta", replace
 
