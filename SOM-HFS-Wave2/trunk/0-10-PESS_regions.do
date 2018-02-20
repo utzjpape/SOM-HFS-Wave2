@@ -51,7 +51,7 @@ save "${gsdData}/1-CleanInput/PESS_population.dta", replace
 ********************************************************************
 *Include the files from Wave 1 into 1-CleanInput 
 ********************************************************************
-foreach dataset in "hhm" "food" "nonfood" "assets" "hhq-poverty"  {
+foreach dataset in "hhm" "food" "nonfood" "assets" "hhq-poverty" "food-deflator"  {
 	use "${gsdDataRaw}/Wave_1/`dataset'.dta", clear
 	cap ren reg_pess reg_pess_old
 	cap recode reg_pess_old (1=1 "Awdal") (2=3 "Banadir") (3=4 "Bari") (4=11 "Mudug") (5=12 "Nugal") (6=13 "Sanaag") (7=16 "Sool") (8=17 "Togdheer") (9=18 "Woqooyi Galbeed"), gen(reg_pess)
