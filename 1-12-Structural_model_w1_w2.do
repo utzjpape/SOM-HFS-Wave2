@@ -3,7 +3,6 @@
 set more off
 set seed 23023980 
 set sortseed 11065955
-
 /*
 *=====================================================================
 * WAVE 1: STRUCTURAL MODEL
@@ -75,6 +74,150 @@ save "${gsdTemp}/poor_structural_w1_analysis.dta", replace
 * II. EXPLORE SPECIFICATIONS FOR CONS
 ******************************************
 
+
+
+*==========================================================
+*==========================================================
+*==========================================================
+
+*Multiple imputation with log consumption 
+
+local model = "mog_dummy type hhsize hhh_gender hhh_age hhh_age2 hhh_edu pgender pworking_age pdependent pliteracy lfp_7d_hh emp_7d_hh house_type_cat water treated_water cook toilet_type hh_floor hh_roof hh_ownership remit12m hh_hunger income_source_dum"
+
+*Exclude the consumption of NE regions
+replace tc_core=ln(tc_core)
+gen mi_tc_core=tc_core if (ind_profile!=2 & ind_profile!=4 & ind_profile!=6)
+mi set wide
+mi register imputed mi_tc_core
+mi register regular `model'
+
+set seed 23081365 
+
+mi impute mvn mi_tc_core= `model', add(100) burnin(1000)
+*Retrieve core consumption values
+mi passive: generate new_tc_core = exp(mi_tc_core)
+
+*Obtain the new poverty line 
+*Scale factor .6779592
+replace plinePPP=plinePPP*.6779592
+
+rename poorPPP poorPPP_old
+rename poorPPP_prob poorPPP_prob_old
+
+mi passive: gen poorPPP = new_tc_core < plinePPP 
+
+*Estimate poverty figures 
+mi svyset ea [pweight=hhweight], strata(strata)
+mi estimate: mean poorPPP [pweight=hhweight]
+mi estimate: mean poorPPP [pweight=hhweight], over(ind_profile)
+
+save "${gsdTemp}/poor_structural_w1_mi.dta", replace
+
+
+*Exctract 100 imputations
+forv i = 1/100 {
+	use "${gsdTemp}/poor_structural_w1_mi.dta", clear
+	mi extract `i', clear	
+	gen mi = `i'
+	save "${gsdTemp}/mi_w1_`i'.dta", replace
+}
+*append
+clear
+forvalues i = 1/100 {
+	append using "${gsdTemp}/mi_w1_`i'.dta"
+}
+save "${gsdTemp}/poor_structural_w1_mi-extract.dta", replace
+
+*Analysis on extract dataset
+collapse (mean) poorPPP_prob = poorPPP , by(strata ea block hh hhsize weight hhweight opt_mod plinePPP )
+svyset ea [pweight=hhweight], strata(strata)
+mean poorPPP_prob [pweight=hhweight]
+gen poorPPP = poorPPP_prob > .55
+mean poorPPP [pweight=hhweight]
+
+merge 1:1 strata ea block hh using "${gsdTemp}/poor_structural_w1_analysis.dta", nogen assert(match) keepusing(ind_profile)
+
+mean poorPPP [pweight=hhweight], over(ind_profile)
+
+save "${gsdTemp}/poor_structural_w1_hhq-poverty.dta", replace
+
+
+
+
+
+*Multiple imputation of consumption directly 
+
+local model = "mog_dummy type hhsize hhh_gender hhh_age hhh_age2 hhh_edu pgender pworking_age pdependent pliteracy lfp_7d_hh emp_7d_hh house_type_cat water treated_water cook toilet_type hh_floor hh_roof hh_ownership remit12m hh_hunger income_source_dum"
+
+*Exclude the consumption of NE regions
+gen mi_tc_core=tc_core if (ind_profile!=2 & ind_profile!=4 & ind_profile!=6)
+mi set wide
+mi register imputed mi_tc_core
+mi register regular `model'
+
+set seed 23081365 
+
+mi impute mvn mi_tc_core= `model', add(100) burnin(1000)
+*Retrieve core consumption values
+mi passive: generate new_tc_core = mi_tc_core
+
+*Obtain the new poverty line 
+*Scale factor .6779592
+replace plinePPP=plinePPP*.6779592
+
+rename poorPPP poorPPP_old
+rename poorPPP_prob poorPPP_prob_old
+
+mi passive: gen poorPPP = new_tc_core < plinePPP 
+
+*Estimate poverty figures 
+mi svyset ea [pweight=hhweight], strata(strata)
+mi estimate: mean poorPPP [pweight=hhweight]
+mi estimate: mean poorPPP [pweight=hhweight], over(ind_profile)
+
+save "${gsdTemp}/poor_structural_w1_mi.dta", replace
+
+
+*Exctract 100 imputations
+forv i = 1/100 {
+	use "${gsdTemp}/poor_structural_w1_mi.dta", clear
+	mi extract `i', clear	
+	gen mi = `i'
+	save "${gsdTemp}/mi_w1_`i'.dta", replace
+}
+*append
+clear
+forvalues i = 1/100 {
+	append using "${gsdTemp}/mi_w1_`i'.dta"
+}
+save "${gsdTemp}/poor_structural_w1_mi-extract.dta", replace
+
+*Analysis on extract dataset
+collapse (mean) poorPPP_prob = poorPPP , by(strata ea block hh hhsize weight hhweight opt_mod plinePPP )
+svyset ea [pweight=hhweight], strata(strata)
+mean poorPPP_prob [pweight=hhweight]
+gen poorPPP = poorPPP_prob > .55
+mean poorPPP [pweight=hhweight]
+
+merge 1:1 strata ea block hh using "${gsdTemp}/poor_structural_w1_analysis.dta", nogen assert(match) keepusing(ind_profile)
+
+mean poorPPP [pweight=hhweight], over(ind_profile)
+
+save "${gsdTemp}/poor_structural_w1_hhq-poverty.dta", replace
+
+
+
+
+
+   
+   
+   
+*==========================================================
+*==========================================================
+*==========================================================
+   
+   
+   
 *Estimate each consumption separately 
 preserve
 merge m:1 astrata using "${gsdData}/1-CleanInput/SHFS2016/food-deflator.dta", nogen assert(match) keep(match)
@@ -465,8 +608,8 @@ qui forval i=2/1000 {
 reshape wide poorPPP_imp, i(x) j(ind_profile)
 tabstat poorPPP_imp1 poorPPP_imp3 poorPPP_imp5 
 
-*/
 
+*/
 
 
 *=====================================================================
@@ -537,6 +680,184 @@ save "${gsdTemp}/poor_structural_w2_analysis.dta", replace
 ******************************************
 * II. EXPLORE SPECIFICATIONS FOR CONS
 ******************************************
+
+
+
+*==========================================================
+*==========================================================
+*==========================================================
+XXX
+
+
+
+
+*Multiple imputation with log consumption 
+
+local model = "dummy_region type host hhsize hhh_gender hhh_age hhh_age2 hhh_literacy pgender pworking_age pdependent pliteracy lfp_7d_hh emp_7d_hh house_type_cat water treated_water hh_cook hh_toilet hh_floor hh_roof hh_ownership hh_hunger remit12m migr_disp income_source_dum electricity  tmarket acc_bank1 dum_assit" 
+
+*Exclude the consumption of NE regions
+replace tc_core=ln(tc_core)
+gen mi_tc_core=tc_core if !inlist(ind_profile,2,4,6,9,10,13)
+mi set wide
+mi register imputed mi_tc_core
+mi register regular `model'
+
+set seed 23081365 
+
+mi impute mvn mi_tc_core= `model', add(100) burnin(1000)
+*Retrieve core consumption values
+mi passive: generate new_tc_core = exp(mi_tc_core)
+
+*Obtain the new poverty line 
+*Scale factor .6779592
+replace plinePPP=plinePPP*.6779592
+
+rename poorPPP poorPPP_old
+rename poorPPP_prob poorPPP_prob_old
+
+mi passive: gen poorPPP = new_tc_core < plinePPP 
+
+*Estimate poverty figures 
+mi svyset ea [pweight=hhweight], strata(strata)
+mi estimate: mean poorPPP [pweight=hhweight]
+mi estimate: mean poorPPP [pweight=hhweight], over(ind_profile)
+
+save "${gsdTemp}/poor_structural_w2_mi.dta", replace
+
+
+*Exctract 100 imputations
+forv i = 1/100 {
+	use "${gsdTemp}/poor_structural_w2_mi.dta", clear
+	mi extract `i', clear	
+	gen mi = `i'
+	save "${gsdTemp}/mi_w2_`i'.dta", replace
+}
+*append
+clear
+forvalues i = 1/100 {
+	append using "${gsdTemp}/mi_w2_`i'.dta"
+}
+save "${gsdTemp}/poor_structural_w2_mi-extract.dta", replace
+
+*Analysis on extract dataset
+collapse (mean) poorPPP_prob = poorPPP , by(strata ea block hh hhsize weight hhweight plinePPP )
+svyset ea [pweight=hhweight], strata(strata)
+mean poorPPP_prob [pweight=hhweight]
+gen poorPPP = poorPPP_prob > .55
+mean poorPPP [pweight=hhweight]
+
+merge 1:1 strata ea block hh using "${gsdTemp}/poor_structural_w2_analysis.dta", nogen assert(match) keepusing(ind_profile)
+
+mean poorPPP [pweight=hhweight], over(ind_profile)
+
+save "${gsdTemp}/poor_structural_w2_hhq-poverty.dta", replace
+
+
+
+
+
+
+
+
+*Multiple imputation with consumption directly
+
+local model = "dummy_region type host hhsize hhh_gender hhh_age hhh_age2 hhh_literacy pgender pworking_age pdependent pliteracy lfp_7d_hh emp_7d_hh house_type_cat water treated_water hh_cook hh_toilet hh_floor hh_roof hh_ownership hh_hunger remit12m migr_disp income_source_dum electricity  tmarket acc_bank1 dum_assit" 
+
+*Exclude the consumption of NE regions
+gen mi_tc_core=tc_core if !inlist(ind_profile,2,4,6,9,10,13)
+mi set wide
+mi register imputed mi_tc_core
+mi register regular `model'
+
+set seed 23081365 
+
+mi impute mvn mi_tc_core= `model', add(100) burnin(1000)
+*Retrieve core consumption values
+mi passive: generate new_tc_core =mi_tc_core
+
+*Obtain the new poverty line 
+*Scale factor .6779592
+replace plinePPP=plinePPP*.6779592
+
+rename poorPPP poorPPP_old
+rename poorPPP_prob poorPPP_prob_old
+
+mi passive: gen poorPPP = new_tc_core < plinePPP 
+
+*Estimate poverty figures 
+mi svyset ea [pweight=hhweight], strata(strata)
+mi estimate: mean poorPPP [pweight=hhweight]
+mi estimate: mean poorPPP [pweight=hhweight], over(ind_profile)
+
+save "${gsdTemp}/poor_structural_w2_mi.dta", replace
+
+
+*Exctract 100 imputations
+forv i = 1/100 {
+	use "${gsdTemp}/poor_structural_w2_mi.dta", clear
+	mi extract `i', clear	
+	gen mi = `i'
+	save "${gsdTemp}/mi_w2_`i'.dta", replace
+}
+*append
+clear
+forvalues i = 1/100 {
+	append using "${gsdTemp}/mi_w2_`i'.dta"
+}
+save "${gsdTemp}/poor_structural_w2_mi-extract.dta", replace
+
+*Analysis on extract dataset
+collapse (mean) poorPPP_prob = poorPPP , by(strata ea block hh hhsize weight hhweight plinePPP )
+svyset ea [pweight=hhweight], strata(strata)
+mean poorPPP_prob [pweight=hhweight]
+gen poorPPP = poorPPP_prob > .55
+mean poorPPP [pweight=hhweight]
+
+merge 1:1 strata ea block hh using "${gsdTemp}/poor_structural_w2_analysis.dta", nogen assert(match) keepusing(ind_profile)
+
+mean poorPPP [pweight=hhweight], over(ind_profile)
+
+save "${gsdTemp}/poor_structural_w2_hhq-poverty.dta", replace
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   
+   
+*==========================================================
+*==========================================================
+*==========================================================
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 *Estimate each consumption separately 
 preserve
