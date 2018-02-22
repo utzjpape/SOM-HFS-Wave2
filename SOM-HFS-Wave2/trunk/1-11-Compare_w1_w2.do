@@ -43,7 +43,7 @@ label var `i' "`a'"
 * generate indicator variable
 * for wave 1 
 cap drop ind_profile
-assert astrata==. if t==1
+replace astrata=. if t==1
 gen ind_profile="NW-Rural" if astrata==22
 replace ind_profile="NE-Rural" if astrata==21
 replace ind_profile="NW-Urban" if astrata==14 | astrata==15
@@ -71,6 +71,58 @@ replace ind_profile="SouthWest-Rural" if strata==53 | strata==55 |  strata==56
 save "${gsdTemp}/hh_w1w2_comparison.dta", replace
 
 
+
+*================================================
+* Review the displacement story 
+*================================================
+
+*Migration or IDP household
+svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
+svy: mean migr_idp if t==1
+tabstat migr_idp [aweight=weight_adj] if ind_profile!="IDP" & ind_profile!="Nomad", by(ind_profile)
+tabstat migr_idp [aweight=weight_adj] if inlist(ind_profile,"Central-Rural","Jubbaland-Rural","NE-Rural","NW-Rural","SouthWest-Rural"), by(ind_profile)
+
+*Birthplace
+use "${gsdData}/1-CleanTemp/hhm_all.dta", clear
+merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", keep(match) keepusing(ind_profile)
+svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
+*Identify members not born on their current region
+gen birth_outside=.
+replace birth_outside=1 if !inlist(birthplace_som,1,13,16,17,18) & inlist(ind_profile,"NW-Rural","NW-Urban") 
+replace birth_outside=0 if inlist(birthplace_som,1,13,16,17,18) & inlist(ind_profile,"NW-Rural","NW-Urban") 
+replace birth_outside=1 if !inlist(birthplace_som,6,8,14) & inlist(ind_profile,"Central-Urban","Central-Rural") 
+replace birth_outside=0 if inlist(birthplace_som,6,8,14) & inlist(ind_profile,"Central-Urban","Central-Rural") 
+replace birth_outside=1 if !inlist(birthplace_som,7,9,10) & inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban") 
+replace birth_outside=0 if inlist(birthplace_som,7,9,10) & inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban") 
+replace birth_outside=1 if !inlist(birthplace_som,3) & inlist(ind_profile,"Mogadishu") 
+replace birth_outside=0 if inlist(birthplace_som,3) & inlist(ind_profile,"Mogadishu") 
+replace birth_outside=1 if !inlist(birthplace_som,4,11,12) & inlist(ind_profile,"NE-Urban","NE-Rural") 
+replace birth_outside=0 if inlist(birthplace_som,4,11,12) & inlist(ind_profile,"NE-Urban","NE-Rural") 
+replace birth_outside=1 if !inlist(birthplace_som,2,5,15) & inlist(ind_profile,"SouthWest-Rural","SouthWest-Rural") 
+replace birth_outside=0 if inlist(birthplace_som,2,5,15) & inlist(ind_profile,"SouthWest-Rural","SouthWest-Rural") 
+replace birth_outside=. if birthplace_som>=.
+collapse (mean) birth_outside [w=weight_adj], by(ind_profile)
+
+*Always lived in the current dwelling
+use "${gsdData}/1-CleanTemp/hhm_all.dta", clear
+merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", keep(match) keepusing(ind_profile)
+svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
+tabstat hh_alwayslived [aweight=weight_adj] if t==0, by(ind_profile)
+tabstat hh_alwayslived [aweight=weight_adj] if t==1, by(ind_profile)
+
+*Household member level variables
+use "${gsdData}/1-CleanTemp/hhm_all.dta", clear
+merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", keep(match) keepusing(ind_profile)
+svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
+replace literacy= . if age<40
+bys t strata ea block hh: egen n_adult_literate=sum(literacy) 
+collapse (max) n_adult_literate, by (t strata ea block hh ind_profile weight_adj)
+svy: mean n_adult_literate if ind_profile=="NW-Rural", over(t)
+test Wave1=Wave2
+svy: mean n_adult_literate if ind_profile=="NW-Urban", over(t)
+test Wave1=Wave2
+
+
 *=====================================================================
 * 3- Analysis (regions covered in both waves) outputs, indicator by indicator
 *=====================================================================
@@ -82,9 +134,9 @@ foreach r in Mogadishu NE-Urban NE-Rural NW-Urban NW-Rural IDP {
 	la def lt 0 "Wave 1 - `r'" 1 "Wave 2 - `r'", replace
 	la val t lt
 	keep if ind_profile=="`r'"
-	tabout ind_profile t using "${gsdOutput}/W1W2-comparison_raw1_`r'.xls", svy sum c(mean poorPPP lb ub) sebnone f(3) h1("Poverty") npos(col) replace ptotal(none) 
+	tabout ind_profile t using "${gsdOutput}/W1W2-comparison_raw1_`r'.xls", svy sum c(mean poorPPP_prob lb ub) sebnone f(3) h1("Poverty") npos(col) replace ptotal(none) 
 	local i=1
-	svy: mean poorPPP, over(t)
+	svy: mean poorPPP_prob, over(t)
 	test _subpop_1 = _subpop_2
 	*rm "${gsdOutput}/W1W2-comparison_raw2_.xls"
 	putexcel set "${gsdOutput}/W1W2-comparison_raw2_`r'.xls", modify
@@ -171,10 +223,10 @@ foreach r in Nomad Central-Urban Central-Rural Jubbaland-Urban Jubbaland-Rural S
 	la def lt 0 "Wave 1 - `r'" 1 "Wave 2 - `r'", replace
 	la val t lt
 	keep if ind_profile=="`r'"
-	tabout ind_profile t using "${gsdOutput}/W1W2-comparison_raw1_`r'.xls", svy sum c(mean poorPPP lb ub) sebnone f(3) h1("Poverty") npos(col) replace ptotal(none) 
+	tabout ind_profile t using "${gsdOutput}/W1W2-comparison_raw1_`r'.xls", svy sum c(mean poorPPP_prob lb ub) sebnone f(3) h1("Poverty") npos(col) replace ptotal(none) 
 
 	local i=1
-	svy: mean poorPPP
+	svy: mean poorPPP_prob
 	
 	* variables of interest
 	global vars hhsize hhh_gender hhh_age no_adults no_children tenure__* house_type__* floor__* roof__* cooking__* 
@@ -828,10 +880,11 @@ export excel using "${gsdOutput}/W1W2-comparison_v2.xlsx", sheet("Raw_Share_Cons
 *=====================================================================
 * 9 Non-monetary indicators
 *=====================================================================
+
+*Wave 2
 use "${gsdData}/1-CleanOutput/hh.dta", clear
 gen pweight=weight*hhsize
 svyset ea [pweight=pweight], strata(strata) singleunit(centered)
-
 *Literacy 
 qui tabout ind_profile using "${gsdOutput}/Prelim_Analysis_1.xls", svy sum c(mean pliteracy se lb ub) format (2c) sebnone h2(Proprtion literate in hh) replace
 *Enrolment
@@ -851,7 +904,94 @@ gen piped_water = water
 replace piped_water= 1 if inlist(water,1,2)
 replace piped_water=0 if inlist(water,3,4,5,.,.a,.b)
 qui tabout ind_profile using "${gsdOutput}/Prelim_Analysis_1.xls", svy sum c(mean piped_water se lb ub) format (2c) sebnone h2(HH has access to piped water) append
+*Floor of cement
+gen floor_cement=(floor_material==1)
+qui tabout ind_profile using "${gsdOutput}/Prelim_Analysis_1.xls", svy sum c(mean floor_cement se lb ub) format (2c) sebnone h2(HH has foor of cement) append
+*Roof of metal sheets
+gen roof_metal=(roof_material==1)
+qui tabout ind_profile using "${gsdOutput}/Prelim_Analysis_1.xls", svy sum c(mean roof_metal se lb ub) format (2c) sebnone h2(HH has roof of metal sheets) append
 
 insheet using "${gsdOutput}/Prelim_Analysis_1.xls", clear nonames tab
 export excel using "${gsdOutput}/W1W2-comparison_v2.xlsx", sheet("Raw_Multi_Deprivation") sheetmodify cell(D3) firstrow(variables)
 erase "${gsdOutput}/Prelim_Analysis_1.xls"
+
+
+*Puntland Wave 1 vs. Wave 2
+use "${gsdData}/1-CleanTemp/hh_all.dta", clear
+gen pweight=weight_cons*hhsize
+svyset ea [pweight=pweight], strata(strata) singleunit(centered)
+*Literacy 
+qui tabout t if ind_profile==2 using "${gsdOutput}/Prelim_Analysis_2.xls", svy sum c(mean pliteracy se lb ub) format (2c) sebnone h2(Proprtion literate NE Urban) replace
+qui tabout t if ind_profile==4 using "${gsdOutput}/Prelim_Analysis_2.xls", svy sum c(mean pliteracy se lb ub) format (2c) sebnone h2(Proprtion literate NE Rural) append
+svy: mean pliteracy if ind_profile==2, over(t)
+test Wave1 =Wave2
+svy: mean pliteracy if ind_profile==4, over(t)
+test Wave1 =Wave2
+
+*Enrolment
+qui tabout t if ind_profile==2 using "${gsdOutput}/Prelim_Analysis_2.xls", svy sum c(mean penrol se lb ub) format (2c) sebnone h2(Proprtion enrolled (6-17) NE Urban) append
+qui tabout t if ind_profile==4 using "${gsdOutput}/Prelim_Analysis_2.xls", svy sum c(mean penrol se lb ub) format (2c) sebnone h2(Proprtion enrolled (6-17) NE Rural) append
+svy: mean penrol if ind_profile==2, over(t)
+test Wave1 =Wave2
+svy: mean penrol if ind_profile==4, over(t)
+test Wave1 =Wave2
+
+*Household has at least one economically active member
+qui tabout t if ind_profile==2 using "${gsdOutput}/Prelim_Analysis_2.xls", svy sum c(mean lfp_7d_hh se lb ub) format (2c) sebnone h2(HH has at least one economically active member NE Urban) append
+qui tabout t if ind_profile==4 using "${gsdOutput}/Prelim_Analysis_2.xls", svy sum c(mean lfp_7d_hh se lb ub) format (2c) sebnone h2(HH has at least one economically active member NE Rural) append
+svy: mean lfp_7d_hh if ind_profile==2, over(t)
+test Wave1 =Wave2
+svy: mean lfp_7d_hh if ind_profile==4, over(t)
+test Wave1 =Wave2
+
+*Household has at least one employed member
+qui tabout t if ind_profile==2 using "${gsdOutput}/Prelim_Analysis_2.xls", svy sum c(mean emp_7d_hh se lb ub) format (2c) sebnone h2(HH has at least one employed member NE Urban) append
+qui tabout t if ind_profile==4 using "${gsdOutput}/Prelim_Analysis_2.xls", svy sum c(mean emp_7d_hh se lb ub) format (2c) sebnone h2(HH has at least one employed member NE Rural) append
+svy: mean emp_7d_hh if ind_profile==2, over(t)
+test Wave1 =Wave2
+svy: mean emp_7d_hh if ind_profile==4, over(t)
+test Wave1 =Wave2
+
+*Improved sanitation
+gen improved_sanitation=1 if inlist(toilet_type,1,1000) 
+replace improved_sanitation=1 if inlist(toilet,1,2,3,4,5) 
+replace improved_sanitation=0 if improved_sanitation==.
+qui tabout t if ind_profile==2 using "${gsdOutput}/Prelim_Analysis_2.xls", svy sum c(mean improved_sanitation se lb ub) format (2c) sebnone h2(HH has access to improved sanitation NE Urban) append
+qui tabout t if ind_profile==4 using "${gsdOutput}/Prelim_Analysis_2.xls", svy sum c(mean improved_sanitation se lb ub) format (2c) sebnone h2(HH has access to improved sanitation NE Rural) append
+svy: mean improved_sanitation if ind_profile==2, over(t)
+test Wave1 =Wave2
+svy: mean improved_sanitation if ind_profile==4, over(t)
+test Wave1 =Wave2
+
+*Improved water
+gen piped_water = water
+replace piped_water= 1 if inlist(water,1,2)
+replace piped_water=0 if inlist(water,3,4,5,.,.a,.b)
+qui tabout t if ind_profile==2 using "${gsdOutput}/Prelim_Analysis_2.xls", svy sum c(mean piped_water se lb ub) format (2c) sebnone h2(HH has access to piped water NE Urban) append
+qui tabout t if ind_profile==4 using "${gsdOutput}/Prelim_Analysis_2.xls", svy sum c(mean piped_water se lb ub) format (2c) sebnone h2(HH has access to piped water NE Rural) append
+svy: mean piped_water if ind_profile==2, over(t)
+test Wave1 =Wave2
+svy: mean piped_water if ind_profile==4, over(t)
+test Wave1 =Wave2
+
+*Floor of cement
+gen floor_cement=(floor_material==1) if !missing(floor_material)
+qui tabout t if ind_profile==2 using "${gsdOutput}/Prelim_Analysis_2.xls", svy sum c(mean floor_cement se lb ub) format (2c) sebnone h2(HH has foor of cement NE Urban) append
+qui tabout t if ind_profile==4 using "${gsdOutput}/Prelim_Analysis_2.xls", svy sum c(mean floor_cement se lb ub) format (2c) sebnone h2(HH has foor of cement NE Rural) append
+svy: mean floor_cement if ind_profile==2, over(t)
+test Wave1 =Wave2
+svy: mean floor_cement if ind_profile==4, over(t)
+test Wave1 =Wave2
+
+*Roof of metal sheets
+gen roof_metal=(roof_material==1) if !missing(roof_material)
+qui tabout t if ind_profile==2 using "${gsdOutput}/Prelim_Analysis_2.xls", svy sum c(mean roof_metal se lb ub) format (2c) sebnone h2(HH has roof of metal sheets NE Urban) append
+qui tabout t if ind_profile==4 using "${gsdOutput}/Prelim_Analysis_2.xls", svy sum c(mean roof_metal se lb ub) format (2c) sebnone h2(HH has roof of metal sheets NE Rural) append
+svy: mean roof_metal if ind_profile==2, over(t)
+test Wave1 =Wave2
+svy: mean roof_metal if ind_profile==4, over(t)
+test Wave1 =Wave2
+
+insheet using "${gsdOutput}/Prelim_Analysis_2.xls", clear nonames tab
+export excel using "${gsdOutput}/W1W2-comparison_v2.xlsx", sheet("Raw_Multi_Deprivation_W1_2") sheetmodify cell(D3) firstrow(variables)
+erase "${gsdOutput}/Prelim_Analysis_2.xls"
