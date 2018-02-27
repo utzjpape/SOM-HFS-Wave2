@@ -714,30 +714,75 @@ label define lintremitmode 1 "1st choice" 2 "2nd choice" 3 "3rd choice" 4 "4th c
 label values intremit_mode_* lremitmode
 
 * generate cleaned GPS coordinates for HH
-gen double long_x = str_loc__Longitude
-replace long_x = loc_hhid_seg1ret1__Longitude if mi(long_x)
-replace long_x = loc_list__Longitude if mi(long_x)
-replace long_x = loc_barcode__Longitude if mi(long_x)
-replace long_x = loc_retry__Longitude if mi(long_x)
-replace long_x=. if long_x<-1000
+gen double long_x = str_loc__Longitude if str_loc__Longitude>-1000
+gen gps_comment = 1 if !mi(long_x) 
+replace long_x = loc_hhid_seg1ret1__Longitude if (mi(long_x) | long_x<-1000) & loc_hhid_seg1ret1__Longitude>-1000
+replace gps_comment = 1 if !mi(long_x) & mi(gps_comment)
+replace long_x = loc_list__Longitude if (mi(long_x) | long_x<-1000) & loc_list__Longitude>-1000
+replace gps_comment = 2 if !mi(long_x) & mi(gps_comment)
+replace long_x = loc_barcode__Longitude if (mi(long_x) | long_x<-1000) & loc_barcode__Longitude>-1000
+replace gps_comment = 2 if !mi(long_x) & mi(gps_comment)
+replace long_x = loc_retry__Longitude if (mi(long_x) | long_x<-1000) & loc_retry__Longitude>-1000
+replace gps_comment = 3 if !mi(long_x) & mi(gps_comment)
 la var long_x "Longitude HH"
+la var gps_comment "GPS comment"
+la def lgps_comment 1 "Taken at household" 2 "Taken at EA" 3 "Taken after interview", replace
+la val gps_comment lgps_comment
 
-gen double lat_y = str_loc__Latitude
-replace lat_y = loc_hhid_seg1ret1__Latitude if mi(lat_y)
-replace lat_y = loc_list__Latitude if mi(lat_y)
-replace lat_y = loc_barcode__Latitude if mi(lat_y)
-replace lat_y = loc_retry__Latitude if mi(lat_y)
+gen double lat_y = str_loc__Latitude if str_loc__Latitude>-1000
+replace lat_y = loc_hhid_seg1ret1__Latitude if (mi(lat_y)| lat_y<-1000) & loc_hhid_seg1ret1__Latitude>-1000
+replace lat_y = loc_list__Latitude if (mi(lat_y)| lat_y<-1000) & loc_list__Latitude>-1000
+replace lat_y = loc_barcode__Latitude if (mi(lat_y)| lat_y<-1000) & loc_barcode__Latitude>-1000
+replace lat_y = loc_retry__Latitude if (mi(lat_y)| lat_y<-1000) & loc_retry__Latitude>-1000
 replace lat_y=. if lat_y<-1000
 la var lat_y "Latitude HH"
+
+gen double alt_z = str_loc__Altitude if str_loc__Altitude>-1000
+replace alt_z = loc_hhid_seg1ret1__Altitude if (mi(alt_z)| alt_z<-1000) & loc_hhid_seg1ret1__Altitude>-1000
+replace alt_z = loc_list__Altitude if (mi(alt_z)| alt_z<-1000) & loc_list__Altitude>-1000
+replace alt_z = loc_barcode__Altitude if (mi(alt_z)| alt_z<-1000) & loc_barcode__Altitude>-1000
+replace alt_z = loc_retry__Altitude if (mi(alt_z)| alt_z<-1000) & loc_retry__Altitude>-1000
+replace alt_z = . if alt_z<-1000
+la var alt_z "Altitude GPS"
+
+gen double acc_xy = str_loc__Accuracy if str_loc__Accuracy>-1000
+replace acc_xy = loc_hhid_seg1ret1__Accuracy if (mi(acc_xy)| acc_xy<-1000) & loc_hhid_seg1ret1__Accuracy>-1000
+replace acc_xy = loc_list__Accuracy if (mi(acc_xy)| acc_xy<-1000) & loc_list__Accuracy>-1000
+replace acc_xy = loc_barcode__Accuracy if (mi(acc_xy)| acc_xy<-1000) & loc_barcode__Accuracy>-1000
+replace acc_xy = loc_retry__Accuracy if (mi(acc_xy)| acc_xy<-1000) & loc_retry__Accuracy>-1000
+replace acc_xy = . if acc_xy<-1000
+la var acc_xy "Accuracy GPS"
 
 * Fix ID of household head
 replace hhh_id = hhh_id0 if mi(hhh_id)
 replace hhh_id=1 if hhh_id0==.
 
+save "${gsdTemp}/hh_pre_clean.dta", replace
+
+*********************************************************************
+* Export data for updated sampling frame
+*********************************************************************
+drop if type==4
+ren (id_household id_structure id_block) (hh_id str_id bl_id)
+* there is one HH in the relevant structure, so hh_id has to be 1
+drop if hh_id<0
+replace hh_id=1 if hh_id==.b
+drop if mi(n_str)
+bysort strata ea bl_id str_id: egen no_hh = mean(n_hh)
+bysort strata ea bl_id: egen no_str = mean(n_str)
+bysort strata ea: egen no_bl = mean(n_bl)
+assert no_bl==n_bl
+gen strata_id = strata
+order hh_id hhsize no_hh str_id no_str bl_id no_bl ea strata strata_id long_x lat_y alt_z acc_xy gps_comment
+keep hh_id hhsize no_hh str_id no_str bl_id no_bl ea strata strata_id long_x lat_y alt_z acc_xy gps_comment
+save "${gsdData}/0-RawOutput/hh_str_bl_ea.dta", replace
+export delim using "${gsdOutput}/hh_str_bl_ea.csv", replace 
+
 ********************************************************************
 *Drop administrative info & specify questions
 ********************************************************************
-drop today examnumber modules__1 modules__2 modules__3 modules__4 modules__5 modules__6 modules__7 modules__8 modules__9 modules__10 modules__11 modules__12 modules__13 modules__14 modules__15 treat_training 
+use "${gsdTemp}/hh_pre_clean.dta", clear
+drop acc_xy alt_z gps_comment strata_id today examnumber modules__1 modules__2 modules__3 modules__4 modules__5 modules__6 modules__7 modules__8 modules__9 modules__10 modules__11 modules__12 modules__13 modules__14 modules__15 treat_training 
 drop ea_barcode ea_barcode_check somsld ea_barcode_confirm loc_barcode__Latitude loc_barcode__Longitude loc_barcode__Accuracy loc_barcode__Altitude loc_barcode__Timestamp loc_check_barcode
 drop ea_list ea_list_confirm loc_list__Latitude loc_list__Longitude loc_list__Accuracy loc_list__Altitude loc_list__Timestamp loc_check_list 
 drop ea_barcode_int original_block original_str original_hh visit_n blid_seg1ret1 strid_seg1ret1 hhid_seg1ret1 loc_hhid_seg1ret1__Latitude loc_hhid_seg1ret1__Longitude loc_hhid_seg1ret1__Accuracy loc_hhid_seg1ret1__Altitude loc_hhid_seg1ret1__Timestamp loc_hhid_check

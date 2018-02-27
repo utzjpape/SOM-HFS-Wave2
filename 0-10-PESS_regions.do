@@ -70,7 +70,7 @@ replace ind_profile=4 if astrata==21
 replace ind_profile=3 if astrata==14 | astrata==15
 replace ind_profile=2 if astrata==12 | astrata==13 
 replace ind_profile=1 if astrata==11
-label define lind_profile 1 "Mogadishu (Urban)" 2 "North-east Urban (Nugaal,Bari,Mudug)" 3 "North-west Urban (Woqooyi G,Awdal,Sanaag,Sool,Togdheer)" 4 "North-east Rural (Bari,Mudug,Nugaal)" 5 "North-west Rural (Awdal,Sanaag,Sool,Togdheer,Woqooyi)" 6 "IDP Settlements"
+label define lind_profile 1 "Mogadishu (Urban)" 2 "North-east Urban (Nugaal,Bari,Mudug)" 3 "North-west Urban (Woqooyi G,Awdal,Sanaag,Sool,Togdheer)" 4 "North-east Rural (Bari,Mudug,Nugaal)" 5 "North-west Rural (Awdal,Sanaag,Sool,Togdheer,Woqooyi)" 6 "IDP Settlements" 7 "Central regions Urban (Hiraan, Middle Shabelle, Galgaduud)" 8 "Central regions Rural (Hiraan, Middle Shabelle, Galgaduud)" 9 "Jubbaland Urban (Gedo, lower and middle Juba)" 10 "Jubbaland Rural (Gedo, lower and middle Juba)" 11 "South West Urban (Bay, Bakool and lower Shabelle)" 12 "South West Rural (Bay, Bakool and lower Shabelle)" 13 "Nomadic population"
 label values ind_profile lind_profile
 label var ind_profile "Indicator: Mogadishu, North-East urban/rural, North-West urban/rural & IDPs"
 save "${gsdData}/1-CleanInput/SHFS2016/hh.dta", replace
@@ -78,4 +78,5 @@ use "${gsdDataRaw}/Wave_1/inflation.dta", clear
 keep gg gf 
 gen team=1
 save "${gsdData}/1-CleanInput/SHFS2016/inflation.dta", replace
-
+use "${gsdDataRaw}/Wave_1/ea_anonkey.dta", clear
+save "${gsdData}/1-CleanInput/SHFS2016/ea_anonkey.dta", replace
