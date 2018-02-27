@@ -51,7 +51,7 @@ la var floor_material "Floor material in dwelling"
 *Merge in aggregates from child files 
 *********************************************************
 * add in household member aggregates
-merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_hhm.dta", nogen assert(match) keepusing(penrol penrol_p penrol_s pgender pworking_age no_children no_adults no_old_age pliteracy hhh_gender hhh_age hhh_edu lfp_7d_hh emp_7d_hh)
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_hhm.dta", nogen assert(match) keepusing(penrol penrol_p penrol_s pgender pworking_age no_children no_adults no_old_age pliteracy hhh_gender hhh_age hhh_edu lfp_7d_hh emp_7d_hh hhh_outstate)
 
 * add in food consumption aggregates
 merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_fcons.dta", nogen assert(master match) keepusing(cons_f0 cons_f1 cons_f2 cons_f3 cons_f4)

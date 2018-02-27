@@ -244,11 +244,19 @@ gen hhh_gender = gender if ishead==1
 gen hhh_age = age if ishead==1
 replace hhh_age=. if hhh_age < 16
 gen hhh_edu = edu_level_broad if ishead==1 & !mi(hhh_age)
-*recode lfp_7d emp_7d (.=0) 
+recode lfp_7d emp_7d (missing=0) 
 * School enrollment dummy
 gen enrol = edu_status==1 if inrange(age, 6, 17)
 gen enrol_p =  edu_status==1 if inrange(age, 6, 13)
 gen enrol_s =  edu_status==1 if inrange(age, 14, 17)
+
+* Identify whether HH head was born in a different state 
+gen hhh_outstate=(birthplace_som!=region) if ishead==1 & !mi(birthplace_som)
+replace hhh_outstate=1 if born_somalia==0 & ishead==1
+replace hhh_outstate=-97 if ishead==0
+replace hhh_outstate=-99 if hhh_outstate==.
+
+
 *Apply labels
 la val hhh_gender hhm_gender
 la var hhh_gender "Gender of Household Head"
@@ -272,7 +280,7 @@ foreach var of local collapselist_min {
 
 
 * Collapse without weights since "count" command will create sum of weights in household; weights come in when merging this with hh.dta
-collapse (mean) penrol=enrol penrol_p=enrol_p penrol_s=enrol_s pgender=gender pworking_age=working_age no_children no_adults no_old_age pliteracy=literacy page_cat_broad_1=age_cat_broad_1 page_cat_broad_2=age_cat_broad_2 page_cat_broad_3=age_cat_broad_3 page_cat_broad_4=age_cat_broad_4 (count) hhsize=hhmid (min) hhh_gender hhh_age hhh_edu (max) lfp_7d_hh=lfp_7d emp_7d_hh=emp_7d, by(strata ea block hh)
+collapse (mean) penrol=enrol penrol_p=enrol_p penrol_s=enrol_s pgender=gender pworking_age=working_age no_children no_adults no_old_age pliteracy=literacy page_cat_broad_1=age_cat_broad_1 page_cat_broad_2=age_cat_broad_2 page_cat_broad_3=age_cat_broad_3 page_cat_broad_4=age_cat_broad_4 (count) hhsize=hhmid (min) hhh_gender hhh_age hhh_edu (max) lfp_7d_hh=lfp_7d emp_7d_hh=emp_7d hhh_outstate, by(strata ea block hh)
 
 replace lfp_7d_hh=0 if mi(lfp_7d_hh)
 replace emp_7d_hh=0 if mi(emp_7d_hh)
@@ -300,6 +308,12 @@ la var penrol_p "Proportion enrolled at primary school age (6,13)"
 la var penrol_s "Proportion enrolled at secondary school age (14,17)"
 la var lfp_7d_hh "Household has at least one economically active member"
 la var emp_7d_hh "Household has at least one employed member"
+la var hhh_outstate "HH head born outside current Somali region of residence"
+recode hhh_outstate (-97 -99=.)
+la def lhhh_outstate 1 "Born outisde" 0 "Born inside", replace
+la val hhh_outstate lhhh_outstate
+
+
 save "${gsdData}/1-CleanTemp/hh_hhm.dta", replace
 
 
