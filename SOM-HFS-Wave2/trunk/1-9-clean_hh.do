@@ -67,7 +67,9 @@ merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhq-poverty.dta", ass
 order tc_imp poorPPP_prob poorPPP_vulnerable_10_prob poorPPP_vulnerable_20_prob poorPPP, after(weight)
 label define lpoorPPP 0 "Non-Poor" 1 "Poor", replace
 label values poorPPP lpoorPPP
-
+* add enumeration team
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", assert(match) nogen keepusing(team)
+ren team enum_team
 
 *********************************************************
 * Generate Poverty Statistics 
