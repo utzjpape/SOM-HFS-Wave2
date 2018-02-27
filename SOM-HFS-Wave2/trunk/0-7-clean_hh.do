@@ -782,7 +782,7 @@ export delim using "${gsdOutput}/hh_str_bl_ea.csv", replace
 *Drop administrative info & specify questions
 ********************************************************************
 use "${gsdTemp}/hh_pre_clean.dta", clear
-drop acc_xy alt_z gps_comment strata_id today examnumber modules__1 modules__2 modules__3 modules__4 modules__5 modules__6 modules__7 modules__8 modules__9 modules__10 modules__11 modules__12 modules__13 modules__14 modules__15 treat_training 
+drop acc_xy alt_z gps_comment today examnumber modules__1 modules__2 modules__3 modules__4 modules__5 modules__6 modules__7 modules__8 modules__9 modules__10 modules__11 modules__12 modules__13 modules__14 modules__15 treat_training 
 drop ea_barcode ea_barcode_check somsld ea_barcode_confirm loc_barcode__Latitude loc_barcode__Longitude loc_barcode__Accuracy loc_barcode__Altitude loc_barcode__Timestamp loc_check_barcode
 drop ea_list ea_list_confirm loc_list__Latitude loc_list__Longitude loc_list__Accuracy loc_list__Altitude loc_list__Timestamp loc_check_list 
 drop ea_barcode_int original_block original_str original_hh visit_n blid_seg1ret1 strid_seg1ret1 hhid_seg1ret1 loc_hhid_seg1ret1__Latitude loc_hhid_seg1ret1__Longitude loc_hhid_seg1ret1__Accuracy loc_hhid_seg1ret1__Altitude loc_hhid_seg1ret1__Timestamp loc_hhid_check

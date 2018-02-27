@@ -67,7 +67,25 @@ replace ind_profile="Jubbaland-Rural" if strata==32 | strata==34 |  strata==35
 replace ind_profile="SouthWest-Urban" if strata==52 | strata==54 |  strata==57
 replace ind_profile="SouthWest-Rural" if strata==53 | strata==55 |  strata==56
 save "${gsdTemp}/hh_w1w2_comparison.dta", replace
-
+xx
+**Check the interquartile range for weights in Wave 1 & 2
+preserve
+drop if type_idp_host==2
+egen w1_mog=iqr(weight_adj) if t==0 & ind_profile=="Mogadishu"
+egen w1_neu=iqr(weight_adj) if t==0 & ind_profile=="NE-Urban"
+egen w1_ner=iqr(weight_adj) if t==0 & ind_profile=="NE-Rural"
+egen w1_nwu=iqr(weight_adj) if t==0 & ind_profile=="NW-Urban"
+egen w1_nwr=iqr(weight_adj) if t==0 & ind_profile=="NW-Rural"
+egen w1_idp=iqr(weight_adj) if t==0 & ind_profile=="IDP"
+egen w2_mog=iqr(weight_adj) if t==1 & ind_profile=="Mogadishu"
+egen w2_neu=iqr(weight_adj) if t==1 & ind_profile=="NE-Urban"
+egen w2_ner=iqr(weight_adj) if t==1 & ind_profile=="NE-Rural"
+egen w2_nwu=iqr(weight_adj) if t==1 & ind_profile=="NW-Urban"
+egen w2_nwr=iqr(weight_adj) if t==1& ind_profile=="NW-Rural"
+egen w2_idp=iqr(weight_adj) if t==1 & ind_profile=="IDP"
+gen x=1
+collapse (max) w1_* w2_*, by(x)
+restore
 
 *=====================================================================
 * Additional recode of variables that make sense between W1 and W2
@@ -115,13 +133,25 @@ label define lcook_comparable 1 "Wood or Gas Stove" 2 "Charcoal Stove" 3 "Other"
 label values cook_comparable lcook_comparable
 label var cook_comparable "Cooking source (Comparable W1 & W2)"
 *Improved sanitation
-
-gen imp_sanitation_comparable=1 if t==0 & inlist(toilet_type,1,1000) 
-replace imp_sanitation_comparable=1 if t==1 & inlist(toilet,1,2,3,4,5) 
-replace imp_sanitation_comparable=0 if imp_sanitation_comparable==. 
-replace imp_sanitation_comparable=. if t==0 & toilet_type>=.
-replace imp_sanitation_comparable=. if t==1 & toilet>=.
-label var imp_sanitation_comparable "HH with improve sanitation"
+gen sanitation_comparable=1 if t==0 & toilet_type==2 | toilet_type==1
+replace sanitation_comparable=1 if t==1 & inlist(toilet,1,3,6,7,8) 
+replace sanitation_comparable=0 if sanitation_comparable==.
+replace sanitation_comparable=. if t==0 & toilet_type>=. 
+replace sanitation_comparable=. if t==1 & toilet>=.
+label var sanitation_comparable "HH toilet Pit Latrine or Flush"
+/*
+gen sanitation_comparable=1 if t==0 & toilet_type==2
+replace sanitation_comparable=1 if t==1 & inlist(toilet,3,6,7,8) 
+replace sanitation_comparable=2 if t==0 & toilet_type==1
+replace sanitation_comparable=2 if t==1 & toilet==1
+replace sanitation_comparable=3 if sanitation_comparable==.
+replace sanitation_comparable=. if t==0 & toilet_type>=. 
+replace sanitation_comparable=. if t==1 & toilet>=.
+label define lsanitation_comparable 1 "Pit Latrine" 2 "Flush" 3 "Public/Open/Other"
+label values sanitation_comparable lsanitation_comparable
+label var sanitation_comparable "HH toilet (Comparable W1 & W2"
+ta sanitation_comparable, gen(sanitation_comparable_)
+*/
 *Floor material
 gen floor_comparable=1 if floor_material==1
 replace floor_comparable=2 if floor_material==2 | floor_material==3
@@ -144,7 +174,7 @@ save "${gsdTemp}/hh_w1w2_comparison.dta", replace
 * Comparison between Wave 1 and 2 for regions covered in both
 *=====================================================================
 use "${gsdTemp}/hh_w1w2_comparison.dta", clear
-*hhsize pgender hhh_age hhh_gender adult_male youth_male child_boy pworking_age n_dependent pliteracy n_literate dum_iliterate_adult_hh lfp_7d_hh emp_7d_hh house_type_comparable__* tenure_own_rent floor_comparable* roof_metal  cook_comparable1 cook_comparable2 cook_comparable3 piped_water  protected_water imp_sanitation_comparable 
+*hhsize pgender hhh_age hhh_gender adult_male youth_male child_boy pworking_age n_dependent pliteracy n_literate dum_iliterate_adult_hh lfp_7d_hh emp_7d_hh house_type_comparable__* tenure_own_rent floor_comparable* roof_metal  cook_comparable1 cook_comparable2 cook_comparable3 piped_water  protected_water sanitation_comparable
 
 * Set worksheets
 qui foreach r in Mogadishu NE-Urban NE-Rural NW-Urban NW-Rural IDP {
@@ -166,9 +196,8 @@ qui foreach r in Mogadishu NE-Urban NE-Rural NW-Urban NW-Rural IDP {
 	putexcel B`i' =`r(p)'
 	*Variables of interest
 	drop pweight
-	gen pweight=weight_adj*hhsize
-	svyset ea [pweight=pweight], strata(strata) singleunit(centered)
-	global vars hhsize pgender hhh_age hhh_gender adult_male youth_male child_boy pworking_age n_dependent pliteracy n_literate dum_iliterate_adult_hh lfp_7d_hh emp_7d_hh house_type_comparable__* tenure_own_rent floor_comparable* roof_metal  cook_comparable1 cook_comparable2 cook_comparable3 piped_water  protected_water imp_sanitation_comparable 
+	svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
+	global vars hhsize pgender hhh_age hhh_gender adult_male youth_male child_boy pworking_age n_dependent pliteracy n_literate dum_iliterate_adult_hh lfp_7d_hh emp_7d_hh house_type_comparable__* tenure_own_rent floor_comparable* roof_metal  cook_comparable1 cook_comparable2 cook_comparable3 piped_water  protected_water sanitation_comparable
 	foreach v of varlist $vars {
 		su `v'
 		local l : variable label `v'
