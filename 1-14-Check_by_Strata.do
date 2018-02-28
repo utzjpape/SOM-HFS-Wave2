@@ -67,7 +67,7 @@ replace ind_profile="Jubbaland-Rural" if strata==32 | strata==34 |  strata==35
 replace ind_profile="SouthWest-Urban" if strata==52 | strata==54 |  strata==57
 replace ind_profile="SouthWest-Rural" if strata==53 | strata==55 |  strata==56
 save "${gsdTemp}/hh_w1w2_comparison.dta", replace
-xx
+
 **Check the interquartile range for weights in Wave 1 & 2
 preserve
 drop if type_idp_host==2
