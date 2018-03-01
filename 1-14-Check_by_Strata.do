@@ -677,6 +677,64 @@ la val t lt
 gen pweight=weight_cons*hhsize
 svyset ea [pweight=pweight], strata(strata) singleunit(centered)
 
+/*
+levelsof itemid, local(items)
+foreach item of local items {
+
+
+
+
+	su own_n
+	local l : variable label item
+	tabout ind_profile t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", sum c(mean own_n) sebnone f(3) h1("`l'") npos(col) append ptotal(none) 
+
+
+
+	svy: mean own_n if itemid==`item', over(t)
+	test _subpop_1==_subpop_2
+   	local i=1
+	putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
+	putexcel A`i' = "Age"
+	putexcel B`i' =`r(p)'
+
+	
+}
+
+
+
+	local i=`i'+1
+	putexcel A`i' ="`l'"
+	putexcel B`i' =`r(p)'
+}
+import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
+ren A v1
+ren B p_value
+sort v1
+save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
+insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
+drop if v1=="ind_profile"
+drop if v1==""
+drop v4 v5 
+la var v1 "Variable of interest"
+la var v2 "Mean"
+la var v3 "Mean"
+destring v2-v3, replace
+foreach x of numlist 2/3 {
+	replace v`x'= v`x'[_n+1]
+}
+drop if v1=="NW-Urban"
+gen n = _n
+sort n
+merge 1:1 v1 using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
+sort n
+drop n
+export excel using "${gsdOutput}/W1W2-comparison_NW-Urban_v1.xlsx", sheet("Raw_5") sheetmodify cell(B3) first(varlabels)
+erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
+erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
+
+
+*/
+
 
 
 
