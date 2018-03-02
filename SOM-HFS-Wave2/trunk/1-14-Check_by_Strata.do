@@ -526,8 +526,8 @@ erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
 erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
 
 *Check average age and age distribution * 
-foreach k in 1 2 3 4 5 {
-	use "${gsdTemp}/hh_w1w2_comparison_V`k'.dta", replace
+foreach k in 1 2 3 4 {
+	use "${gsdTemp}/hh_w1w2_comparison_V`k'.dta", clear
 	* merge with hhm data set
 	merge 1:m strata ea block hh using "${gsdData}/1-CleanTemp/hhm_all.dta", nogen assert(match using) keep(match) keepusing(age literacy age_cat_narrow)
 
@@ -596,6 +596,11 @@ foreach k in 1 2 3 4 5 {
 	erase "${gsdOutput}/W1W2-comparison_raw4_NW-Urban.xls"
 }
 
+*=====================================================================
+* COMPARISON W/SLHS 2013
+*=====================================================================
+
+
 
 
 *=====================================================================
@@ -643,69 +648,86 @@ rename district district_w2
 merge m:1 strata ea block hh using "${gsdDataRaw}/Wave_1/hh_w1_district.dta", nogen keep(master match) keepusing(district)
 replace literacy=. if age<30
 svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-svy: mean literacy if district=="Hargeisa"	
-svy: mean literacy if district_w2=="Hargeysa"	
-svy: mean literacy if district=="Burco"	
-svy: mean literacy if district_w2=="Burco"	
+svy: mean literacy if district=="Hargeisa" | district=="Burco"	
+svy: mean literacy if district_w2=="Hargeysa" | district_w2=="Burco"	
 *Literacy rate by enumerator
 keep if inlist(district,"Hargeisa","Burco") | inlist(district_w2,"Burco","Hargeysa")
 graph bar literacy if t==0, over(enum, sort(1))
 graph bar literacy if t==1, over(enum, sort(1))
 
-
-*=====================================================================
-* COMPARE ASSETS 
-*=====================================================================
-use "${gsdData}/1-CleanOutput/assets.dta", clear
+*HHM separated roster for Hargeysa and Burco in W2
+use "${gsdData}/1-CleanOutput/hhm_separated.dta", clear
 gen t=1
-merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", nogen keep(match) keepusing(ind_profile weight_cons hhsize)
+merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", nogen keep(master match) keepusing(ind_profile)
 keep if ind_profile=="NW-Urban"
 merge m:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh-PESS_district.dta", nogen keep(master match) keepusing(district) 
+keep if district=="Hargeysa" | district=="Burco"	
+tab hhm_sep_reason, m
+
+*Population pyramid 2017
+use "${gsdData}/1-CleanOutput/hhm.dta", clear 
+merge m:1 strata ea block hh using "${gsdData}/1-CleanOutput/hh.dta", assert(match) keepusing(weight type ind_profile) nogen
+keep if ind_profile==3
+merge m:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh-PESS_district.dta", nogen keep(master match) keepusing(district) 
+drop if !inlist(district,"Burco","Hargeysa")
+svyset ea [pweight=weight_adj], strata(strata)
+qui tabout age_cat_narrow gender using "${gsdOutput}/Somaliland_Comparison_3.xls", svy pop c(freq se) f(3) sebnone h1(Age distribution (5-year intervals) by gender - Urban) append
+
+
+*=====================================================================
+* COMPARE ASSETS - Share of households owning each item
+*=====================================================================
+/*
+use "${gsdData}/1-CleanOutput/assets.dta", clear
+gen t=1
+merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", nogen keep(match) keepusing(ind_profile weight_cons weight_adj hhsize)
+keep if ind_profile=="NW-Urban"
+recode own_n (missing=0)
+merge m:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh-PESS_district.dta", nogen keep(master match) keepusing(district) 
 keep if district=="Hargeysa" | district=="Burco"
-keep t strata ea block hh weight_cons hhsize itemid own_n 
+keep t strata ea block hh weight_cons hhsize itemid own_n weight_adj ind_profile
 save "${gsdTemp}/assets_nwurban_w2.dta", replace
 use "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
+keep strata ea block hh itemid own_n
+reshape wide own_n, i(strata ea block hh) j(itemid)
+recode own_n* (.=0)
+reshape long own_n, i(strata ea block hh) j(itemid)
 gen t=0
-merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", nogen keep(match) keepusing(ind_profile weight_cons hhsize)
+merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", nogen keep(match using) keepusing(ind_profile weight_cons weight_adj hhsize)
 keep if ind_profile=="NW-Urban"
 merge m:1 strata ea block hh using "${gsdDataRaw}/Wave_1/hh_w1_district.dta", nogen keep(master match) keepusing(district)
 keep if district=="Hargeisa" | district=="Burco"
-keep t strata ea block hh weight_cons hhsize itemid own_n 
+keep t strata ea block hh weight_cons hhsize itemid own_n weight_adj ind_profile
 append using "${gsdTemp}/assets_nwurban_w2.dta"
 la def lt 0 "Wave 1 - NW-Urban" 1 "Wave 2 - NW-Urban", replace
 la val t lt
-gen pweight=weight_cons*hhsize
-svyset ea [pweight=pweight], strata(strata) singleunit(centered)
+svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
 
-/*
-levelsof itemid, local(items)
+tab itemid, gen(item_)
+foreach k of varlist item_* {
+local a : variable label `k'
+local a : subinstr local a "itemid==" ""
+label var `k' "`a'"
+}
+
+
+cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
+cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
+
+local i=1
+levelsof itemid, local(items) 
 foreach item of local items {
-
-
-
-
-	su own_n
-	local l : variable label item
-	tabout ind_profile t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", sum c(mean own_n) sebnone f(3) h1("`l'") npos(col) append ptotal(none) 
-
-
-
+	replace item_`item' = 0 if own_n==0
+	local l : variable label item_`item'
+	tabout ind_profile t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls" if itemid==`item', sum c(mean item_`item') sebnone f(5) h1("`l'") npos(col) append ptotal(none) 
 	svy: mean own_n if itemid==`item', over(t)
 	test _subpop_1==_subpop_2
-   	local i=1
 	putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
-	putexcel A`i' = "Age"
+	putexcel A`i' = "`l'"
 	putexcel B`i' =`r(p)'
-
-	
-}
-
-
-
 	local i=`i'+1
-	putexcel A`i' ="`l'"
-	putexcel B`i' =`r(p)'
 }
+
 import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
 ren A v1
 ren B p_value
@@ -731,20 +753,114 @@ drop n
 export excel using "${gsdOutput}/W1W2-comparison_NW-Urban_v1.xlsx", sheet("Raw_5") sheetmodify cell(B3) first(varlabels)
 erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
 erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-
-
 */
 
-
-
-
-
-
-
-
-
-
-
+*=====================================================================
+* COMPARE ASSETS - Average number of each item owned
+*=====================================================================
+use "${gsdData}/1-CleanOutput/assets.dta", clear
+*Wave 2
+gen t=1
+merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", nogen keep(match) keepusing(ind_profile weight_cons weight_adj hhsize)
+keep if ind_profile=="NW-Urban"
+merge m:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh-PESS_district.dta", nogen keep(master match) keepusing(district) 
+keep if district=="Hargeysa" | district=="Burco"
+*Include owning zero assets 
+replace own_n=0 if own==0
+keep t strata ea block hh weight_cons hhsize itemid own_n weight_adj ind_profile
+save "${gsdTemp}/assets_nwurban_w2.dta", replace
+*Wave 1 ID zeros
+use "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
+merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hh.dta"
+keep if _merge==2 | (strata==101 & ea==85 & block==11 & hh==4)
+keep strata ea block hh itemid own_n
+replace itemid=1 if itemid==.
+reshape wide own_n, i(strata ea block hh) j(itemid)
+reshape long
+drop if strata==101 & ea==85 & block==11 & hh==4
+replace own_n=0 if own_n==.
+save "${gsdTemp}/assets_nwurban_w2_noassets.dta", replace
+*Wave 1 
+use "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
+keep strata ea block hh itemid own_n
+append using "${gsdTemp}/assets_nwurban_w2_noassets.dta"
+replace own_n=0 if own_n==.
+gen t=0
+merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", nogen keep(master match) keepusing(ind_profile weight_cons weight_adj hhsize)
+keep if ind_profile=="NW-Urban" | ind_profile==""
+merge m:1 strata ea block hh using "${gsdDataRaw}/Wave_1/hh_w1_district.dta", nogen keep(master match) keepusing(district)
+keep if district=="Hargeisa" | district=="Burco"
+keep t strata ea block hh weight_cons hhsize itemid own_n weight_adj ind_profile
+append using "${gsdTemp}/assets_nwurban_w2.dta"
+la def lt 0 "Wave 1 - NW-Urban" 1 "Wave 2 - NW-Urban", replace
+la val t lt
+svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
+tab itemid, gen(item_)
+foreach k of varlist item_* {
+local a : variable label `k'
+local a : subinstr local a "itemid==" ""
+label var `k' "`a'"
+}
+drop if mi(own_n)
+cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
+cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
+preserve
+local i=1
+levelsof itemid, local(items) 
+qui foreach item of local items {
+	su own_n
+	local l : variable label item_`item'
+	tabout ind_profile t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls" if itemid==`item', svy sum c(mean own_n) sebnone f(5) h1("`l'") append ptotal(none)
+	svy: mean own_n if itemid==`item', over(t)
+	cap test _subpop_1==_subpop_2
+	putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
+	putexcel A`i' = "`l'"
+	cap putexcel B`i' =`r(p)'
+	local i=`i'+1
+}
+import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
+ren A v1
+ren B p_value
+sort v1
+save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
+insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
+drop if v1=="ind_profile"
+drop if v1==""
+replace v3="" if v4==""
+drop v4 
+la var v1 "Variable of interest"
+la var v2 "Mean"
+la var v3 "Mean"
+destring v2-v3, replace
+foreach x of numlist 2/3 {
+	replace v`x'= v`x'[_n+1]
+}
+drop if v1=="NW-Urban"
+gen n = _n
+sort n
+merge 1:1 v1 using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
+sort n
+drop n
+export excel using "${gsdOutput}/W1W2-comparison_NW-Urban_v1.xlsx", sheet("Raw_6") sheetmodify cell(B3) first(varlabels)
+erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
+erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
+restore
+*Check median values
+levelsof itemid, local(items) 
+qui foreach item of local items {
+	preserve 
+	keep if itemid==`item'
+	collapse (median) own_n [aweight=weight_adj], by(t)
+	gen itemid=`item'
+	reshape wide own_n, i(itemid) j(t)
+	save "${gsdTemp}/W1W2-comparison_assets_`item'.dta", replace
+	restore
+}
+use "${gsdTemp}/W1W2-comparison_assets_1.dta", clear
+qui forval i=2/37 {
+	append using "${gsdTemp}/W1W2-comparison_assets_`i'.dta"
+}
+export excel using "${gsdOutput}/W1W2-comparison_NW-Urban_v1.xlsx", sheet("Raw_7") sheetmodify cell(B3) first(varlabels)
 
 
 
