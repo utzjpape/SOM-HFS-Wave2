@@ -51,7 +51,7 @@ save "${gsdData}/1-CleanInput/PESS_population.dta", replace
 ********************************************************************
 *Include the files from Wave 1 into 1-CleanInput 
 ********************************************************************
-foreach dataset in "hhm" "food" "nonfood" "assets" "hhq-poverty" "food-deflator"  {
+foreach dataset in "hhm" "food" "nonfood" "assets" "hhq-poverty" "hhq-poverty_comparable_2013" "food-deflator"  {
 	use "${gsdDataRaw}/Wave_1/`dataset'.dta", clear
 	cap ren reg_pess reg_pess_old
 	cap recode reg_pess_old (1=1 "Awdal") (2=3 "Banadir") (3=4 "Bari") (4=11 "Mudug") (5=12 "Nugal") (6=13 "Sanaag") (7=16 "Sool") (8=17 "Togdheer") (9=18 "Woqooyi Galbeed"), gen(reg_pess)
@@ -80,3 +80,12 @@ gen team=1
 save "${gsdData}/1-CleanInput/SHFS2016/inflation.dta", replace
 use "${gsdDataRaw}/Wave_1/ea_anonkey.dta", clear
 save "${gsdData}/1-CleanInput/SHFS2016/ea_anonkey.dta", replace
+
+
+********************************************************************
+*Include the files from SLHS 2013 into 1-CleanInput
+********************************************************************
+foreach dataset in "hh" "hh_pre" "hhm" "food_consumption_clean" "paasche_r" "paasche_u" {
+	use "${gsdDataRaw}/SLHS2013/`dataset'.dta", clear
+	save "${gsdData}/1-CleanInput/SLHS2013/`dataset'.dta", replace
+}
