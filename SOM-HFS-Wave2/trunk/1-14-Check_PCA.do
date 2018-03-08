@@ -4,7 +4,7 @@ set more off
 set seed 23081980 
 set sortseed 11041955
 
-
+/*
 *Open combined data set
 use "${gsdData}/1-CleanTemp/hh_all.dta", clear
 gen pweight=weight_adj*hhsize
@@ -2138,7 +2138,7 @@ cap drop v1 v4
 export excel using "${gsdShared}/2-Output/W1W2-comparison_IDP_V1.xlsx", sheet("Raw_8") sheetmodify cell(b56) first(varlabels)
 erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
 erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-
+*/
 
 
 
