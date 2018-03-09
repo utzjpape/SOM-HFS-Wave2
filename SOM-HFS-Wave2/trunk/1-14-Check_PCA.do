@@ -4,7 +4,7 @@ set more off
 set seed 23081980 
 set sortseed 11041955
 
-/*
+
 *Open combined data set
 use "${gsdData}/1-CleanTemp/hh_all.dta", clear
 gen pweight=weight_adj*hhsize
@@ -348,2532 +348,455 @@ save "${gsdTemp}/hh_SLHSw1w2_comparison.dta", replace
 
 
 
-
 *=====================================================================
-* ANALYSIS FOR URBAN AREAS (WITHOUT PUNTLAND)
+* DATASET FOR PCA ANALAYSIS OF W2
 *=====================================================================
-//CREATE DATASETS FOR EACH OF THE 5 SCENARIOS 
-* Step 1: Prepare data sets
-//V1 Case: Including IDPs/Migrants + Born Outside + Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"Mogadishu","NW-Urban") & t>=0
-save "${gsdTemp}/hh_comparison_Urban_NoPL_V1.dta", replace
-
-//V2 Case: Excluding IDPs/Migrants / Including Born Outside + Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"Mogadishu","NW-Urban") & t>=0
-* Exclude IDPs
-drop if migr_idp==1
-tab t, m
-save "${gsdTemp}/hh_comparison_Urban_NoPL_V2.dta", replace
-
-//V3 Case: Excluding IDPs/Migrants + Born Outside / Including  Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"Mogadishu","NW-Urban") & t>=0
-* Exclude IDPs + Born Outside
-drop if migr_idp==1
-drop if hhh_outstate==1
-tab t, m
-save "${gsdTemp}/hh_comparison_Urban_NoPL_V3.dta", replace
-
-//V4 Case: Excluding IDPs/Migrants + Born Outside + Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"Mogadishu","NW-Urban") & t>=0
-* Excluding IDPs/Migrants + Born Outside + Not always lived in current HH
-drop if migr_idp==1
-drop if hhh_outstate==1
-keep if prop_alwayslive==1
-tab t, m
-save "${gsdTemp}/hh_comparison_Urban_NoPL_V4.dta", replace
-
-//V5 Case: Excluding IDPs/Migrants + Born Outside + Not always live there + self-reported drought shock
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"Mogadishu","NW-Urban") & t>=0
-* Excluding IDPs/Migrants + Born Outside + Not always lived in current HH + self-reported drought shock
-drop if migr_idp==1
-drop if hhh_outstate==1
-keep if prop_alwayslive==1
-drop if shocks0__1==1
-tab t, m
-save "${gsdTemp}/hh_comparison_Urban_NoPL_V5.dta", replace
-
-
-* Implement extraction of statistics
-forvalues k = 1/5 {
-	use "${gsdTemp}/hh_comparison_Urban_NoPL_V`k'.dta", clear
-	gen pweight=weight_cons*hhsize
-	svyset ea [pweight=pweight], strata(strata) singleunit(centered)
-	tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", svy sum c(mean poorPPP_prob ) sebnone f(3) h1("Poverty") npos(col) replace ptotal(none) 
-	local i=1
-	svy: mean poorPPP_prob, over(t)
-	test _subpop_1 = _subpop_2
-	cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-	putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
-	putexcel A`i' = "Poverty"
-	putexcel B`i' =`r(p)'
-
-	*Variables of interest
-	drop pweight
-	svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-	global vars hhsize pgender hhh_age hhh_gender adult_male youth_male child_boy pworking_age n_dependent pliteracy_25 n_literate dum_iliterate_adult_hh lfp_7d_hh emp_7d_hh house_type_comparable__* tenure_own_rent floor_comparable* roof_metal  cook_comparable1 cook_comparable2 cook_comparable3 piped_water  protected_water sanitation_comparable
-	foreach v of varlist $vars {
-		noisily di `v'
-		local l : variable label `v'
-		tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", svy sum c(mean `v') sebnone f(3) h1("`l'") npos(col) append ptotal(none) 
-		svy: mean `v', over(t)
-		test _subpop_1 = _subpop_2
-		local i=`i'+1
-		putexcel A`i' ="`l'"
-		putexcel B`i' =`r(p)'
-	}
-
-
-	import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-	ren A v1
-	ren (B) (p_value) 
-	gen n=_n
-	save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-	insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-	drop if v1=="t"
-	drop v3 
-    gen even = !mod(_n,2)
-    gen n=_n  
-	replace n=n-even 
-    gen n2=(n+1)/2 
-    drop n even 
-	rename (n2 v1) (n v1_old) 
-	gen v1=0 if v1_old=="Wave 1"
-	replace v1=1 if v1_old=="Wave 2"
-	drop v1_old 
- 	reshape wide v2, i(n) j(v1)
-	rename (v20 v21) (v2 v3)
-	la var v2 "Wave 1"
-	la var v3 "Wave 2"
-	merge 1:1 n using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-	drop n
-	la var v1 "Variable of interest"
-	order  v1 v2 v3
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Urban-NoPL_v1.xlsx", sheet("Raw_`k'") sheetmodify cell(B3) first(varlabels)
-	erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-}
-
-*Check average age and age distribution * 
-* Append the data first
-use "${gsdData}/1-CleanTemp/hhm_all.dta", clear
-append using "${gsdTemp}/SLSH-hhm_comparable.dta"
-la def lt 0 "Wave 1" 1 "Wave 2", replace
-la val t lt
-save "${gsdTemp}/hhm_SLw1w2.dta", replace
-
-foreach k in 1 2 3 4 5 {
-	use "${gsdTemp}/hh_comparison_Urban_NoPL_V`k'.dta", clear
-	* merge with hhm data set
-	merge 1:m strata ea block hh using "${gsdTemp}/hhm_SLw1w2.dta", nogen assert(match using) keep(match) keepusing(age literacy age_cat_narrow dependent gender)
-
-	* Variables of interest
-	cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw4_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls"
-	local i=1
-	svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-	replace literacy=. if age<30
-	global hhmvars age gender dependent literacy
-	foreach v of varlist $hhmvars {
-		local l : variable label `v'
-		tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", svy sum c(mean `v') sebnone f(3) h1("`l'") npos(col) append ptotal(none) 
-		svy: mean `v', over(t)
-		test _subpop_1 = _subpop_2
-		putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
-		local i=`i'+1
-		putexcel A`i' = "`l'"
-		putexcel B`i' =`r(p)'
-	}
-	import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-	ren A v1
-	ren (B) (p_value)
-	gen n=_n
-	save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-	insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-	drop if v1=="t"
-    drop v3
-	gen even = !mod(_n,2)
-    gen n=_n  
-	replace n=n-even 
-    gen n2=(n+1)/2 
-    drop n even 
-	rename (n2 v1) (n v1_old) 
-	gen v1=0 if v1_old=="Wave 1"
-	replace v1=1 if v1_old=="Wave 2"
-	drop v1_old 
- 	reshape wide v2, i(n) j(v1)
-	rename (v20 v21) (v2 v3)
-	la var v2 "Wave 1"
-	la var v3 "Wave 2"
-	merge 1:1 n using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-    drop n
-	la var v1 "Variable of interest"
-	order  v1 v2 v3
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Urban-NoPL_v1.xlsx", sheet("Raw_`k'_2") sheetreplace first(varlabels)
-	erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-
-	* Age distribution
-	use "${gsdTemp}/hh_comparison_Urban_NoPL_V`k'.dta", replace
-	* merge with hhm data set
-	merge 1:m strata ea block hh using "${gsdTemp}/hhm_SLw1w2.dta", nogen assert(match using) keep(match) keepusing(age literacy age_cat_narrow)
-	svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls" if t==0, svy pop c(perc lb) f(5) sebnone h2("Age Distribution, w1") npos(col) replace ptotal(none) 
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls" if t==1, svy pop c(perc lb) f(5) sebnone h2("Age Distribution, w2") npos(col) replace ptotal(none) 
-	drop if mi(literacy)
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls" if t==0, svy sum c(mean literacy lb) f(5) sebnone h2("Literacy X Age, w1")  replace ptotal(none) 
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls" if t==1, svy sum c(mean literacy lb) f(5) sebnone h2("Literacy X Age, w2")  replace ptotal(none) 
-	insheet using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1 v4 
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Urban-NoPL_v1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(D6) first(varlabels)
-	insheet using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1 v4
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Urban-NoPL_v1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(F6) first(varlabels)
-	insheet using "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Urban-NoPL_v1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(J7) first(varlabels)
-	insheet using "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Urban-NoPL_v1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(L7) first(varlabels)
-	erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls"
-}
-
 *Include the average number of each item owned
 use "${gsdData}/1-CleanOutput/assets.dta", clear
-*Wave 2
 gen t=1
 merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", nogen keep(match) keepusing(ind_profile weight_cons weight_adj hhsize)
 *Include owning zero assets 
 replace own_n=0 if own==0
-keep t strata ea block hh weight_cons hhsize itemid own_n weight_adj ind_profile
-save "${gsdTemp}/assets_nwurban_w2.dta", replace
-*Wave 1 ID zeros
-use "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
-merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hh.dta"
-keep if _merge==2 | (strata==101 & ea==85 & block==11 & hh==4)
-keep strata ea block hh itemid own_n
-replace itemid=1 if itemid==.
-reshape wide own_n, i(strata ea block hh) j(itemid)
-reshape long
-drop if strata==101 & ea==85 & block==11 & hh==4
-replace own_n=0 if own_n==.
-save "${gsdTemp}/assets_nwurban_w2_noassets.dta", replace
-*Wave 1 
-use "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
-keep strata ea block hh itemid own_n
-append using "${gsdTemp}/assets_nwurban_w2_noassets.dta"
-replace own_n=0 if own_n==.
-gen t=0
-merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", nogen keep(master match) keepusing(ind_profile weight_cons weight_adj hhsize)
-keep t strata ea block hh weight_cons hhsize itemid own_n weight_adj ind_profile
-append using "${gsdTemp}/assets_nwurban_w2.dta"
-la def lt 0 "Wave 1" 1 "Wave 2", replace
-la val t lt
-*Restrict to the relevant subsample
-merge m:1 t strata ea block hh using "${gsdTemp}/hh_comparison_Urban_NoPL_V1.dta", nogen keep(match)
-svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-tab itemid, gen(item_)
-foreach k of varlist item_* {
-local a : variable label `k'
-local a : subinstr local a "itemid==" ""
-label var `k' "`a'"
-}
-drop if mi(own_n)
-cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-preserve
-local i=1
-levelsof itemid, local(items) 
-qui foreach item of local items {
-	su own_n
-	local l : variable label item_`item'
-	tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls" if itemid==`item', svy sum c(mean own_n) sebnone f(5) h1("`l'") append ptotal(none)
-	svy: mean own_n if itemid==`item', over(t)
-	cap test _subpop_1==_subpop_2
-	putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
-	putexcel A`i' = "`l'"
-	cap putexcel B`i' =`r(p)'
-	local i=`i'+1
-}
-import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-ren A v1
-ren B p_value
-gen n=_n
-save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-drop if v1=="t"
-gen even = !mod(_n,2)
-gen n=_n  
-replace n=n-even 
-gen n2=(n+1)/2 
-drop n even 
-rename (n2 v1) (n v1_old) 
-gen v1=0 if v1_old=="Wave 1"
-replace v1=1 if v1_old=="Wave 2"
-drop v1_old 
-reshape wide v2, i(n) j(v1)
-rename (v20 v21) (v2 v3)
-la var v2 "Wave 1"
-la var v3 "Wave 2"
-merge 1:1 n using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-drop n
-la var v1 "Variable of interest"
-order  v1 v2 v3
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Urban-NoPL_v1.xlsx", sheet("Raw_6") sheetmodify cell(B3) first(varlabels)
-erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-restore
-*Check median values
-levelsof itemid, local(items) 
-qui foreach item of local items {
-	preserve 
-	keep if itemid==`item'
-	collapse (median) own_n [aweight=weight_adj], by(t)
-	gen itemid=`item'
-	reshape wide own_n, i(itemid) j(t)
-	save "${gsdTemp}/W1W2-comparison_assets_`item'.dta", replace
-	restore
-}
-use "${gsdTemp}/W1W2-comparison_assets_1.dta", clear
-qui forval i=2/37 {
-	append using "${gsdTemp}/W1W2-comparison_assets_`i'.dta"
-}
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Urban-NoPL_v1.xlsx", sheet("Raw_7") sheetmodify cell(B3) first(varlabels)
+keep strata ea block hh weight_cons hhsize itemid own_n weight_adj ind_profile
+collapse (sum) own_n , by (strata ea block hh) 
+rename own_n n_assets_owned
+save "${gsdTemp}/assets_owned_w2.dta", replace
 
-*Include information on assets sold in Wave 2
-cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-use "${gsdTemp}/hh_comparison_Urban_NoPL_V1.dta", clear
-gen pweight=weight_adj*hhsize
-svyset ea [pweight=pweight], strata(strata) singleunit(centered)
-gen sell_assets=(inlist(cop_sellassets,1,3)) if !missing(cop_sellassets)
-tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls" if t>=0, svy sum c(mean sell_assets) sebnone f(5) h1("`l'") replace ptotal(none)
-svy: mean sell_assets if t>=0, over(t)
-cap test _subpop_1==_subpop_2
-putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", replace
-putexcel A1 = "Sell_Assets"
-cap putexcel B1 =`r(p)'
-import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-ren A v1
-ren B p_value
-sort v1
-save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-gen v1="Sell_Assets"
-merge m:1 v1 using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-duplicates drop
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Urban-NoPL_v1.xlsx", sheet("Raw_7_2") sheetmodify cell(B3) first(varlabels)
-erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-
-*Population pyramid
-cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-use "${gsdTemp}/hh_comparison_Urban_NoPL_V1.dta", replace
-* merge with hhm data set
-merge 1:m strata ea block hh using "${gsdTemp}/hhm_SLw1w2.dta", nogen assert(match using) keep(match) keepusing(gender age literacy age_cat_narrow)
-svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-tabout age_cat_narrow gender using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls" if t==0, svy pop c(perc) f(5) sebnone h1("Age Distribution, w1") npos(col) replace ptotal(none) 
-tabout age_cat_narrow gender using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls" if t==1, svy pop c(perc) f(5) sebnone h1("Age Distribution, w2") npos(col) replace ptotal(none) 
-insheet using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear nonames tab
-replace v2 = v1 if v2==""
-cap drop v1 v4 
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Urban-NoPL_v1.xlsx", sheet("Raw_8") sheetmodify cell(b29) first(varlabels)
-insheet using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls", clear nonames tab
-replace v2 = v1 if v2==""
-cap drop v1 v4
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Urban-NoPL_v1.xlsx", sheet("Raw_8") sheetmodify cell(b56) first(varlabels)
-erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
+*Include assets and generate key variables for the PCA analysis
+use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
+keep if t==1
+drop roof_metal
+merge 1:1 strata ea block hh using "${gsdTemp}/assets_owned_w2.dta", nogen assert(match)
+gen tenure_own=(tenure==2) if !missing(tenure)
+gen house_type_apt=(house_type_cat==1) if !missing(house_type_cat)
+gen water_pipe=(water==1) if !missing(water)
+gen cook_charcoal=(cook==2) if !missing(cook)
+gen toilet_flush_pit=(inlist(toilet,3,7,8)) if !missing(toilet)
+gen floor_cement=(floor_material==1) if !missing(floor_material)
+gen roof_metal=(roof_material==1) if !missing(roof_material)
+gen tmarket_10orless=(tmarket<=2) if !missing(tmarket)
+gen hunger_never=(hunger==1) if !missing(hunger)
+gen lhood_salaried=(lhood==1) if !missing(lhood)
+replace pgender=round(pgender*100,1)
+replace pliteracy=round(pliteracy*100,1)
+keep strata ea block hh type ind_profile weight_adj n_assets_owned tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal tmarket_10orless hunger_never lhood_salaried street_light hhsize hhh_age pgender pliteracy assist__2 remit12m
+order strata ea block hh type ind_profile weight_adj hhsize hhh_age pgender pliteracy tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal tmarket_10orless street_light hunger_never lhood_salaried assist__2 remit12m n_assets_owned
+save "${gsdTemp}/pca_data_w2.dta", replace
 
 
 
 
 *=====================================================================
-* ANALYSIS FOR URBAN AREAS (WITH PUNTLAND)
+* ALL REGIONS: PCA ANALAYSIS OF W2
 *=====================================================================
-//CREATE DATASETS FOR EACH OF THE 5 SCENARIOS 
-* Step 1: Prepare data sets
-//V1 Case: Including IDPs/Migrants + Born Outside + Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"Mogadishu","NW-Urban","NE-Urban") & t>=0
-save "${gsdTemp}/hh_comparison_Urban_V1.dta", replace
-
-//V2 Case: Excluding IDPs/Migrants / Including Born Outside + Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"Mogadishu","NW-Urban","NE-Urban") & t>=0
-* Exclude IDPs
-drop if migr_idp==1
-tab t, m
-save "${gsdTemp}/hh_comparison_Urban_V2.dta", replace
-
-//V3 Case: Excluding IDPs/Migrants + Born Outside / Including  Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"Mogadishu","NW-Urban","NE-Urban") & t>=0
-* Exclude IDPs + Born Outside
-drop if migr_idp==1
-drop if hhh_outstate==1
-tab t, m
-save "${gsdTemp}/hh_comparison_Urban_V3.dta", replace
-
-//V4 Case: Excluding IDPs/Migrants + Born Outside + Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"Mogadishu","NW-Urban","NE-Urban") & t>=0
-* Excluding IDPs/Migrants + Born Outside + Not always lived in current HH
-drop if migr_idp==1
-drop if hhh_outstate==1
-keep if prop_alwayslive==1
-tab t, m
-save "${gsdTemp}/hh_comparison_Urban_V4.dta", replace
-
-//V5 Case: Excluding IDPs/Migrants + Born Outside + Not always live there + self-reported drought shock
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"Mogadishu","NW-Urban","NE-Urban") & t>=0
-* Excluding IDPs/Migrants + Born Outside + Not always lived in current HH + self-reported drought shock
-drop if migr_idp==1
-drop if hhh_outstate==1
-keep if prop_alwayslive==1
-drop if shocks0__1==1
-tab t, m
-save "${gsdTemp}/hh_comparison_Urban_V5.dta", replace
+* 1) All variables
+use "${gsdTemp}/pca_data_w2.dta", clear
+mca hhsize hhh_age pgender pliteracy tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal tmarket_10orless street_light hunger_never lhood_salaried assist__2 remit12m n_assets_owned 
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Central-Urban","Jubbaland-Urban","Mogadishu","NE-Urban","NW-Urban","SouthWest-Urban")),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Central-Rural","Jubbaland-Rural","NE-Rural","NW-Rural","SouthWest-Rural")),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="IDP"),  msize(small) mcolor(red)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Nomad"),  msize(small) mcolor(blue)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("All regions - All variables") legend(on order(1 "Urban" 2 "Rural" 3 "IDPs" 4 "Nomads" )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 5)) xscale(range(-5 5)) ylabel(#5) xlabel(#5)
+graph save "${gsdShared}/2-Output/PCA/Overall_All_Vars.gph", replace
 
 
-* Implement extraction of statistics
-forvalues k = 1/5 {
-	use "${gsdTemp}/hh_comparison_Urban_V`k'.dta", clear
-	gen pweight=weight_cons*hhsize
-	svyset ea [pweight=pweight], strata(strata) singleunit(centered)
-	tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", svy sum c(mean poorPPP_prob ) sebnone f(3) h1("Poverty") npos(col) replace ptotal(none) 
-	local i=1
-	svy: mean poorPPP_prob, over(t)
-	test _subpop_1 = _subpop_2
-	cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-	putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
-	putexcel A`i' = "Poverty"
-	putexcel B`i' =`r(p)'
+* 2)Household composition/characteristics
+use "${gsdTemp}/pca_data_w2.dta", clear
+mca hhsize hhh_age pgender pliteracy
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Central-Urban","Jubbaland-Urban","Mogadishu","NE-Urban","NW-Urban","SouthWest-Urban")),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Central-Rural","Jubbaland-Rural","NE-Rural","NW-Rural","SouthWest-Rural")),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="IDP"),  msize(small) mcolor(red)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Nomad"),  msize(small) mcolor(blue)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("All regions - HH Characteristics") legend(on order(1 "Urban" 2 "Rural" 3 "IDPs" 4 "Nomads" )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 10)) xscale(range(-5 5)) ylabel(#5) xlabel(#5)
+graph save "${gsdShared}/2-Output/PCA/Overall_HH.gph", replace
 
-	*Variables of interest
-	drop pweight
-	svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-	global vars hhsize pgender hhh_age hhh_gender adult_male youth_male child_boy pworking_age n_dependent pliteracy_25 n_literate dum_iliterate_adult_hh lfp_7d_hh emp_7d_hh house_type_comparable__* tenure_own_rent floor_comparable* roof_metal  cook_comparable1 cook_comparable2 cook_comparable3 piped_water  protected_water sanitation_comparable
-	foreach v of varlist $vars {
-		noisily di `v'
-		local l : variable label `v'
-		tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", svy sum c(mean `v') sebnone f(3) h1("`l'") npos(col) append ptotal(none) 
-		svy: mean `v', over(t)
-		test _subpop_1 = _subpop_2
-		local i=`i'+1
-		putexcel A`i' ="`l'"
-		putexcel B`i' =`r(p)'
-	}
+* 3) Dwelling characteristics
+use "${gsdTemp}/pca_data_w2.dta", clear
+mca tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal tmarket_10orless street_light
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Central-Urban","Jubbaland-Urban","Mogadishu","NE-Urban","NW-Urban","SouthWest-Urban")),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Central-Rural","Jubbaland-Rural","NE-Rural","NW-Rural","SouthWest-Rural")),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="IDP"),  msize(small) mcolor(red)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Nomad"),  msize(small) mcolor(blue)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("All regions - Dwelling Characteristics") legend(on order(1 "Urban" 2 "Rural" 3 "IDPs" 4 "Nomads" )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 10)) xscale(range(-5 5)) ylabel(#5) xlabel(#5)
+graph save "${gsdShared}/2-Output/PCA/Overall_Dwelling.gph", replace
 
-
-	import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-	ren A v1
-	ren (B) (p_value) 
-	gen n=_n
-	save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-	insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-	drop if v1=="t"
-	drop v3 
-    gen even = !mod(_n,2)
-    gen n=_n  
-	replace n=n-even 
-    gen n2=(n+1)/2 
-    drop n even 
-	rename (n2 v1) (n v1_old) 
-	gen v1=0 if v1_old=="Wave 1"
-	replace v1=1 if v1_old=="Wave 2"
-	drop v1_old 
- 	reshape wide v2, i(n) j(v1)
-	rename (v20 v21) (v2 v3)
-	la var v2 "Wave 1"
-	la var v3 "Wave 2"
-	merge 1:1 n using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-	drop n
-	la var v1 "Variable of interest"
-	order  v1 v2 v3
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Urban_v1.xlsx", sheet("Raw_`k'") sheetmodify cell(B3) first(varlabels)
-	erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-}
-
-*Check average age and age distribution * 
-* Append the data first
-use "${gsdData}/1-CleanTemp/hhm_all.dta", clear
-append using "${gsdTemp}/SLSH-hhm_comparable.dta"
-la def lt 0 "Wave 1" 1 "Wave 2", replace
-la val t lt
-save "${gsdTemp}/hhm_SLw1w2.dta", replace
-
-foreach k in 1 2 3 4 5 {
-	use "${gsdTemp}/hh_comparison_Urban_V`k'.dta", clear
-	* merge with hhm data set
-	merge 1:m strata ea block hh using "${gsdTemp}/hhm_SLw1w2.dta", nogen assert(match using) keep(match) keepusing(age literacy age_cat_narrow dependent gender)
-
-	* Variables of interest
-	cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw4_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls"
-	local i=1
-	svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-	replace literacy=. if age<30
-	global hhmvars age gender dependent literacy
-	foreach v of varlist $hhmvars {
-		local l : variable label `v'
-		tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", svy sum c(mean `v') sebnone f(3) h1("`l'") npos(col) append ptotal(none) 
-		svy: mean `v', over(t)
-		test _subpop_1 = _subpop_2
-		putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
-		local i=`i'+1
-		putexcel A`i' = "`l'"
-		putexcel B`i' =`r(p)'
-	}
-	import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-	ren A v1
-	ren (B) (p_value)
-	gen n=_n
-	save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-	insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-	drop if v1=="t"
-    drop v3
-	gen even = !mod(_n,2)
-    gen n=_n  
-	replace n=n-even 
-    gen n2=(n+1)/2 
-    drop n even 
-	rename (n2 v1) (n v1_old) 
-	gen v1=0 if v1_old=="Wave 1"
-	replace v1=1 if v1_old=="Wave 2"
-	drop v1_old 
- 	reshape wide v2, i(n) j(v1)
-	rename (v20 v21) (v2 v3)
-	la var v2 "Wave 1"
-	la var v3 "Wave 2"
-	merge 1:1 n using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-    drop n
-	la var v1 "Variable of interest"
-	order  v1 v2 v3
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Urban_v1.xlsx", sheet("Raw_`k'_2") sheetreplace first(varlabels)
-	erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-
-	* Age distribution
-	use "${gsdTemp}/hh_comparison_Urban_V`k'.dta", replace
-	* merge with hhm data set
-	merge 1:m strata ea block hh using "${gsdTemp}/hhm_SLw1w2.dta", nogen assert(match using) keep(match) keepusing(age literacy age_cat_narrow)
-	svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls" if t==0, svy pop c(perc lb) f(5) sebnone h2("Age Distribution, w1") npos(col) replace ptotal(none) 
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls" if t==1, svy pop c(perc lb) f(5) sebnone h2("Age Distribution, w2") npos(col) replace ptotal(none) 
-	drop if mi(literacy)
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls" if t==0, svy sum c(mean literacy lb) f(5) sebnone h2("Literacy X Age, w1")  replace ptotal(none) 
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls" if t==1, svy sum c(mean literacy lb) f(5) sebnone h2("Literacy X Age, w2")  replace ptotal(none) 
-	insheet using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1 v4 
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Urban_v1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(D6) first(varlabels)
-	insheet using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1 v4
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Urban_v1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(F6) first(varlabels)
-	insheet using "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Urban_v1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(J7) first(varlabels)
-	insheet using "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Urban_v1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(L7) first(varlabels)
-	erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls"
-}
-
-*Include the average number of each item owned
-use "${gsdData}/1-CleanOutput/assets.dta", clear
-*Wave 2
-gen t=1
-merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", nogen keep(match) keepusing(ind_profile weight_cons weight_adj hhsize)
-*Include owning zero assets 
-replace own_n=0 if own==0
-keep t strata ea block hh weight_cons hhsize itemid own_n weight_adj ind_profile
-save "${gsdTemp}/assets_nwurban_w2.dta", replace
-*Wave 1 ID zeros
-use "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
-merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hh.dta"
-keep if _merge==2 | (strata==101 & ea==85 & block==11 & hh==4)
-keep strata ea block hh itemid own_n
-replace itemid=1 if itemid==.
-reshape wide own_n, i(strata ea block hh) j(itemid)
-reshape long
-drop if strata==101 & ea==85 & block==11 & hh==4
-replace own_n=0 if own_n==.
-save "${gsdTemp}/assets_nwurban_w2_noassets.dta", replace
-*Wave 1 
-use "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
-keep strata ea block hh itemid own_n
-append using "${gsdTemp}/assets_nwurban_w2_noassets.dta"
-replace own_n=0 if own_n==.
-gen t=0
-merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", nogen keep(master match) keepusing(ind_profile weight_cons weight_adj hhsize)
-keep t strata ea block hh weight_cons hhsize itemid own_n weight_adj ind_profile
-append using "${gsdTemp}/assets_nwurban_w2.dta"
-la def lt 0 "Wave 1" 1 "Wave 2", replace
-la val t lt
-*Restrict to the relevant subsample
-merge m:1 t strata ea block hh using "${gsdTemp}/hh_comparison_Urban_V1.dta", nogen keep(match)
-svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-tab itemid, gen(item_)
-foreach k of varlist item_* {
-local a : variable label `k'
-local a : subinstr local a "itemid==" ""
-label var `k' "`a'"
-}
-drop if mi(own_n)
-cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-preserve
-local i=1
-levelsof itemid, local(items) 
-qui foreach item of local items {
-	su own_n
-	local l : variable label item_`item'
-	tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls" if itemid==`item', svy sum c(mean own_n) sebnone f(5) h1("`l'") append ptotal(none)
-	svy: mean own_n if itemid==`item', over(t)
-	cap test _subpop_1==_subpop_2
-	putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
-	putexcel A`i' = "`l'"
-	cap putexcel B`i' =`r(p)'
-	local i=`i'+1
-}
-import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-ren A v1
-ren B p_value
-gen n=_n
-save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-drop if v1=="t"
-gen even = !mod(_n,2)
-gen n=_n  
-replace n=n-even 
-gen n2=(n+1)/2 
-drop n even 
-rename (n2 v1) (n v1_old) 
-gen v1=0 if v1_old=="Wave 1"
-replace v1=1 if v1_old=="Wave 2"
-drop v1_old 
-reshape wide v2, i(n) j(v1)
-rename (v20 v21) (v2 v3)
-la var v2 "Wave 1"
-la var v3 "Wave 2"
-merge 1:1 n using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-drop n
-la var v1 "Variable of interest"
-order  v1 v2 v3
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Urban_v1.xlsx", sheet("Raw_6") sheetmodify cell(B3) first(varlabels)
-erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-restore
-*Check median values
-levelsof itemid, local(items) 
-qui foreach item of local items {
-	preserve 
-	keep if itemid==`item'
-	collapse (median) own_n [aweight=weight_adj], by(t)
-	gen itemid=`item'
-	reshape wide own_n, i(itemid) j(t)
-	save "${gsdTemp}/W1W2-comparison_assets_`item'.dta", replace
-	restore
-}
-use "${gsdTemp}/W1W2-comparison_assets_1.dta", clear
-qui forval i=2/37 {
-	append using "${gsdTemp}/W1W2-comparison_assets_`i'.dta"
-}
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Urban_v1.xlsx", sheet("Raw_7") sheetmodify cell(B3) first(varlabels)
-
-*Include information on assets sold in Wave 2
-cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-use "${gsdTemp}/hh_comparison_Urban_V1.dta", clear
-gen pweight=weight_adj*hhsize
-svyset ea [pweight=pweight], strata(strata) singleunit(centered)
-gen sell_assets=(inlist(cop_sellassets,1,3)) if !missing(cop_sellassets)
-tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls" if t>=0, svy sum c(mean sell_assets) sebnone f(5) h1("`l'") replace ptotal(none)
-svy: mean sell_assets if t>=0, over(t)
-cap test _subpop_1==_subpop_2
-putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", replace
-putexcel A1 = "Sell_Assets"
-cap putexcel B1 =`r(p)'
-import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-ren A v1
-ren B p_value
-sort v1
-save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-gen v1="Sell_Assets"
-merge m:1 v1 using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-duplicates drop
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Urban_v1.xlsx", sheet("Raw_7_2") sheetmodify cell(B3) first(varlabels)
-erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-
-*Population pyramid
-cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-use "${gsdTemp}/hh_comparison_Urban_V1.dta", replace
-* merge with hhm data set
-merge 1:m strata ea block hh using "${gsdTemp}/hhm_SLw1w2.dta", nogen assert(match using) keep(match) keepusing(gender age literacy age_cat_narrow)
-svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-tabout age_cat_narrow gender using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls" if t==0, svy pop c(perc) f(5) sebnone h1("Age Distribution, w1") npos(col) replace ptotal(none) 
-tabout age_cat_narrow gender using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls" if t==1, svy pop c(perc) f(5) sebnone h1("Age Distribution, w2") npos(col) replace ptotal(none) 
-insheet using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear nonames tab
-replace v2 = v1 if v2==""
-cap drop v1 v4 
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Urban_v1.xlsx", sheet("Raw_8") sheetmodify cell(b29) first(varlabels)
-insheet using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls", clear nonames tab
-replace v2 = v1 if v2==""
-cap drop v1 v4
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Urban_v1.xlsx", sheet("Raw_8") sheetmodify cell(b56) first(varlabels)
-erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-
+* 4) Income, assets and hunger 
+use "${gsdTemp}/pca_data_w2.dta", clear
+mca hunger_never lhood_salaried assist__2 remit12m n_assets_owned
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Central-Urban","Jubbaland-Urban","Mogadishu","NE-Urban","NW-Urban","SouthWest-Urban")),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Central-Rural","Jubbaland-Rural","NE-Rural","NW-Rural","SouthWest-Rural")),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="IDP"),  msize(small) mcolor(red)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Nomad"),  msize(small) mcolor(blue)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("All regions - Income/Hunger") legend(on order(1 "Urban" 2 "Rural" 3 "IDPs" 4 "Nomads" )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 10)) xscale(range(-5 5)) ylabel(#5) xlabel(#5)
+graph save "${gsdShared}/2-Output/PCA/Overall_Income.gph", replace
 
 
 
 
 
 *=====================================================================
-* ANALYSIS FOR RURAL AREAS (WITHOUT PUNTLAND)
+* ALL REGIONS (WITHOUT JUBBALAND AND PUNTLAND): PCA ANALAYSIS OF W2
 *=====================================================================
-//CREATE DATASETS FOR EACH OF THE 5 SCENARIOS 
-* Step 1: Prepare data sets
-//V1 Case: Including IDPs/Migrants + Born Outside + Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"NW-Rural") & t>=0
-save "${gsdTemp}/hh_comparison_Rural_NoPL_V1.dta", replace
-
-//V2 Case: Excluding IDPs/Migrants / Including Born Outside + Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"NW-Rural") & t>=0
-* Exclude IDPs
-drop if migr_idp==1
-tab t, m
-save "${gsdTemp}/hh_comparison_Rural_NoPL_V2.dta", replace
-
-//V3 Case: Excluding IDPs/Migrants + Born Outside / Including  Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"NW-Rural") & t>=0
-* Exclude IDPs + Born Outside
-drop if migr_idp==1
-drop if hhh_outstate==1
-tab t, m
-save "${gsdTemp}/hh_comparison_Rural_NoPL_V3.dta", replace
-
-//V4 Case: Excluding IDPs/Migrants + Born Outside + Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"NW-Rural") & t>=0
-* Excluding IDPs/Migrants + Born Outside + Not always lived in current HH
-drop if migr_idp==1
-drop if hhh_outstate==1
-keep if prop_alwayslive==1
-tab t, m
-save "${gsdTemp}/hh_comparison_Rural_NoPL_V4.dta", replace
-
-//V5 Case: Excluding IDPs/Migrants + Born Outside + Not always live there + self-reported drought shock
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"NW-Rural") & t>=0
-* Excluding IDPs/Migrants + Born Outside + Not always lived in current HH + self-reported drought shock
-drop if migr_idp==1
-drop if hhh_outstate==1
-keep if prop_alwayslive==1
-drop if shocks0__1==1
-tab t, m
-save "${gsdTemp}/hh_comparison_Rural_NoPL_V5.dta", replace
+* 1) All variables
+use "${gsdTemp}/pca_data_w2.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+mca hhsize hhh_age pgender pliteracy tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal tmarket_10orless street_light hunger_never lhood_salaried assist__2 remit12m n_assets_owned 
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Central-Urban","Jubbaland-Urban","Mogadishu","NE-Urban","NW-Urban","SouthWest-Urban")),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Central-Rural","Jubbaland-Rural","NE-Rural","NW-Rural","SouthWest-Rural")),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="IDP"),  msize(small) mcolor(red)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Nomad"),  msize(small) mcolor(blue)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("All regions (w/o Jubbaland & Puntland) - All variables") legend(on order(1 "Urban" 2 "Rural" 3 "IDPs" 4 "Nomads" )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 5)) xscale(range(-5 5)) ylabel(#5) xlabel(#5)
+graph save "${gsdShared}/2-Output/PCA/Overall_No-JB-PL_All_Vars.gph", replace
 
 
-* Implement extraction of statistics
-forvalues k = 1/5 {
-	use "${gsdTemp}/hh_comparison_Rural_NoPL_V`k'.dta", clear
-	gen pweight=weight_cons*hhsize
-	svyset ea [pweight=pweight], strata(strata) singleunit(centered)
-	tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", svy sum c(mean poorPPP_prob ) sebnone f(3) h1("Poverty") npos(col) replace ptotal(none) 
-	local i=1
-	svy: mean poorPPP_prob, over(t)
-	test _subpop_1 = _subpop_2
-	cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-	putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
-	putexcel A`i' = "Poverty"
-	putexcel B`i' =`r(p)'
+* 2)Household composition/characteristics
+use "${gsdTemp}/pca_data_w2.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+mca hhsize hhh_age pgender pliteracy
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Central-Urban","Jubbaland-Urban","Mogadishu","NE-Urban","NW-Urban","SouthWest-Urban")),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Central-Rural","Jubbaland-Rural","NE-Rural","NW-Rural","SouthWest-Rural")),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="IDP"),  msize(small) mcolor(red)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Nomad"),  msize(small) mcolor(blue)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("All regions (w/o Jubbaland & Puntland) - HH Characteristics") legend(on order(1 "Urban" 2 "Rural" 3 "IDPs" 4 "Nomads" )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 10)) xscale(range(-5 5)) ylabel(#5) xlabel(#5)
+graph save "${gsdShared}/2-Output/PCA/Overall_No-JB-PL_HH.gph", replace
 
-	*Variables of interest
-	drop pweight
-	svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-	global vars hhsize pgender hhh_age hhh_gender adult_male youth_male child_boy pworking_age n_dependent pliteracy_25 n_literate dum_iliterate_adult_hh lfp_7d_hh emp_7d_hh house_type_comparable__* tenure_own_rent floor_comparable* roof_metal  cook_comparable1 cook_comparable2 cook_comparable3 piped_water  protected_water sanitation_comparable
-	foreach v of varlist $vars {
-		noisily di `v'
-		local l : variable label `v'
-		tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", svy sum c(mean `v') sebnone f(3) h1("`l'") npos(col) append ptotal(none) 
-		svy: mean `v', over(t)
-		test _subpop_1 = _subpop_2
-		local i=`i'+1
-		putexcel A`i' ="`l'"
-		putexcel B`i' =`r(p)'
-	}
+* 3) Dwelling characteristics
+use "${gsdTemp}/pca_data_w2.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+mca tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal tmarket_10orless street_light
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Central-Urban","Jubbaland-Urban","Mogadishu","NE-Urban","NW-Urban","SouthWest-Urban")),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Central-Rural","Jubbaland-Rural","NE-Rural","NW-Rural","SouthWest-Rural")),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="IDP"),  msize(small) mcolor(red)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Nomad"),  msize(small) mcolor(blue)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("All regions (w/o Jubbaland & Puntland) - Dwelling Characteristics") legend(on order(1 "Urban" 2 "Rural" 3 "IDPs" 4 "Nomads" )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-5 5)) ylabel(#5) xlabel(#5)
+graph save "${gsdShared}/2-Output/PCA/Overall_No-JB-PL_Dwelling.gph", replace
 
-
-	import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-	ren A v1
-	ren (B) (p_value) 
-	gen n=_n
-	save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-	insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-	drop if v1=="t"
-	drop v3 
-    gen even = !mod(_n,2)
-    gen n=_n  
-	replace n=n-even 
-    gen n2=(n+1)/2 
-    drop n even 
-	rename (n2 v1) (n v1_old) 
-	gen v1=0 if v1_old=="Wave 1"
-	replace v1=1 if v1_old=="Wave 2"
-	drop v1_old 
- 	reshape wide v2, i(n) j(v1)
-	rename (v20 v21) (v2 v3)
-	la var v2 "Wave 1"
-	la var v3 "Wave 2"
-	merge 1:1 n using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-	drop n
-	la var v1 "Variable of interest"
-	order  v1 v2 v3
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Rural-NoPL_v1.xlsx", sheet("Raw_`k'") sheetmodify cell(B3) first(varlabels)
-	erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-}
-
-*Check average age and age distribution * 
-* Append the data first
-use "${gsdData}/1-CleanTemp/hhm_all.dta", clear
-append using "${gsdTemp}/SLSH-hhm_comparable.dta"
-la def lt 0 "Wave 1" 1 "Wave 2", replace
-la val t lt
-save "${gsdTemp}/hhm_SLw1w2.dta", replace
-
-foreach k in 1 2 3 4 5 {
-	use "${gsdTemp}/hh_comparison_Rural_NoPL_V`k'.dta", clear
-	* merge with hhm data set
-	merge 1:m strata ea block hh using "${gsdTemp}/hhm_SLw1w2.dta", nogen assert(match using) keep(match) keepusing(age literacy age_cat_narrow dependent gender)
-
-	* Variables of interest
-	cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw4_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls"
-	local i=1
-	svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-	replace literacy=. if age<30
-	global hhmvars age gender dependent literacy
-	foreach v of varlist $hhmvars {
-		local l : variable label `v'
-		tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", svy sum c(mean `v') sebnone f(3) h1("`l'") npos(col) append ptotal(none) 
-		svy: mean `v', over(t)
-		test _subpop_1 = _subpop_2
-		putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
-		local i=`i'+1
-		putexcel A`i' = "`l'"
-		putexcel B`i' =`r(p)'
-	}
-	import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-	ren A v1
-	ren (B) (p_value)
-	gen n=_n
-	save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-	insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-	drop if v1=="t"
-    drop v3
-	gen even = !mod(_n,2)
-    gen n=_n  
-	replace n=n-even 
-    gen n2=(n+1)/2 
-    drop n even 
-	rename (n2 v1) (n v1_old) 
-	gen v1=0 if v1_old=="Wave 1"
-	replace v1=1 if v1_old=="Wave 2"
-	drop v1_old 
- 	reshape wide v2, i(n) j(v1)
-	rename (v20 v21) (v2 v3)
-	la var v2 "Wave 1"
-	la var v3 "Wave 2"
-	merge 1:1 n using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-    drop n
-	la var v1 "Variable of interest"
-	order  v1 v2 v3
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Rural-NoPL_v1.xlsx", sheet("Raw_`k'_2") sheetreplace first(varlabels)
-	erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-
-	* Age distribution
-	use "${gsdTemp}/hh_comparison_Rural_NoPL_V`k'.dta", replace
-	* merge with hhm data set
-	merge 1:m strata ea block hh using "${gsdTemp}/hhm_SLw1w2.dta", nogen assert(match using) keep(match) keepusing(age literacy age_cat_narrow)
-	svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls" if t==0, svy pop c(perc lb) f(5) sebnone h2("Age Distribution, w1") npos(col) replace ptotal(none) 
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls" if t==1, svy pop c(perc lb) f(5) sebnone h2("Age Distribution, w2") npos(col) replace ptotal(none) 
-	drop if mi(literacy)
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls" if t==0, svy sum c(mean literacy lb) f(5) sebnone h2("Literacy X Age, w1")  replace ptotal(none) 
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls" if t==1, svy sum c(mean literacy lb) f(5) sebnone h2("Literacy X Age, w2")  replace ptotal(none) 
-	insheet using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1 v4 
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Rural-NoPL_v1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(D6) first(varlabels)
-	insheet using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1 v4
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Rural-NoPL_v1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(F6) first(varlabels)
-	insheet using "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Rural-NoPL_v1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(J7) first(varlabels)
-	insheet using "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Rural-NoPL_v1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(L7) first(varlabels)
-	erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls"
-}
-
-*Include the average number of each item owned
-use "${gsdData}/1-CleanOutput/assets.dta", clear
-*Wave 2
-gen t=1
-merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", nogen keep(match) keepusing(ind_profile weight_cons weight_adj hhsize)
-*Include owning zero assets 
-replace own_n=0 if own==0
-keep t strata ea block hh weight_cons hhsize itemid own_n weight_adj ind_profile
-save "${gsdTemp}/assets_nwurban_w2.dta", replace
-*Wave 1 ID zeros
-use "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
-merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hh.dta"
-keep if _merge==2 | (strata==101 & ea==85 & block==11 & hh==4)
-keep strata ea block hh itemid own_n
-replace itemid=1 if itemid==.
-reshape wide own_n, i(strata ea block hh) j(itemid)
-reshape long
-drop if strata==101 & ea==85 & block==11 & hh==4
-replace own_n=0 if own_n==.
-save "${gsdTemp}/assets_nwurban_w2_noassets.dta", replace
-*Wave 1 
-use "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
-keep strata ea block hh itemid own_n
-append using "${gsdTemp}/assets_nwurban_w2_noassets.dta"
-replace own_n=0 if own_n==.
-gen t=0
-merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", nogen keep(master match) keepusing(ind_profile weight_cons weight_adj hhsize)
-keep t strata ea block hh weight_cons hhsize itemid own_n weight_adj ind_profile
-append using "${gsdTemp}/assets_nwurban_w2.dta"
-la def lt 0 "Wave 1" 1 "Wave 2", replace
-la val t lt
-*Restrict to the relevant subsample
-merge m:1 t strata ea block hh using "${gsdTemp}/hh_comparison_Rural_NoPL_V1.dta", nogen keep(match)
-svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-tab itemid, gen(item_)
-foreach k of varlist item_* {
-local a : variable label `k'
-local a : subinstr local a "itemid==" ""
-label var `k' "`a'"
-}
-drop if mi(own_n)
-cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-preserve
-local i=1
-levelsof itemid, local(items) 
-qui foreach item of local items {
-	su own_n
-	local l : variable label item_`item'
-	tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls" if itemid==`item', svy sum c(mean own_n) sebnone f(5) h1("`l'") append ptotal(none)
-	svy: mean own_n if itemid==`item', over(t)
-	cap test _subpop_1==_subpop_2
-	putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
-	putexcel A`i' = "`l'"
-	cap putexcel B`i' =`r(p)'
-	local i=`i'+1
-}
-import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-ren A v1
-ren B p_value
-gen n=_n
-save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-drop if v1=="t"
-gen even = !mod(_n,2)
-gen n=_n  
-replace n=n-even 
-gen n2=(n+1)/2 
-drop n even 
-rename (n2 v1) (n v1_old) 
-gen v1=0 if v1_old=="Wave 1"
-replace v1=1 if v1_old=="Wave 2"
-drop v1_old 
-reshape wide v2, i(n) j(v1)
-rename (v20 v21) (v2 v3)
-la var v2 "Wave 1"
-la var v3 "Wave 2"
-merge 1:1 n using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-drop n
-la var v1 "Variable of interest"
-order  v1 v2 v3
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Rural-NoPL_v1.xlsx", sheet("Raw_6") sheetmodify cell(B3) first(varlabels)
-erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-restore
-*Check median values
-levelsof itemid, local(items) 
-qui foreach item of local items {
-	preserve 
-	keep if itemid==`item'
-	collapse (median) own_n [aweight=weight_adj], by(t)
-	gen itemid=`item'
-	reshape wide own_n, i(itemid) j(t)
-	save "${gsdTemp}/W1W2-comparison_assets_`item'.dta", replace
-	restore
-}
-use "${gsdTemp}/W1W2-comparison_assets_1.dta", clear
-qui forval i=2/37 {
-	append using "${gsdTemp}/W1W2-comparison_assets_`i'.dta"
-}
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Rural-NoPL_v1.xlsx", sheet("Raw_7") sheetmodify cell(B3) first(varlabels)
-
-*Include information on assets sold in Wave 2
-cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-use "${gsdTemp}/hh_comparison_Rural_NoPL_V1.dta", clear
-gen pweight=weight_adj*hhsize
-svyset ea [pweight=pweight], strata(strata) singleunit(centered)
-gen sell_assets=(inlist(cop_sellassets,1,3)) if !missing(cop_sellassets)
-tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls" if t>=0, svy sum c(mean sell_assets) sebnone f(5) h1("`l'") replace ptotal(none)
-svy: mean sell_assets if t>=0, over(t)
-cap test _subpop_1==_subpop_2
-putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", replace
-putexcel A1 = "Sell_Assets"
-cap putexcel B1 =`r(p)'
-import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-ren A v1
-ren B p_value
-sort v1
-save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-gen v1="Sell_Assets"
-merge m:1 v1 using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-duplicates drop
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Rural-NoPL_v1.xlsx", sheet("Raw_7_2") sheetmodify cell(B3) first(varlabels)
-erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-
-*Population pyramid
-cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-use "${gsdTemp}/hh_comparison_Rural_NoPL_V1.dta", replace
-* merge with hhm data set
-merge 1:m strata ea block hh using "${gsdTemp}/hhm_SLw1w2.dta", nogen assert(match using) keep(match) keepusing(gender age literacy age_cat_narrow)
-svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-tabout age_cat_narrow gender using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls" if t==0, svy pop c(perc) f(5) sebnone h1("Age Distribution, w1") npos(col) replace ptotal(none) 
-tabout age_cat_narrow gender using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls" if t==1, svy pop c(perc) f(5) sebnone h1("Age Distribution, w2") npos(col) replace ptotal(none) 
-insheet using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear nonames tab
-replace v2 = v1 if v2==""
-cap drop v1 v4 
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Rural-NoPL_v1.xlsx", sheet("Raw_8") sheetmodify cell(b29) first(varlabels)
-insheet using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls", clear nonames tab
-replace v2 = v1 if v2==""
-cap drop v1 v4
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Rural-NoPL_v1.xlsx", sheet("Raw_8") sheetmodify cell(b56) first(varlabels)
-erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-
+* 4) Income, assets and hunger 
+use "${gsdTemp}/pca_data_w2.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+mca hunger_never lhood_salaried assist__2 remit12m n_assets_owned
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Central-Urban","Jubbaland-Urban","Mogadishu","NE-Urban","NW-Urban","SouthWest-Urban")),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Central-Rural","Jubbaland-Rural","NE-Rural","NW-Rural","SouthWest-Rural")),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="IDP"),  msize(small) mcolor(red)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Nomad"),  msize(small) mcolor(blue)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("All regions (w/o Jubbaland & Puntland) - Income/Hunger") legend(on order(1 "Urban" 2 "Rural" 3 "IDPs" 4 "Nomads" )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 10)) xscale(range(-5 5)) ylabel(#5) xlabel(#5)
+graph save "${gsdShared}/2-Output/PCA/Overall_No-JB-PL_Income.gph", replace
 
 
 
 
 *=====================================================================
-* ANALYSIS FOR RURAL AREAS (WITH PUNTLAND)
+* URBAN AREAS: PCA ANALAYSIS OF W2
 *=====================================================================
-//CREATE DATASETS FOR EACH OF THE 5 SCENARIOS 
-* Step 1: Prepare data sets
-//V1 Case: Including IDPs/Migrants + Born Outside + Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"NW-Rural","NE-Rural") & t>=0
-save "${gsdTemp}/hh_comparison_Rural_V1.dta", replace
-
-//V2 Case: Excluding IDPs/Migrants / Including Born Outside + Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"NW-Rural","NE-Rural") & t>=0
-* Exclude IDPs
-drop if migr_idp==1
-tab t, m
-save "${gsdTemp}/hh_comparison_Rural_V2.dta", replace
-
-//V3 Case: Excluding IDPs/Migrants + Born Outside / Including  Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"NW-Rural","NE-Rural") & t>=0
-* Exclude IDPs + Born Outside
-drop if migr_idp==1
-drop if hhh_outstate==1
-tab t, m
-save "${gsdTemp}/hh_comparison_Rural_V3.dta", replace
-
-//V4 Case: Excluding IDPs/Migrants + Born Outside + Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"NW-Rural","NE-Rural") & t>=0
-* Excluding IDPs/Migrants + Born Outside + Not always lived in current HH
-drop if migr_idp==1
-drop if hhh_outstate==1
-keep if prop_alwayslive==1
-tab t, m
-save "${gsdTemp}/hh_comparison_Rural_V4.dta", replace
-
-//V5 Case: Excluding IDPs/Migrants + Born Outside + Not always live there + self-reported drought shock
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"NW-Rural","NE-Rural") & t>=0
-* Excluding IDPs/Migrants + Born Outside + Not always lived in current HH + self-reported drought shock
-drop if migr_idp==1
-drop if hhh_outstate==1
-keep if prop_alwayslive==1
-drop if shocks0__1==1
-tab t, m
-save "${gsdTemp}/hh_comparison_Rural_V5.dta", replace
+* 1) All variables
+use "${gsdTemp}/pca_data_w2.dta", clear
+keep if type==1
+mca hhsize hhh_age pgender pliteracy tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal tmarket_10orless street_light hunger_never lhood_salaried assist__2 remit12m n_assets_owned 
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Central-Urban"),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Jubbaland-Urban"),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Mogadishu"),  msize(small) mcolor(blue)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Urban"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="SouthWest-Urban"),  msize(small) mcolor(gs8)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NE-Urban"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Urban Areas - All variables") legend(on order(1 "Central" 2 "Jubbaland" 3 "Mogadishu" 4 "NW" 5 "SW" 6 "NE")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 5)) xscale(range(-5 10)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Urban_All_Vars.gph", replace
 
 
-* Implement extraction of statistics
-forvalues k = 1/5 {
-	use "${gsdTemp}/hh_comparison_Rural_V`k'.dta", clear
-	gen pweight=weight_cons*hhsize
-	svyset ea [pweight=pweight], strata(strata) singleunit(centered)
-	tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", svy sum c(mean poorPPP_prob ) sebnone f(3) h1("Poverty") npos(col) replace ptotal(none) 
-	local i=1
-	svy: mean poorPPP_prob, over(t)
-	test _subpop_1 = _subpop_2
-	cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-	putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
-	putexcel A`i' = "Poverty"
-	putexcel B`i' =`r(p)'
+* 2)Household composition/characteristics
+use "${gsdTemp}/pca_data_w2.dta", clear
+keep if type==1
+mca hhsize hhh_age pgender pliteracy
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Central-Urban"),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Jubbaland-Urban"),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Mogadishu"),  msize(small) mcolor(blue)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Urban"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="SouthWest-Urban"),  msize(small) mcolor(gs8)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NE-Urban"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Urban Areas - HH Characteristics") legend(on order(1 "Central" 2 "Jubbaland" 3 "Mogadishu" 4 "NW" 5 "SW" 6 "NE")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-40 5)) xscale(range(-45 5)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Urban_HH.gph", replace
 
-	*Variables of interest
-	drop pweight
-	svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-	global vars hhsize pgender hhh_age hhh_gender adult_male youth_male child_boy pworking_age n_dependent pliteracy_25 n_literate dum_iliterate_adult_hh lfp_7d_hh emp_7d_hh house_type_comparable__* tenure_own_rent floor_comparable* roof_metal  cook_comparable1 cook_comparable2 cook_comparable3 piped_water  protected_water sanitation_comparable
-	foreach v of varlist $vars {
-		noisily di `v'
-		local l : variable label `v'
-		tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", svy sum c(mean `v') sebnone f(3) h1("`l'") npos(col) append ptotal(none) 
-		svy: mean `v', over(t)
-		test _subpop_1 = _subpop_2
-		local i=`i'+1
-		putexcel A`i' ="`l'"
-		putexcel B`i' =`r(p)'
-	}
+* 3) Dwelling characteristics
+use "${gsdTemp}/pca_data_w2.dta", clear
+keep if type==1
+mca tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal tmarket_10orless street_light
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Central-Urban"),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Jubbaland-Urban"),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Mogadishu"),  msize(small) mcolor(blue)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Urban"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="SouthWest-Urban"),  msize(small) mcolor(gs8)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NE-Urban"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Urban Areas - Dwelling Characteristics") legend(on order(1 "Central" 2 "Jubbaland" 3 "Mogadishu" 4 "NW" 5 "SW" 6 "NE")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-5 5)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Urban_Dwelling.gph", replace
 
-
-	import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-	ren A v1
-	ren (B) (p_value) 
-	gen n=_n
-	save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-	insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-	drop if v1=="t"
-	drop v3 
-    gen even = !mod(_n,2)
-    gen n=_n  
-	replace n=n-even 
-    gen n2=(n+1)/2 
-    drop n even 
-	rename (n2 v1) (n v1_old) 
-	gen v1=0 if v1_old=="Wave 1"
-	replace v1=1 if v1_old=="Wave 2"
-	drop v1_old 
- 	reshape wide v2, i(n) j(v1)
-	rename (v20 v21) (v2 v3)
-	la var v2 "Wave 1"
-	la var v3 "Wave 2"
-	merge 1:1 n using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-	drop n
-	la var v1 "Variable of interest"
-	order  v1 v2 v3
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Rural_V1.xlsx", sheet("Raw_`k'") sheetmodify cell(B3) first(varlabels)
-	erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-}
-
-*Check average age and age distribution * 
-* Append the data first
-use "${gsdData}/1-CleanTemp/hhm_all.dta", clear
-append using "${gsdTemp}/SLSH-hhm_comparable.dta"
-la def lt 0 "Wave 1" 1 "Wave 2", replace
-la val t lt
-save "${gsdTemp}/hhm_SLw1w2.dta", replace
-
-foreach k in 1 2 3 4 5 {
-	use "${gsdTemp}/hh_comparison_Rural_V`k'.dta", clear
-	* merge with hhm data set
-	merge 1:m strata ea block hh using "${gsdTemp}/hhm_SLw1w2.dta", nogen assert(match using) keep(match) keepusing(age literacy age_cat_narrow dependent gender)
-
-	* Variables of interest
-	cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw4_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls"
-	local i=1
-	svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-	replace literacy=. if age<30
-	global hhmvars age gender dependent literacy
-	foreach v of varlist $hhmvars {
-		local l : variable label `v'
-		tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", svy sum c(mean `v') sebnone f(3) h1("`l'") npos(col) append ptotal(none) 
-		svy: mean `v', over(t)
-		test _subpop_1 = _subpop_2
-		putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
-		local i=`i'+1
-		putexcel A`i' = "`l'"
-		putexcel B`i' =`r(p)'
-	}
-	import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-	ren A v1
-	ren (B) (p_value)
-	gen n=_n
-	save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-	insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-	drop if v1=="t"
-    drop v3
-	gen even = !mod(_n,2)
-    gen n=_n  
-	replace n=n-even 
-    gen n2=(n+1)/2 
-    drop n even 
-	rename (n2 v1) (n v1_old) 
-	gen v1=0 if v1_old=="Wave 1"
-	replace v1=1 if v1_old=="Wave 2"
-	drop v1_old 
- 	reshape wide v2, i(n) j(v1)
-	rename (v20 v21) (v2 v3)
-	la var v2 "Wave 1"
-	la var v3 "Wave 2"
-	merge 1:1 n using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-    drop n
-	la var v1 "Variable of interest"
-	order  v1 v2 v3
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Rural_V1.xlsx", sheet("Raw_`k'_2") sheetreplace first(varlabels)
-	erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-
-	* Age distribution
-	use "${gsdTemp}/hh_comparison_Rural_V`k'.dta", replace
-	* merge with hhm data set
-	merge 1:m strata ea block hh using "${gsdTemp}/hhm_SLw1w2.dta", nogen assert(match using) keep(match) keepusing(age literacy age_cat_narrow)
-	svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls" if t==0, svy pop c(perc lb) f(5) sebnone h2("Age Distribution, w1") npos(col) replace ptotal(none) 
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls" if t==1, svy pop c(perc lb) f(5) sebnone h2("Age Distribution, w2") npos(col) replace ptotal(none) 
-	drop if mi(literacy)
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls" if t==0, svy sum c(mean literacy lb) f(5) sebnone h2("Literacy X Age, w1")  replace ptotal(none) 
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls" if t==1, svy sum c(mean literacy lb) f(5) sebnone h2("Literacy X Age, w2")  replace ptotal(none) 
-	insheet using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1 v4 
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Rural_V1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(D6) first(varlabels)
-	insheet using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1 v4
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Rural_V1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(F6) first(varlabels)
-	insheet using "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Rural_V1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(J7) first(varlabels)
-	insheet using "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Rural_V1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(L7) first(varlabels)
-	erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls"
-}
-
-*Include the average number of each item owned
-use "${gsdData}/1-CleanOutput/assets.dta", clear
-*Wave 2
-gen t=1
-merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", nogen keep(match) keepusing(ind_profile weight_cons weight_adj hhsize)
-*Include owning zero assets 
-replace own_n=0 if own==0
-keep t strata ea block hh weight_cons hhsize itemid own_n weight_adj ind_profile
-save "${gsdTemp}/assets_nwurban_w2.dta", replace
-*Wave 1 ID zeros
-use "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
-merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hh.dta"
-keep if _merge==2 | (strata==101 & ea==85 & block==11 & hh==4)
-keep strata ea block hh itemid own_n
-replace itemid=1 if itemid==.
-reshape wide own_n, i(strata ea block hh) j(itemid)
-reshape long
-drop if strata==101 & ea==85 & block==11 & hh==4
-replace own_n=0 if own_n==.
-save "${gsdTemp}/assets_nwurban_w2_noassets.dta", replace
-*Wave 1 
-use "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
-keep strata ea block hh itemid own_n
-append using "${gsdTemp}/assets_nwurban_w2_noassets.dta"
-replace own_n=0 if own_n==.
-gen t=0
-merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", nogen keep(master match) keepusing(ind_profile weight_cons weight_adj hhsize)
-keep t strata ea block hh weight_cons hhsize itemid own_n weight_adj ind_profile
-append using "${gsdTemp}/assets_nwurban_w2.dta"
-la def lt 0 "Wave 1" 1 "Wave 2", replace
-la val t lt
-*Restrict to the relevant subsample
-merge m:1 t strata ea block hh using "${gsdTemp}/hh_comparison_Rural_V1.dta", nogen keep(match)
-svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-tab itemid, gen(item_)
-foreach k of varlist item_* {
-local a : variable label `k'
-local a : subinstr local a "itemid==" ""
-label var `k' "`a'"
-}
-drop if mi(own_n)
-cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-preserve
-local i=1
-levelsof itemid, local(items) 
-qui foreach item of local items {
-	su own_n
-	local l : variable label item_`item'
-	tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls" if itemid==`item', svy sum c(mean own_n) sebnone f(5) h1("`l'") append ptotal(none)
-	svy: mean own_n if itemid==`item', over(t)
-	cap test _subpop_1==_subpop_2
-	putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
-	putexcel A`i' = "`l'"
-	cap putexcel B`i' =`r(p)'
-	local i=`i'+1
-}
-import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-ren A v1
-ren B p_value
-gen n=_n
-save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-drop if v1=="t"
-gen even = !mod(_n,2)
-gen n=_n  
-replace n=n-even 
-gen n2=(n+1)/2 
-drop n even 
-rename (n2 v1) (n v1_old) 
-gen v1=0 if v1_old=="Wave 1"
-replace v1=1 if v1_old=="Wave 2"
-drop v1_old 
-reshape wide v2, i(n) j(v1)
-rename (v20 v21) (v2 v3)
-la var v2 "Wave 1"
-la var v3 "Wave 2"
-merge 1:1 n using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-drop n
-la var v1 "Variable of interest"
-order  v1 v2 v3
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Rural_V1.xlsx", sheet("Raw_6") sheetmodify cell(B3) first(varlabels)
-erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-restore
-*Check median values
-levelsof itemid, local(items) 
-qui foreach item of local items {
-	preserve 
-	keep if itemid==`item'
-	collapse (median) own_n [aweight=weight_adj], by(t)
-	gen itemid=`item'
-	reshape wide own_n, i(itemid) j(t)
-	save "${gsdTemp}/W1W2-comparison_assets_`item'.dta", replace
-	restore
-}
-use "${gsdTemp}/W1W2-comparison_assets_1.dta", clear
-qui forval i=2/37 {
-	append using "${gsdTemp}/W1W2-comparison_assets_`i'.dta"
-}
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Rural_V1.xlsx", sheet("Raw_7") sheetmodify cell(B3) first(varlabels)
-
-*Include information on assets sold in Wave 2
-cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-use "${gsdTemp}/hh_comparison_Rural_V1.dta", clear
-gen pweight=weight_adj*hhsize
-svyset ea [pweight=pweight], strata(strata) singleunit(centered)
-gen sell_assets=(inlist(cop_sellassets,1,3)) if !missing(cop_sellassets)
-tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls" if t>=0, svy sum c(mean sell_assets) sebnone f(5) h1("`l'") replace ptotal(none)
-svy: mean sell_assets if t>=0, over(t)
-cap test _subpop_1==_subpop_2
-putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", replace
-putexcel A1 = "Sell_Assets"
-cap putexcel B1 =`r(p)'
-import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-ren A v1
-ren B p_value
-sort v1
-save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-gen v1="Sell_Assets"
-merge m:1 v1 using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-duplicates drop
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Rural_V1.xlsx", sheet("Raw_7_2") sheetmodify cell(B3) first(varlabels)
-erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-
-*Population pyramid
-cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-use "${gsdTemp}/hh_comparison_Rural_V1.dta", replace
-* merge with hhm data set
-merge 1:m strata ea block hh using "${gsdTemp}/hhm_SLw1w2.dta", nogen assert(match using) keep(match) keepusing(gender age literacy age_cat_narrow)
-svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-tabout age_cat_narrow gender using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls" if t==0, svy pop c(perc) f(5) sebnone h1("Age Distribution, w1") npos(col) replace ptotal(none) 
-tabout age_cat_narrow gender using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls" if t==1, svy pop c(perc) f(5) sebnone h1("Age Distribution, w2") npos(col) replace ptotal(none) 
-insheet using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear nonames tab
-replace v2 = v1 if v2==""
-cap drop v1 v4 
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Rural_V1.xlsx", sheet("Raw_8") sheetmodify cell(b29) first(varlabels)
-insheet using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls", clear nonames tab
-replace v2 = v1 if v2==""
-cap drop v1 v4
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Rural_V1.xlsx", sheet("Raw_8") sheetmodify cell(b56) first(varlabels)
-erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-
-
-
+* 4) Income, assets and hunger 
+use "${gsdTemp}/pca_data_w2.dta", clear
+keep if type==1
+mca hunger_never lhood_salaried assist__2 remit12m n_assets_owned
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Central-Urban"),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Jubbaland-Urban"),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Mogadishu"),  msize(small) mcolor(blue)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Urban"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="SouthWest-Urban"),  msize(small) mcolor(gs8)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NE-Urban"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Urban Areas - Income/Hunger") legend(on order(1 "Central" 2 "Jubbaland" 3 "Mogadishu" 4 "NW" 5 "SW" 6 "NE")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-5 10)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Urban_Income.gph", replace
 
 
 
 
 *=====================================================================
-* ANALYSIS FOR IDPS (COMPARABLE)
+* URBAN AREAS (WITHOUT JUBBALAND AND PUNTLAND): PCA ANALAYSIS OF W2
 *=====================================================================
-//CREATE DATASETS FOR EACH OF THE 5 SCENARIOS 
-*Check strata for IDPs in Wave 2
-*use "${gsdTemp}/hh_final.dta", clear
-* Step 1: Prepare data sets
-//V1 Case: Including IDPs/Migrants + Born Outside + Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"IDP") & t>=0
-drop if t==1 &  !inlist(strata,4,5,6) 
-save "${gsdTemp}/hh_comparison_IDP_V1.dta", replace
+* 1) All variables
+use "${gsdTemp}/pca_data_w2.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+keep if type==1
+mca hhsize hhh_age pgender pliteracy tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal tmarket_10orless street_light hunger_never lhood_salaried assist__2 remit12m n_assets_owned 
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Central-Urban"),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Mogadishu"),  msize(small) mcolor(blue)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Urban"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="SouthWest-Urban"),  msize(small) mcolor(gs8)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Urban Areas (w/o Jubbaland & Puntland) - All variables") legend(on order(1 "Central" 2 "Mogadishu" 3 "NW" 4 "SW" )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 5)) xscale(range(-5 15)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Urban_No-JB-PL_All_Vars.gph", replace
 
-//V2 Case: Excluding IDPs/Migrants / Including Born Outside + Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"IDP") & t>=0
-drop if t==1 &  !inlist(strata,4,5,6) 
-* Exclude IDPs
-*drop if migr_idp==1
-tab t, m
-save "${gsdTemp}/hh_comparison_IDP_V2.dta", replace
+* 2)Household composition/characteristics
+use "${gsdTemp}/pca_data_w2.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+keep if type==1
+mca hhsize hhh_age pgender pliteracy
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Central-Urban"),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Mogadishu"),  msize(small) mcolor(blue)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Urban"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="SouthWest-Urban"),  msize(small) mcolor(gs8)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Urban Areas (w/o Jubbaland & Puntland) - HH Characteristics") legend(on order(1 "Central" 2 "Mogadishu" 3 "NW" 4 "SW")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 5)) xscale(range(-40 5)) ylabel(#5) xlabel(#5)
+graph save "${gsdShared}/2-Output/PCA/Urban_No-JB-PL_HH.gph", replace
 
-//V3 Case: Excluding IDPs/Migrants + Born Outside / Including  Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"IDP") & t>=0
-drop if t==1 &  !inlist(strata,4,5,6) 
-* Exclude IDPs + Born Outside
-*drop if migr_idp==1
-drop if hhh_outstate==1
-tab t, m
-save "${gsdTemp}/hh_comparison_IDP_V3.dta", replace
+* 3) Dwelling characteristics
+use "${gsdTemp}/pca_data_w2.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+keep if type==1
+mca tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal tmarket_10orless street_light
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Central-Urban"),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Mogadishu"),  msize(small) mcolor(blue)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Urban"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="SouthWest-Urban"),  msize(small) mcolor(gs8)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Urban Areas (w/o Jubbaland & Puntland) - Dwelling Characteristics") legend(on order(1 "Central" 2 "Mogadishu" 3 "NW" 4 "SW")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-4 3)) xscale(range(-3 3)) ylabel(#1) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Urban_No-JB-PL_Dwelling.gph", replace
 
-//V4 Case: Excluding IDPs/Migrants + Born Outside + Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"IDP") & t>=0
-drop if t==1 &  !inlist(strata,4,5,6) 
-* Excluding IDPs/Migrants + Born Outside + Not always lived in current HH
-*drop if migr_idp==1
-drop if hhh_outstate==1
-keep if prop_alwayslive==1
-tab t, m
-save "${gsdTemp}/hh_comparison_IDP_V4.dta", replace
-
-//V5 Case: Excluding IDPs/Migrants + Born Outside + Not always live there + self-reported drought shock
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"IDP") & t>=0
-drop if t==1 &  !inlist(strata,4,5,6) 
-* Excluding IDPs/Migrants + Born Outside + Not always lived in current HH + self-reported drought shock
-*drop if migr_idp==1
-drop if hhh_outstate==1
-keep if prop_alwayslive==1
-drop if shocks0__1==1
-tab t, m
-save "${gsdTemp}/hh_comparison_IDP_V5.dta", replace
-
-
-* Implement extraction of statistics
-forvalues k = 1/5 {
-	use "${gsdTemp}/hh_comparison_IDP_V`k'.dta", clear
-	gen pweight=weight_cons*hhsize
-	svyset ea [pweight=pweight], strata(strata) singleunit(centered)
-	tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", svy sum c(mean poorPPP_prob ) sebnone f(3) h1("Poverty") npos(col) replace ptotal(none) 
-	local i=1
-	svy: mean poorPPP_prob, over(t)
-	test _subpop_1 = _subpop_2
-	cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-	putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
-	putexcel A`i' = "Poverty"
-	putexcel B`i' =`r(p)'
-
-	*Variables of interest
-	drop pweight
-	svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-	global vars hhsize pgender hhh_age hhh_gender adult_male youth_male child_boy pworking_age n_dependent pliteracy_25 n_literate dum_iliterate_adult_hh lfp_7d_hh emp_7d_hh house_type_comparable__* tenure_own_rent floor_comparable* roof_metal  cook_comparable1 cook_comparable2 cook_comparable3 piped_water  protected_water sanitation_comparable
-	foreach v of varlist $vars {
-		noisily di `v'
-		local l : variable label `v'
-		tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", svy sum c(mean `v') sebnone f(3) h1("`l'") npos(col) append ptotal(none) 
-		svy: mean `v', over(t)
-		test _subpop_1 = _subpop_2
-		local i=`i'+1
-		putexcel A`i' ="`l'"
-		putexcel B`i' =`r(p)'
-	}
-
-
-	import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-	ren A v1
-	ren (B) (p_value) 
-	gen n=_n
-	save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-	insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-	drop if v1=="t"
-	drop v3 
-    gen even = !mod(_n,2)
-    gen n=_n  
-	replace n=n-even 
-    gen n2=(n+1)/2 
-    drop n even 
-	rename (n2 v1) (n v1_old) 
-	gen v1=0 if v1_old=="Wave 1"
-	replace v1=1 if v1_old=="Wave 2"
-	drop v1_old 
- 	reshape wide v2, i(n) j(v1)
-	rename (v20 v21) (v2 v3)
-	la var v2 "Wave 1"
-	la var v3 "Wave 2"
-	merge 1:1 n using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-	drop n
-	la var v1 "Variable of interest"
-	order  v1 v2 v3
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_IDP_V1.xlsx", sheet("Raw_`k'") sheetmodify cell(B3) first(varlabels)
-	erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-}
-
-*Check average age and age distribution * 
-* Append the data first
-use "${gsdData}/1-CleanTemp/hhm_all.dta", clear
-append using "${gsdTemp}/SLSH-hhm_comparable.dta"
-la def lt 0 "Wave 1" 1 "Wave 2", replace
-la val t lt
-save "${gsdTemp}/hhm_SLw1w2.dta", replace
-
-foreach k in 1 2 3 4 5 {
-	use "${gsdTemp}/hh_comparison_IDP_V`k'.dta", clear
-	* merge with hhm data set
-	merge 1:m strata ea block hh using "${gsdTemp}/hhm_SLw1w2.dta", nogen assert(match using) keep(match) keepusing(age literacy age_cat_narrow dependent gender)
-
-	* Variables of interest
-	cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw4_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls"
-	local i=1
-	svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-	replace literacy=. if age<30
-	global hhmvars age gender dependent literacy
-	foreach v of varlist $hhmvars {
-		local l : variable label `v'
-		tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", svy sum c(mean `v') sebnone f(3) h1("`l'") npos(col) append ptotal(none) 
-		svy: mean `v', over(t)
-		test _subpop_1 = _subpop_2
-		putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
-		local i=`i'+1
-		putexcel A`i' = "`l'"
-		putexcel B`i' =`r(p)'
-	}
-	import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-	ren A v1
-	ren (B) (p_value)
-	gen n=_n
-	save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-	insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-	drop if v1=="t"
-    drop v3
-	gen even = !mod(_n,2)
-    gen n=_n  
-	replace n=n-even 
-    gen n2=(n+1)/2 
-    drop n even 
-	rename (n2 v1) (n v1_old) 
-	gen v1=0 if v1_old=="Wave 1"
-	replace v1=1 if v1_old=="Wave 2"
-	drop v1_old 
- 	reshape wide v2, i(n) j(v1)
-	rename (v20 v21) (v2 v3)
-	la var v2 "Wave 1"
-	la var v3 "Wave 2"
-	merge 1:1 n using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-    drop n
-	la var v1 "Variable of interest"
-	order  v1 v2 v3
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_IDP_V1.xlsx", sheet("Raw_`k'_2") sheetreplace first(varlabels)
-	erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-
-	* Age distribution
-	use "${gsdTemp}/hh_comparison_IDP_V`k'.dta", replace
-	* merge with hhm data set
-	merge 1:m strata ea block hh using "${gsdTemp}/hhm_SLw1w2.dta", nogen assert(match using) keep(match) keepusing(age literacy age_cat_narrow)
-	svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls" if t==0, svy pop c(perc lb) f(5) sebnone h2("Age Distribution, w1") npos(col) replace ptotal(none) 
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls" if t==1, svy pop c(perc lb) f(5) sebnone h2("Age Distribution, w2") npos(col) replace ptotal(none) 
-	drop if mi(literacy)
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls" if t==0, svy sum c(mean literacy lb) f(5) sebnone h2("Literacy X Age, w1")  replace ptotal(none) 
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls" if t==1, svy sum c(mean literacy lb) f(5) sebnone h2("Literacy X Age, w2")  replace ptotal(none) 
-	insheet using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1 v4 
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_IDP_V1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(D6) first(varlabels)
-	insheet using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1 v4
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_IDP_V1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(F6) first(varlabels)
-	insheet using "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_IDP_V1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(J7) first(varlabels)
-	insheet using "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_IDP_V1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(L7) first(varlabels)
-	erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls"
-}
-
-*Include the average number of each item owned
-use "${gsdData}/1-CleanOutput/assets.dta", clear
-*Wave 2
-gen t=1
-merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", nogen keep(match) keepusing(ind_profile weight_cons weight_adj hhsize)
-*Include owning zero assets 
-replace own_n=0 if own==0
-keep t strata ea block hh weight_cons hhsize itemid own_n weight_adj ind_profile
-save "${gsdTemp}/assets_nwurban_w2.dta", replace
-*Wave 1 ID zeros
-use "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
-merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hh.dta"
-keep if _merge==2 | (strata==101 & ea==85 & block==11 & hh==4)
-keep strata ea block hh itemid own_n
-replace itemid=1 if itemid==.
-reshape wide own_n, i(strata ea block hh) j(itemid)
-reshape long
-drop if strata==101 & ea==85 & block==11 & hh==4
-replace own_n=0 if own_n==.
-save "${gsdTemp}/assets_nwurban_w2_noassets.dta", replace
-*Wave 1 
-use "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
-keep strata ea block hh itemid own_n
-append using "${gsdTemp}/assets_nwurban_w2_noassets.dta"
-replace own_n=0 if own_n==.
-gen t=0
-merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", nogen keep(master match) keepusing(ind_profile weight_cons weight_adj hhsize)
-keep t strata ea block hh weight_cons hhsize itemid own_n weight_adj ind_profile
-append using "${gsdTemp}/assets_nwurban_w2.dta"
-la def lt 0 "Wave 1" 1 "Wave 2", replace
-la val t lt
-*Restrict to the relevant subsample
-merge m:1 t strata ea block hh using "${gsdTemp}/hh_comparison_IDP_V1.dta", nogen keep(match)
-svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-tab itemid, gen(item_)
-foreach k of varlist item_* {
-local a : variable label `k'
-local a : subinstr local a "itemid==" ""
-label var `k' "`a'"
-}
-drop if mi(own_n)
-cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-preserve
-local i=1
-levelsof itemid, local(items) 
-qui foreach item of local items {
-	su own_n
-	local l : variable label item_`item'
-	tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls" if itemid==`item', svy sum c(mean own_n) sebnone f(5) h1("`l'") append ptotal(none)
-	svy: mean own_n if itemid==`item', over(t)
-	cap test _subpop_1==_subpop_2
-	putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
-	putexcel A`i' = "`l'"
-	cap putexcel B`i' =`r(p)'
-	local i=`i'+1
-}
-import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-ren A v1
-ren B p_value
-gen n=_n
-save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-drop if v1=="t"
-gen even = !mod(_n,2)
-gen n=_n  
-replace n=n-even 
-gen n2=(n+1)/2 
-drop n even 
-rename (n2 v1) (n v1_old) 
-gen v1=0 if v1_old=="Wave 1"
-replace v1=1 if v1_old=="Wave 2"
-drop v1_old 
-reshape wide v2, i(n) j(v1)
-rename (v20 v21) (v2 v3)
-la var v2 "Wave 1"
-la var v3 "Wave 2"
-merge 1:1 n using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-drop n
-la var v1 "Variable of interest"
-order  v1 v2 v3
-export excel using "${gsdShared}/2-Output/W1W2-comparison_IDP_V1.xlsx", sheet("Raw_6") sheetmodify cell(B3) first(varlabels)
-erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-restore
-*Check median values
-levelsof itemid, local(items) 
-qui foreach item of local items {
-	preserve 
-	keep if itemid==`item'
-	collapse (median) own_n [aweight=weight_adj], by(t)
-	gen itemid=`item'
-	reshape wide own_n, i(itemid) j(t)
-	save "${gsdTemp}/W1W2-comparison_assets_`item'.dta", replace
-	restore
-}
-use "${gsdTemp}/W1W2-comparison_assets_1.dta", clear
-qui forval i=2/37 {
-	append using "${gsdTemp}/W1W2-comparison_assets_`i'.dta"
-}
-export excel using "${gsdShared}/2-Output/W1W2-comparison_IDP_V1.xlsx", sheet("Raw_7") sheetmodify cell(B3) first(varlabels)
-
-*Include information on assets sold in Wave 2
-cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-use "${gsdTemp}/hh_comparison_IDP_V1.dta", clear
-gen pweight=weight_adj*hhsize
-svyset ea [pweight=pweight], strata(strata) singleunit(centered)
-gen sell_assets=(inlist(cop_sellassets,1,3)) if !missing(cop_sellassets)
-tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls" if t>=0, svy sum c(mean sell_assets) sebnone f(5) h1("`l'") replace ptotal(none)
-svy: mean sell_assets if t>=0, over(t)
-cap test _subpop_1==_subpop_2
-putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", replace
-putexcel A1 = "Sell_Assets"
-cap putexcel B1 =`r(p)'
-import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-ren A v1
-ren B p_value
-sort v1
-save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-gen v1="Sell_Assets"
-merge m:1 v1 using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-duplicates drop
-export excel using "${gsdShared}/2-Output/W1W2-comparison_IDP_V1.xlsx", sheet("Raw_7_2") sheetmodify cell(B3) first(varlabels)
-erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-
-*Population pyramid
-cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-use "${gsdTemp}/hh_comparison_IDP_V1.dta", replace
-* merge with hhm data set
-merge 1:m strata ea block hh using "${gsdTemp}/hhm_SLw1w2.dta", nogen assert(match using) keep(match) keepusing(gender age literacy age_cat_narrow)
-svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-tabout age_cat_narrow gender using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls" if t==0, svy pop c(perc) f(5) sebnone h1("Age Distribution, w1") npos(col) replace ptotal(none) 
-tabout age_cat_narrow gender using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls" if t==1, svy pop c(perc) f(5) sebnone h1("Age Distribution, w2") npos(col) replace ptotal(none) 
-insheet using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear nonames tab
-replace v2 = v1 if v2==""
-cap drop v1 v4 
-export excel using "${gsdShared}/2-Output/W1W2-comparison_IDP_V1.xlsx", sheet("Raw_8") sheetmodify cell(b29) first(varlabels)
-insheet using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls", clear nonames tab
-replace v2 = v1 if v2==""
-cap drop v1 v4
-export excel using "${gsdShared}/2-Output/W1W2-comparison_IDP_V1.xlsx", sheet("Raw_8") sheetmodify cell(b56) first(varlabels)
-erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-*/
-
-
+* 4) Income, assets and hunger 
+use "${gsdTemp}/pca_data_w2.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+keep if type==1
+mca hunger_never lhood_salaried assist__2 remit12m n_assets_owned
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Central-Urban"),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Mogadishu"),  msize(small) mcolor(blue)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Urban"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="SouthWest-Urban"),  msize(small) mcolor(gs8)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Urban Areas (w/o Jubbaland & Puntland) - Income/Hunger") legend(on order(1 "Central" 2 "Mogadishu" 3 "NW" 4 "SW")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-4 6)) ylabel(#5) xlabel(#2)
+graph save "${gsdShared}/2-Output/PCA/Urban_No-JB-PL_Income.gph", replace
 
 
 
 
 *=====================================================================
-* ANALYSIS FOR ALL AREAS (WITHOUT PUNTLAND + COMPARABLE IDPs)
+* RURAL AREAS: PCA ANALAYSIS OF W2
 *=====================================================================
-//CREATE DATASETS FOR EACH OF THE 5 SCENARIOS 
-*Check strata for IDPs in Wave 2
-*use "${gsdTemp}/hh_final.dta", clear
-* Step 1: Prepare data sets
-//V1 Case: Including IDPs/Migrants + Born Outside + Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"Mogadishu","NW-Urban","NW-Rural","IDP") & t>=0
-drop if ind_profile=="IDP" & t==1 &  !inlist(strata,4,5,6) 
-save "${gsdTemp}/hh_comparison_Overall-NoPL_V1.dta", replace
-
-//V2 Case: Excluding IDPs/Migrants / Including Born Outside + Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"Mogadishu","NW-Urban","NW-Rural","IDP") & t>=0
-drop if ind_profile=="IDP" & t==1 &  !inlist(strata,4,5,6) 
-* Exclude IDPs
-drop if migr_idp==1
-drop if t==0 & ind_profile=="IDP"
-tab t, m
-save "${gsdTemp}/hh_comparison_Overall-NoPL_V2.dta", replace
-
-//V3 Case: Excluding IDPs/Migrants + Born Outside / Including  Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"Mogadishu","NW-Urban","NW-Rural","IDP") & t>=0
-drop if ind_profile=="IDP" & t==1 &  !inlist(strata,4,5,6) 
-* Exclude IDPs + Born Outside
-drop if migr_idp==1
-drop if t==0 & ind_profile=="IDP"
-drop if hhh_outstate==1
-tab t, m
-save "${gsdTemp}/hh_comparison_Overall-NoPL_V3.dta", replace
-
-//V4 Case: Excluding IDPs/Migrants + Born Outside + Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"Mogadishu","NW-Urban","NW-Rural","IDP") & t>=0
-drop if ind_profile=="IDP" & t==1 &  !inlist(strata,4,5,6) 
-* Excluding IDPs/Migrants + Born Outside + Not always lived in current HH
-drop if migr_idp==1
-drop if t==0 & ind_profile=="IDP"
-drop if hhh_outstate==1
-keep if prop_alwayslive==1
-tab t, m
-save "${gsdTemp}/hh_comparison_Overall-NoPL_V4.dta", replace
-
-//V5 Case: Excluding IDPs/Migrants + Born Outside + Not always live there + self-reported drought shock
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"Mogadishu","NW-Urban","NW-Rural","IDP") & t>=0
-drop if ind_profile=="IDP" & t==1 &  !inlist(strata,4,5,6) 
-* Excluding IDPs/Migrants + Born Outside + Not always lived in current HH + self-reported drought shock
-drop if migr_idp==1
-drop if t==0 & ind_profile=="IDP"
-drop if hhh_outstate==1
-keep if prop_alwayslive==1
-drop if shocks0__1==1
-tab t, m
-save "${gsdTemp}/hh_comparison_Overall-NoPL_V5.dta", replace
+* 1) All variables
+use "${gsdTemp}/pca_data_w2.dta", clear
+keep if type==2
+mca hhsize hhh_age pgender pliteracy tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal tmarket_10orless street_light hunger_never lhood_salaried assist__2 remit12m n_assets_owned 
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Central-Rural"),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Jubbaland-Rural"),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Rural"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="SouthWest-Rural"),  msize(small) mcolor(gs8)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NE-Rural"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Rural Areas - All variables") legend(on order(1 "Central" 2 "Jubbaland" 3 "NW" 4 "SW" 5 "NE")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 5)) xscale(range(-5 5)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Rural_All_Vars.gph", replace
 
 
-* Implement extraction of statistics
-forvalues k = 1/5 {
-	use "${gsdTemp}/hh_comparison_Overall-NoPL_V`k'.dta", clear
-	gen pweight=weight_cons*hhsize
-	svyset ea [pweight=pweight], strata(strata) singleunit(centered)
-	tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", svy sum c(mean poorPPP_prob ) sebnone f(3) h1("Poverty") npos(col) replace ptotal(none) 
-	local i=1
-	svy: mean poorPPP_prob, over(t)
-	test _subpop_1 = _subpop_2
-	cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-	putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
-	putexcel A`i' = "Poverty"
-	putexcel B`i' =`r(p)'
+* 2)Household composition/characteristics
+use "${gsdTemp}/pca_data_w2.dta", clear
+keep if type==2
+mca hhsize hhh_age pgender pliteracy
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Central-Rural"),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Jubbaland-Rural"),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Rural"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="SouthWest-Rural"),  msize(small) mcolor(gs8)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NE-Rural"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Rural Areas - HH Characteristics") legend(on order(1 "Central" 2 "Jubbaland" 3 "NW" 4 "SW" 5 "NE")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-15 5)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Rural_HH.gph", replace
 
-	*Variables of interest
-	drop pweight
-	svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-	global vars hhsize pgender hhh_age hhh_gender adult_male youth_male child_boy pworking_age n_dependent pliteracy_25 n_literate dum_iliterate_adult_hh lfp_7d_hh emp_7d_hh house_type_comparable__* tenure_own_rent floor_comparable* roof_metal  cook_comparable1 cook_comparable2 cook_comparable3 piped_water  protected_water sanitation_comparable
-	foreach v of varlist $vars {
-		noisily di `v'
-		local l : variable label `v'
-		tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", svy sum c(mean `v') sebnone f(3) h1("`l'") npos(col) append ptotal(none) 
-		svy: mean `v', over(t)
-		test _subpop_1 = _subpop_2
-		local i=`i'+1
-		putexcel A`i' ="`l'"
-		putexcel B`i' =`r(p)'
-	}
+* 3) Dwelling characteristics
+use "${gsdTemp}/pca_data_w2.dta", clear
+keep if type==2
+mca tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal tmarket_10orless street_light
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Central-Rural"),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Jubbaland-Rural"),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Rural"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="SouthWest-Rural"),  msize(small) mcolor(gs8)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NE-Rural"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Rural Areas - Dwelling Characteristics") legend(on order(1 "Central" 2 "Jubbaland" 3 "NW" 4 "SW" 5 "NE")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-5 5)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Rural_Dwelling.gph", replace
 
-
-	import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-	ren A v1
-	ren (B) (p_value) 
-	gen n=_n
-	save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-	insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-	drop if v1=="t"
-	drop v3 
-    gen even = !mod(_n,2)
-    gen n=_n  
-	replace n=n-even 
-    gen n2=(n+1)/2 
-    drop n even 
-	rename (n2 v1) (n v1_old) 
-	gen v1=0 if v1_old=="Wave 1"
-	replace v1=1 if v1_old=="Wave 2"
-	drop v1_old 
- 	reshape wide v2, i(n) j(v1)
-	rename (v20 v21) (v2 v3)
-	la var v2 "Wave 1"
-	la var v3 "Wave 2"
-	merge 1:1 n using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-	drop n
-	la var v1 "Variable of interest"
-	order  v1 v2 v3
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Overall-NoPL_V1.xlsx", sheet("Raw_`k'") sheetmodify cell(B3) first(varlabels)
-	erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-}
-
-*Check average age and age distribution * 
-* Append the data first
-use "${gsdData}/1-CleanTemp/hhm_all.dta", clear
-append using "${gsdTemp}/SLSH-hhm_comparable.dta"
-la def lt 0 "Wave 1" 1 "Wave 2", replace
-la val t lt
-save "${gsdTemp}/hhm_SLw1w2.dta", replace
-
-foreach k in 1 2 3 4 5 {
-	use "${gsdTemp}/hh_comparison_Overall-NoPL_V`k'.dta", clear
-	* merge with hhm data set
-	merge 1:m strata ea block hh using "${gsdTemp}/hhm_SLw1w2.dta", nogen assert(match using) keep(match) keepusing(age literacy age_cat_narrow dependent gender)
-
-	* Variables of interest
-	cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw4_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls"
-	local i=1
-	svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-	replace literacy=. if age<30
-	global hhmvars age gender dependent literacy
-	foreach v of varlist $hhmvars {
-		local l : variable label `v'
-		tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", svy sum c(mean `v') sebnone f(3) h1("`l'") npos(col) append ptotal(none) 
-		svy: mean `v', over(t)
-		test _subpop_1 = _subpop_2
-		putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
-		local i=`i'+1
-		putexcel A`i' = "`l'"
-		putexcel B`i' =`r(p)'
-	}
-	import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-	ren A v1
-	ren (B) (p_value)
-	gen n=_n
-	save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-	insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-	drop if v1=="t"
-    drop v3
-	gen even = !mod(_n,2)
-    gen n=_n  
-	replace n=n-even 
-    gen n2=(n+1)/2 
-    drop n even 
-	rename (n2 v1) (n v1_old) 
-	gen v1=0 if v1_old=="Wave 1"
-	replace v1=1 if v1_old=="Wave 2"
-	drop v1_old 
- 	reshape wide v2, i(n) j(v1)
-	rename (v20 v21) (v2 v3)
-	la var v2 "Wave 1"
-	la var v3 "Wave 2"
-	merge 1:1 n using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-    drop n
-	la var v1 "Variable of interest"
-	order  v1 v2 v3
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Overall-NoPL_V1.xlsx", sheet("Raw_`k'_2") sheetreplace first(varlabels)
-	erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-
-	* Age distribution
-	use "${gsdTemp}/hh_comparison_Overall-NoPL_V`k'.dta", replace
-	* merge with hhm data set
-	merge 1:m strata ea block hh using "${gsdTemp}/hhm_SLw1w2.dta", nogen assert(match using) keep(match) keepusing(age literacy age_cat_narrow)
-	svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls" if t==0, svy pop c(perc lb) f(5) sebnone h2("Age Distribution, w1") npos(col) replace ptotal(none) 
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls" if t==1, svy pop c(perc lb) f(5) sebnone h2("Age Distribution, w2") npos(col) replace ptotal(none) 
-	drop if mi(literacy)
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls" if t==0, svy sum c(mean literacy lb) f(5) sebnone h2("Literacy X Age, w1")  replace ptotal(none) 
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls" if t==1, svy sum c(mean literacy lb) f(5) sebnone h2("Literacy X Age, w2")  replace ptotal(none) 
-	insheet using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1 v4 
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Overall-NoPL_V1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(D6) first(varlabels)
-	insheet using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1 v4
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Overall-NoPL_V1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(F6) first(varlabels)
-	insheet using "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Overall-NoPL_V1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(J7) first(varlabels)
-	insheet using "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Overall-NoPL_V1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(L7) first(varlabels)
-	erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls"
-}
-
-*Include the average number of each item owned
-use "${gsdData}/1-CleanOutput/assets.dta", clear
-*Wave 2
-gen t=1
-merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", nogen keep(match) keepusing(ind_profile weight_cons weight_adj hhsize)
-*Include owning zero assets 
-replace own_n=0 if own==0
-keep t strata ea block hh weight_cons hhsize itemid own_n weight_adj ind_profile
-save "${gsdTemp}/assets_nwurban_w2.dta", replace
-*Wave 1 ID zeros
-use "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
-merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hh.dta"
-keep if _merge==2 | (strata==101 & ea==85 & block==11 & hh==4)
-keep strata ea block hh itemid own_n
-replace itemid=1 if itemid==.
-reshape wide own_n, i(strata ea block hh) j(itemid)
-reshape long
-drop if strata==101 & ea==85 & block==11 & hh==4
-replace own_n=0 if own_n==.
-save "${gsdTemp}/assets_nwurban_w2_noassets.dta", replace
-*Wave 1 
-use "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
-keep strata ea block hh itemid own_n
-append using "${gsdTemp}/assets_nwurban_w2_noassets.dta"
-replace own_n=0 if own_n==.
-gen t=0
-merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", nogen keep(master match) keepusing(ind_profile weight_cons weight_adj hhsize)
-keep t strata ea block hh weight_cons hhsize itemid own_n weight_adj ind_profile
-append using "${gsdTemp}/assets_nwurban_w2.dta"
-la def lt 0 "Wave 1" 1 "Wave 2", replace
-la val t lt
-*Restrict to the relevant subsample
-merge m:1 t strata ea block hh using "${gsdTemp}/hh_comparison_Overall-NoPL_V1.dta", nogen keep(match)
-svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-tab itemid, gen(item_)
-foreach k of varlist item_* {
-local a : variable label `k'
-local a : subinstr local a "itemid==" ""
-label var `k' "`a'"
-}
-drop if mi(own_n)
-cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-preserve
-local i=1
-levelsof itemid, local(items) 
-qui foreach item of local items {
-	su own_n
-	local l : variable label item_`item'
-	tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls" if itemid==`item', svy sum c(mean own_n) sebnone f(5) h1("`l'") append ptotal(none)
-	svy: mean own_n if itemid==`item', over(t)
-	cap test _subpop_1==_subpop_2
-	putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
-	putexcel A`i' = "`l'"
-	cap putexcel B`i' =`r(p)'
-	local i=`i'+1
-}
-import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-ren A v1
-ren B p_value
-gen n=_n
-save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-drop if v1=="t"
-gen even = !mod(_n,2)
-gen n=_n  
-replace n=n-even 
-gen n2=(n+1)/2 
-drop n even 
-rename (n2 v1) (n v1_old) 
-gen v1=0 if v1_old=="Wave 1"
-replace v1=1 if v1_old=="Wave 2"
-drop v1_old 
-reshape wide v2, i(n) j(v1)
-rename (v20 v21) (v2 v3)
-la var v2 "Wave 1"
-la var v3 "Wave 2"
-merge 1:1 n using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-drop n
-la var v1 "Variable of interest"
-order  v1 v2 v3
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Overall-NoPL_V1.xlsx", sheet("Raw_6") sheetmodify cell(B3) first(varlabels)
-erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-restore
-*Check median values
-levelsof itemid, local(items) 
-qui foreach item of local items {
-	preserve 
-	keep if itemid==`item'
-	collapse (median) own_n [aweight=weight_adj], by(t)
-	gen itemid=`item'
-	reshape wide own_n, i(itemid) j(t)
-	save "${gsdTemp}/W1W2-comparison_assets_`item'.dta", replace
-	restore
-}
-use "${gsdTemp}/W1W2-comparison_assets_1.dta", clear
-qui forval i=2/37 {
-	append using "${gsdTemp}/W1W2-comparison_assets_`i'.dta"
-}
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Overall-NoPL_V1.xlsx", sheet("Raw_7") sheetmodify cell(B3) first(varlabels)
-
-*Include information on assets sold in Wave 2
-cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-use "${gsdTemp}/hh_comparison_Overall-NoPL_V1.dta", clear
-gen pweight=weight_adj*hhsize
-svyset ea [pweight=pweight], strata(strata) singleunit(centered)
-gen sell_assets=(inlist(cop_sellassets,1,3)) if !missing(cop_sellassets)
-tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls" if t>=0, svy sum c(mean sell_assets) sebnone f(5) h1("`l'") replace ptotal(none)
-svy: mean sell_assets if t>=0, over(t)
-cap test _subpop_1==_subpop_2
-putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", replace
-putexcel A1 = "Sell_Assets"
-cap putexcel B1 =`r(p)'
-import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-ren A v1
-ren B p_value
-sort v1
-save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-gen v1="Sell_Assets"
-merge m:1 v1 using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-duplicates drop
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Overall-NoPL_V1.xlsx", sheet("Raw_7_2") sheetmodify cell(B3) first(varlabels)
-erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-
-*Population pyramid
-cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-use "${gsdTemp}/hh_comparison_Overall-NoPL_V1.dta", replace
-* merge with hhm data set
-merge 1:m strata ea block hh using "${gsdTemp}/hhm_SLw1w2.dta", nogen assert(match using) keep(match) keepusing(gender age literacy age_cat_narrow)
-svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-tabout age_cat_narrow gender using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls" if t==0, svy pop c(perc) f(5) sebnone h1("Age Distribution, w1") npos(col) replace ptotal(none) 
-tabout age_cat_narrow gender using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls" if t==1, svy pop c(perc) f(5) sebnone h1("Age Distribution, w2") npos(col) replace ptotal(none) 
-insheet using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear nonames tab
-replace v2 = v1 if v2==""
-cap drop v1 v4 
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Overall-NoPL_V1.xlsx", sheet("Raw_8") sheetmodify cell(b29) first(varlabels)
-insheet using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls", clear nonames tab
-replace v2 = v1 if v2==""
-cap drop v1 v4
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Overall-NoPL_V1.xlsx", sheet("Raw_8") sheetmodify cell(b56) first(varlabels)
-erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-
+* 4) Income, assets and hunger 
+use "${gsdTemp}/pca_data_w2.dta", clear
+keep if type==2
+mca hunger_never lhood_salaried assist__2 remit12m n_assets_owned
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Central-Rural"),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Jubbaland-Rural"),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Rural"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="SouthWest-Rural"),  msize(small) mcolor(gs8)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NE-Rural"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Rural Areas - Income/Hunger") legend(on order(1 "Central" 2 "Jubbaland" 3 "NW" 4 "SW" 5 "NE")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-5 5)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Rural_Income.gph", replace
 
 
 
 
 *=====================================================================
-* ANALYSIS FOR ALL AREAS (WITH PUNTLAND + COMPARABLE IDPs)
+* RURAL AREAS (WITHOUT JUBBALAND AND PUNTLAND): PCA ANALAYSIS OF W2
 *=====================================================================
-//CREATE DATASETS FOR EACH OF THE 5 SCENARIOS 
-*Check strata for IDPs in Wave 2
-*use "${gsdTemp}/hh_final.dta", clear
-* Step 1: Prepare data sets
-//V1 Case: Including IDPs/Migrants + Born Outside + Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"Mogadishu","NW-Urban","NW-Rural","NE-Urban","NE-Rural","IDP") & t>=0
-drop if ind_profile=="IDP" & t==1 &  !inlist(strata,4,5,6) 
-save "${gsdTemp}/hh_comparison_Overall_V1.dta", replace
-
-//V2 Case: Excluding IDPs/Migrants / Including Born Outside + Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"Mogadishu","NW-Urban","NW-Rural","NE-Urban","NE-Rural","IDP") & t>=0
-drop if ind_profile=="IDP" & t==1 &  !inlist(strata,4,5,6) 
-* Exclude IDPs
-drop if migr_idp==1
-drop if t==0 & ind_profile=="IDP"
-tab t, m
-save "${gsdTemp}/hh_comparison_Overall_V2.dta", replace
-
-//V3 Case: Excluding IDPs/Migrants + Born Outside / Including  Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"Mogadishu","NW-Urban","NW-Rural","NE-Urban","NE-Rural","IDP") & t>=0
-drop if ind_profile=="IDP" & t==1 &  !inlist(strata,4,5,6) 
-* Exclude IDPs + Born Outside
-drop if migr_idp==1
-drop if t==0 & ind_profile=="IDP"
-drop if hhh_outstate==1
-tab t, m
-save "${gsdTemp}/hh_comparison_Overall_V3.dta", replace
-
-//V4 Case: Excluding IDPs/Migrants + Born Outside + Not always live there / Weights 
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"Mogadishu","NW-Urban","NW-Rural","NE-Urban","NE-Rural","IDP") & t>=0
-drop if ind_profile=="IDP" & t==1 &  !inlist(strata,4,5,6) 
-* Excluding IDPs/Migrants + Born Outside + Not always lived in current HH
-drop if migr_idp==1
-drop if t==0 & ind_profile=="IDP"
-drop if hhh_outstate==1
-keep if prop_alwayslive==1
-tab t, m
-save "${gsdTemp}/hh_comparison_Overall_V4.dta", replace
-
-//V5 Case: Excluding IDPs/Migrants + Born Outside + Not always live there + self-reported drought shock
-use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
-keep if inlist(ind_profile,"Mogadishu","NW-Urban","NW-Rural","NE-Urban","NE-Rural","IDP") & t>=0
-drop if ind_profile=="IDP" & t==1 &  !inlist(strata,4,5,6) 
-* Excluding IDPs/Migrants + Born Outside + Not always lived in current HH + self-reported drought shock
-drop if migr_idp==1
-drop if t==0 & ind_profile=="IDP"
-drop if hhh_outstate==1
-keep if prop_alwayslive==1
-drop if shocks0__1==1
-tab t, m
-save "${gsdTemp}/hh_comparison_Overall_V5.dta", replace
+* 1) All variables
+use "${gsdTemp}/pca_data_w2.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+keep if type==2
+mca hhsize hhh_age pgender pliteracy tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal tmarket_10orless street_light hunger_never lhood_salaried assist__2 remit12m n_assets_owned 
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Central-Rural"),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Rural"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="SouthWest-Rural"),  msize(small) mcolor(gs8)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Rural Areas (w/o Jubbaland & Puntland) - All variables") legend(on order(1 "Central" 2 "NW" 3 "SW")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 5)) xscale(range(-5 5)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Rural_No-JB-PL_All_Vars.gph", replace
 
 
-* Implement extraction of statistics
-forvalues k = 1/5 {
-	use "${gsdTemp}/hh_comparison_Overall_V`k'.dta", clear
-	gen pweight=weight_cons*hhsize
-	svyset ea [pweight=pweight], strata(strata) singleunit(centered)
-	tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", svy sum c(mean poorPPP_prob ) sebnone f(3) h1("Poverty") npos(col) replace ptotal(none) 
-	local i=1
-	svy: mean poorPPP_prob, over(t)
-	test _subpop_1 = _subpop_2
-	cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-	putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
-	putexcel A`i' = "Poverty"
-	putexcel B`i' =`r(p)'
+* 2)Household composition/characteristics
+use "${gsdTemp}/pca_data_w2.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+keep if type==2
+mca hhsize hhh_age pgender pliteracy
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Central-Rural"),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Rural"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="SouthWest-Rural"),  msize(small) mcolor(gs8)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Rural Areas (w/o Jubbaland & Puntland) - HH Characteristics") legend(on order(1 "Central" 2 "NW" 3 "SW")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-15 5)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Rural_No-JB-PL_HH.gph", replace
 
-	*Variables of interest
-	drop pweight
-	svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-	global vars hhsize pgender hhh_age hhh_gender adult_male youth_male child_boy pworking_age n_dependent pliteracy_25 n_literate dum_iliterate_adult_hh lfp_7d_hh emp_7d_hh house_type_comparable__* tenure_own_rent floor_comparable* roof_metal  cook_comparable1 cook_comparable2 cook_comparable3 piped_water  protected_water sanitation_comparable
-	foreach v of varlist $vars {
-		noisily di `v'
-		local l : variable label `v'
-		tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", svy sum c(mean `v') sebnone f(3) h1("`l'") npos(col) append ptotal(none) 
-		svy: mean `v', over(t)
-		test _subpop_1 = _subpop_2
-		local i=`i'+1
-		putexcel A`i' ="`l'"
-		putexcel B`i' =`r(p)'
-	}
+* 3) Dwelling characteristics
+use "${gsdTemp}/pca_data_w2.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+keep if type==2
+mca tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal tmarket_10orless street_light
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Central-Rural"),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Rural"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="SouthWest-Rural"),  msize(small) mcolor(gs8)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Rural Areas (w/o Jubbaland & Puntland) - Dwelling Characteristics") legend(on order(1 "Central" 2 "NW" 3 "SW")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-5 5)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Rural_No-JB-PL_Dwelling.gph", replace
+
+* 4) Income, assets and hunger 
+use "${gsdTemp}/pca_data_w2.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+keep if type==2
+mca hunger_never lhood_salaried assist__2 remit12m n_assets_owned
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Central-Rural"),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Rural"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="SouthWest-Rural"),  msize(small) mcolor(gs8)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Rural Areas (w/o Jubbaland & Puntland) - Income/Hunger") legend(on order(1 "Central" 2 "NW" 3 "SW")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-6 4)) ylabel(#5) xlabel(#2)
+graph save "${gsdShared}/2-Output/PCA/Rural_No-JB-PL_Income.gph", replace
 
 
-	import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-	ren A v1
-	ren (B) (p_value) 
-	gen n=_n
-	save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-	insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-	drop if v1=="t"
-	drop v3 
-    gen even = !mod(_n,2)
-    gen n=_n  
-	replace n=n-even 
-    gen n2=(n+1)/2 
-    drop n even 
-	rename (n2 v1) (n v1_old) 
-	gen v1=0 if v1_old=="Wave 1"
-	replace v1=1 if v1_old=="Wave 2"
-	drop v1_old 
- 	reshape wide v2, i(n) j(v1)
-	rename (v20 v21) (v2 v3)
-	la var v2 "Wave 1"
-	la var v3 "Wave 2"
-	merge 1:1 n using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-	drop n
-	la var v1 "Variable of interest"
-	order  v1 v2 v3
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Overall_V1.xlsx", sheet("Raw_`k'") sheetmodify cell(B3) first(varlabels)
-	erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-}
 
-*Check average age and age distribution * 
-* Append the data first
-use "${gsdData}/1-CleanTemp/hhm_all.dta", clear
-append using "${gsdTemp}/SLSH-hhm_comparable.dta"
-la def lt 0 "Wave 1" 1 "Wave 2", replace
-la val t lt
-save "${gsdTemp}/hhm_SLw1w2.dta", replace
 
-foreach k in 1 2 3 4 5 {
-	use "${gsdTemp}/hh_comparison_Overall_V`k'.dta", clear
-	* merge with hhm data set
-	merge 1:m strata ea block hh using "${gsdTemp}/hhm_SLw1w2.dta", nogen assert(match using) keep(match) keepusing(age literacy age_cat_narrow dependent gender)
+*=====================================================================
+* IDPS + NOMADS: PCA ANALAYSIS OF W2
+*=====================================================================
+ * 1) All variables
+use "${gsdTemp}/pca_data_w2.dta", clear
+keep if type==3 | type==4
+mca hhsize hhh_age pgender pliteracy tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal tmarket_10orless street_light hunger_never lhood_salaried assist__2 remit12m n_assets_owned 
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="IDP"),  msize(small) mcolor(red)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Nomad"),  msize(small) mcolor(blue)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("IDP & Nomads - All variables") legend(on order(1 "IDPs" 2 "Nomads" )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 5)) xscale(range(-5 5)) ylabel(#5) xlabel(#5)
+graph save "${gsdShared}/2-Output/PCA/IDP_Nomads_All_Vars.gph", replace
 
-	* Variables of interest
-	cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw4_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls"
-	cap erase "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls"
-	local i=1
-	svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-	replace literacy=. if age<30
-	global hhmvars age gender dependent literacy
-	foreach v of varlist $hhmvars {
-		local l : variable label `v'
-		tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", svy sum c(mean `v') sebnone f(3) h1("`l'") npos(col) append ptotal(none) 
-		svy: mean `v', over(t)
-		test _subpop_1 = _subpop_2
-		putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
-		local i=`i'+1
-		putexcel A`i' = "`l'"
-		putexcel B`i' =`r(p)'
-	}
-	import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-	ren A v1
-	ren (B) (p_value)
-	gen n=_n
-	save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-	insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-	drop if v1=="t"
-    drop v3
-	gen even = !mod(_n,2)
-    gen n=_n  
-	replace n=n-even 
-    gen n2=(n+1)/2 
-    drop n even 
-	rename (n2 v1) (n v1_old) 
-	gen v1=0 if v1_old=="Wave 1"
-	replace v1=1 if v1_old=="Wave 2"
-	drop v1_old 
- 	reshape wide v2, i(n) j(v1)
-	rename (v20 v21) (v2 v3)
-	la var v2 "Wave 1"
-	la var v3 "Wave 2"
-	merge 1:1 n using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-    drop n
-	la var v1 "Variable of interest"
-	order  v1 v2 v3
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Overall_V1.xlsx", sheet("Raw_`k'_2") sheetreplace first(varlabels)
-	erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
 
-	* Age distribution
-	use "${gsdTemp}/hh_comparison_Overall_V`k'.dta", replace
-	* merge with hhm data set
-	merge 1:m strata ea block hh using "${gsdTemp}/hhm_SLw1w2.dta", nogen assert(match using) keep(match) keepusing(age literacy age_cat_narrow)
-	svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls" if t==0, svy pop c(perc lb) f(5) sebnone h2("Age Distribution, w1") npos(col) replace ptotal(none) 
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls" if t==1, svy pop c(perc lb) f(5) sebnone h2("Age Distribution, w2") npos(col) replace ptotal(none) 
-	drop if mi(literacy)
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls" if t==0, svy sum c(mean literacy lb) f(5) sebnone h2("Literacy X Age, w1")  replace ptotal(none) 
-	tabout age_cat_narrow using "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls" if t==1, svy sum c(mean literacy lb) f(5) sebnone h2("Literacy X Age, w2")  replace ptotal(none) 
-	insheet using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1 v4 
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Overall_V1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(D6) first(varlabels)
-	insheet using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1 v4
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Overall_V1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(F6) first(varlabels)
-	insheet using "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Overall_V1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(J7) first(varlabels)
-	insheet using "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls", clear nonames tab
-	replace v2 = v1 if v2==""
-	cap drop v1
-	export excel using "${gsdShared}/2-Output/W1W2-comparison_Overall_V1.xlsx", sheet("Raw_`k'_2") sheetmodify cell(L7) first(varlabels)
-	erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw5_NW-Urban.xls"
-	erase "${gsdOutput}/W1W2-comparison_raw6_NW-Urban.xls"
-}
+* 2)Household composition/characteristics
+use "${gsdTemp}/pca_data_w2.dta", clear
+keep if type==3 | type==4
+mca hhsize hhh_age pgender pliteracy
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="IDP"),  msize(small) mcolor(red)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Nomad"),  msize(small) mcolor(blue)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("IDP & Nomads - HH Characteristics") legend(on order(1 "IDPs" 2 "Nomads"  )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 10)) xscale(range(-5 5)) ylabel(#5) xlabel(#5)
+graph save "${gsdShared}/2-Output/PCA/IDP_Nomads_HH.gph", replace
 
-*Include the average number of each item owned
-use "${gsdData}/1-CleanOutput/assets.dta", clear
-*Wave 2
-gen t=1
-merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", nogen keep(match) keepusing(ind_profile weight_cons weight_adj hhsize)
-*Include owning zero assets 
-replace own_n=0 if own==0
-keep t strata ea block hh weight_cons hhsize itemid own_n weight_adj ind_profile
-save "${gsdTemp}/assets_nwurban_w2.dta", replace
-*Wave 1 ID zeros
-use "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
-merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hh.dta"
-keep if _merge==2 | (strata==101 & ea==85 & block==11 & hh==4)
-keep strata ea block hh itemid own_n
-replace itemid=1 if itemid==.
-reshape wide own_n, i(strata ea block hh) j(itemid)
-reshape long
-drop if strata==101 & ea==85 & block==11 & hh==4
-replace own_n=0 if own_n==.
-save "${gsdTemp}/assets_nwurban_w2_noassets.dta", replace
-*Wave 1 
-use "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
-keep strata ea block hh itemid own_n
-append using "${gsdTemp}/assets_nwurban_w2_noassets.dta"
-replace own_n=0 if own_n==.
-gen t=0
-merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", nogen keep(master match) keepusing(ind_profile weight_cons weight_adj hhsize)
-keep t strata ea block hh weight_cons hhsize itemid own_n weight_adj ind_profile
-append using "${gsdTemp}/assets_nwurban_w2.dta"
-la def lt 0 "Wave 1" 1 "Wave 2", replace
-la val t lt
-*Restrict to the relevant subsample
-merge m:1 t strata ea block hh using "${gsdTemp}/hh_comparison_Overall_V1.dta", nogen keep(match)
-svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-tab itemid, gen(item_)
-foreach k of varlist item_* {
-local a : variable label `k'
-local a : subinstr local a "itemid==" ""
-label var `k' "`a'"
-}
-drop if mi(own_n)
-cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-preserve
-local i=1
-levelsof itemid, local(items) 
-qui foreach item of local items {
-	su own_n
-	local l : variable label item_`item'
-	tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls" if itemid==`item', svy sum c(mean own_n) sebnone f(5) h1("`l'") append ptotal(none)
-	svy: mean own_n if itemid==`item', over(t)
-	cap test _subpop_1==_subpop_2
-	putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", modify
-	putexcel A`i' = "`l'"
-	cap putexcel B`i' =`r(p)'
-	local i=`i'+1
-}
-import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-ren A v1
-ren B p_value
-gen n=_n
-save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-drop if v1=="t"
-gen even = !mod(_n,2)
-gen n=_n  
-replace n=n-even 
-gen n2=(n+1)/2 
-drop n even 
-rename (n2 v1) (n v1_old) 
-gen v1=0 if v1_old=="Wave 1"
-replace v1=1 if v1_old=="Wave 2"
-drop v1_old 
-reshape wide v2, i(n) j(v1)
-rename (v20 v21) (v2 v3)
-la var v2 "Wave 1"
-la var v3 "Wave 2"
-merge 1:1 n using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-drop n
-la var v1 "Variable of interest"
-order  v1 v2 v3
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Overall_V1.xlsx", sheet("Raw_6") sheetmodify cell(B3) first(varlabels)
-erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-restore
-*Check median values
-levelsof itemid, local(items) 
-qui foreach item of local items {
-	preserve 
-	keep if itemid==`item'
-	collapse (median) own_n [aweight=weight_adj], by(t)
-	gen itemid=`item'
-	reshape wide own_n, i(itemid) j(t)
-	save "${gsdTemp}/W1W2-comparison_assets_`item'.dta", replace
-	restore
-}
-use "${gsdTemp}/W1W2-comparison_assets_1.dta", clear
-qui forval i=2/37 {
-	append using "${gsdTemp}/W1W2-comparison_assets_`i'.dta"
-}
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Overall_V1.xlsx", sheet("Raw_7") sheetmodify cell(B3) first(varlabels)
+* 3) Dwelling characteristics
+use "${gsdTemp}/pca_data_w2.dta", clear
+keep if type==3 | type==4
+mca tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal tmarket_10orless street_light
+predict a1 a2 
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="IDP"),  msize(small) mcolor(red)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Nomad"),  msize(small) mcolor(blue)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("IDP & Nomads - Dwelling Characteristics") legend(on order(1 "IDPs" 2 "Nomads" )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-5 5)) ylabel(#5) xlabel(#5)
+graph save "${gsdShared}/2-Output/PCA/IDP_Nomads_Dwelling.gph", replace
 
-*Include information on assets sold in Wave 2
-cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-use "${gsdTemp}/hh_comparison_Overall_V1.dta", clear
-gen pweight=weight_adj*hhsize
-svyset ea [pweight=pweight], strata(strata) singleunit(centered)
-gen sell_assets=(inlist(cop_sellassets,1,3)) if !missing(cop_sellassets)
-tabout t using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls" if t>=0, svy sum c(mean sell_assets) sebnone f(5) h1("`l'") replace ptotal(none)
-svy: mean sell_assets if t>=0, over(t)
-cap test _subpop_1==_subpop_2
-putexcel set "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", replace
-putexcel A1 = "Sell_Assets"
-cap putexcel B1 =`r(p)'
-import excel using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear 
-ren A v1
-ren B p_value
-sort v1
-save "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", replace
-insheet using "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls", clear 
-gen v1="Sell_Assets"
-merge m:1 v1 using "${gsdTemp}/W1W2-comparison_raw2_NW-Urban.dta", nogen
-duplicates drop
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Overall_V1.xlsx", sheet("Raw_7_2") sheetmodify cell(B3) first(varlabels)
-erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-
-*Population pyramid
-cap erase "${gsdOutput}/W1W2-comparison_raw1_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-cap erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
-use "${gsdTemp}/hh_comparison_Overall_V1.dta", replace
-* merge with hhm data set
-merge 1:m strata ea block hh using "${gsdTemp}/hhm_SLw1w2.dta", nogen assert(match using) keep(match) keepusing(gender age literacy age_cat_narrow)
-svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-tabout age_cat_narrow gender using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls" if t==0, svy pop c(perc) f(5) sebnone h1("Age Distribution, w1") npos(col) replace ptotal(none) 
-tabout age_cat_narrow gender using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls" if t==1, svy pop c(perc) f(5) sebnone h1("Age Distribution, w2") npos(col) replace ptotal(none) 
-insheet using "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls", clear nonames tab
-replace v2 = v1 if v2==""
-cap drop v1 v4 
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Overall_V1.xlsx", sheet("Raw_8") sheetmodify cell(b29) first(varlabels)
-insheet using "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls", clear nonames tab
-replace v2 = v1 if v2==""
-cap drop v1 v4
-export excel using "${gsdShared}/2-Output/W1W2-comparison_Overall_V1.xlsx", sheet("Raw_8") sheetmodify cell(b56) first(varlabels)
-erase "${gsdOutput}/W1W2-comparison_raw2_NW-Urban.xls"
-erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
+* 4) Income, assets and hunger 
+use "${gsdTemp}/pca_data_w2.dta", clear
+keep if type==3 | type==4
+mca hunger_never lhood_salaried assist__2 remit12m n_assets_owned
+predict a1 a2 
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="IDP"),  msize(small) mcolor(red)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="Nomad"),  msize(small) mcolor(blue)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("IDP & Nomads - Income/Hunger") legend(on order(1 "IDPs" 2 "Nomads" )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-5 5)) ylabel(#5) xlabel(#5)
+graph save "${gsdShared}/2-Output/PCA/IDP_Nomads_Income.gph", replace
 
