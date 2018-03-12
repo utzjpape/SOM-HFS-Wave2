@@ -800,3 +800,370 @@ yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight") 
 ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-5 5)) ylabel(#5) xlabel(#5)
 graph save "${gsdShared}/2-Output/PCA/IDP_Nomads_Income.gph", replace
 
+
+
+
+
+*=====================================================================
+* DATASET FOR PCA ANALAYSIS OF W1
+*=====================================================================
+*ID zeros
+use "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
+merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hh.dta"
+keep if _merge==2 | (strata==101 & ea==85 & block==11 & hh==4)
+keep strata ea block hh itemid own_n
+replace itemid=1 if itemid==.
+reshape wide own_n, i(strata ea block hh) j(itemid)
+reshape long
+drop if strata==101 & ea==85 & block==11 & hh==4
+replace own_n=0 if own_n==.
+save "${gsdTemp}/assets_w1_noassets.dta", replace
+*Wave 1 
+use "${gsdData}/1-CleanInput/SHFS2016/assets.dta", clear
+keep strata ea block hh itemid own_n
+append using "${gsdTemp}/assets_w1_noassets.dta"
+replace own_n=0 if own_n==.
+gen t=0
+merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1w2_comparison.dta", nogen keep(master match) keepusing(ind_profile weight_cons weight_adj hhsize)
+keep strata ea block hh weight_cons hhsize itemid own_n weight_adj ind_profile
+collapse (sum) own_n , by (strata ea block hh) 
+rename own_n n_assets_owned
+save "${gsdTemp}/assets_owned_w1.dta", replace
+
+*Include assets and generate key variables for the PCA analysis
+use "${gsdTemp}/hh_SLHSw1w2_comparison.dta", clear
+keep if t==0
+drop roof_metal
+merge 1:1 strata ea block hh using "${gsdTemp}/assets_owned_w1.dta", nogen assert(match)
+gen tenure_own=(tenure==2) if !missing(tenure)
+gen house_type_apt=(house_type_cat==1) if !missing(house_type_cat)
+gen water_pipe=(water==1) if !missing(water)
+gen cook_charcoal=(cook==2) if !missing(cook)
+gen toilet_flush_pit=sanitation_comparable if !missing(sanitation_comparable)
+gen floor_cement=(floor_material==1) if !missing(floor_material)
+gen roof_metal=(roof_material==1) if !missing(roof_material)
+*gen tmarket_10orless=(tmarket<=2) if !missing(tmarket)
+gen hunger_never=(hunger==1) if !missing(hunger)
+gen lhood_salaried=(main_income_source==1) if !missing(main_income_source)
+replace pgender=round(pgender*100,1)
+replace pliteracy=round(pliteracy*100,1)
+keep strata ea block hh type ind_profile weight_adj n_assets_owned tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal hunger_never lhood_salaried hhsize hhh_age pgender pliteracy remit12m
+order strata ea block hh type ind_profile weight_adj hhsize hhh_age pgender pliteracy tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal hunger_never lhood_salaried remit12m n_assets_owned
+save "${gsdTemp}/pca_data_w1.dta", replace
+
+*=====================================================================
+* ALL REGIONS: PCA ANALAYSIS OF W1
+*=====================================================================
+* 1) All variables
+use "${gsdTemp}/pca_data_w1.dta", clear
+mca hhsize hhh_age pgender pliteracy tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal   hunger_never lhood_salaried  remit12m n_assets_owned 
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Mogadishu","NE-Urban","NW-Urban")),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"NE-Rural","NW-Rural")),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="IDP"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("All regions - All variables") legend(on order(1 "Urban" 2 "Rural" 3 "IDPs" )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 5)) xscale(range(-5 5)) ylabel(#5) xlabel(#5)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Wave_1/Overall_All_Vars.gph", replace
+
+
+* 2)Household composition/characteristics
+use "${gsdTemp}/pca_data_w1.dta", clear
+mca hhsize hhh_age pgender pliteracy
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Mogadishu","NE-Urban","NW-Urban")),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"NE-Rural","NW-Rural")),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="IDP"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("All regions - HH Characteristics") legend(on order(1 "Urban" 2 "Rural" 3 "IDPs" )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 10)) xscale(range(-5 5)) ylabel(#5) xlabel(#5)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Wave_1/Overall_HH.gph", replace
+
+* 3) Dwelling characteristics
+use "${gsdTemp}/pca_data_w1.dta", clear
+mca tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal  
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Mogadishu","NE-Urban","NW-Urban")),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"NE-Rural","NW-Rural")),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="IDP"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("All regions - Dwelling Characteristics") legend(on order(1 "Urban" 2 "Rural" 3 "IDPs"  )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 10)) xscale(range(-5 5)) ylabel(#5) xlabel(#5)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Wave_1/Overall_Dwelling.gph", replace
+
+* 4) Income, assets and hunger 
+use "${gsdTemp}/pca_data_w1.dta", clear
+mca hunger_never lhood_salaried  remit12m n_assets_owned
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Mogadishu","NE-Urban","NW-Urban")),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"NE-Rural","NW-Rural")),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="IDP"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("All regions - Income/Hunger") legend(on order(1 "Urban" 2 "Rural" 3 "IDPs" )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 10)) xscale(range(-5 5)) ylabel(#5) xlabel(#5)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Wave_1/Overall_Income.gph", replace
+
+
+
+
+
+*=====================================================================
+* ALL REGIONS (WITHOUT PUNTLAND): PCA ANALAYSIS OF W1
+*=====================================================================
+* 1) All variables
+use "${gsdTemp}/pca_data_w1.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+mca hhsize hhh_age pgender pliteracy tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal   hunger_never lhood_salaried  remit12m n_assets_owned 
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Mogadishu","NE-Urban","NW-Urban")),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"NE-Rural","NW-Rural")),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="IDP"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("All regions (w/o Puntland) - All variables") legend(on order(1 "Urban" 2 "Rural" 3 "IDPs" )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 5)) xscale(range(-5 5)) ylabel(#5) xlabel(#5)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Overall_No-JB-PL_All_Vars.gph", replace
+
+
+* 2)Household composition/characteristics
+use "${gsdTemp}/pca_data_w1.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+mca hhsize hhh_age pgender pliteracy
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Mogadishu","NE-Urban","NW-Urban")),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"NE-Rural","NW-Rural")),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="IDP"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("All regions (w/o Puntland) - HH Characteristics") legend(on order(1 "Urban" 2 "Rural" 3 "IDPs" )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 10)) xscale(range(-5 5)) ylabel(#5) xlabel(#5)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Overall_No-JB-PL_HH.gph", replace
+
+* 3) Dwelling characteristics
+use "${gsdTemp}/pca_data_w1.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+mca tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal  
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Mogadishu","NE-Urban","NW-Urban")),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"NE-Rural","NW-Rural")),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="IDP"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("All regions (w/o Puntland) - Dwelling Characteristics") legend(on order(1 "Urban" 2 "Rural" 3 "IDPs" )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-5 5)) ylabel(#5) xlabel(#5)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Overall_No-JB-PL_Dwelling.gph", replace
+
+* 4) Income, assets and hunger 
+use "${gsdTemp}/pca_data_w1.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+mca hunger_never lhood_salaried  remit12m n_assets_owned
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"Mogadishu","NE-Urban","NW-Urban")),  msize(small) mcolor(black)) ///
+(scatter a2 a1 [aw=weight_adj] if (inlist(ind_profile,"NE-Rural","NW-Rural")),  msize(small) mcolor(green)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="IDP"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("All regions (w/o Puntland) - Income/Hunger") legend(on order(1 "Urban" 2 "Rural" 3 "IDPs"  )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 10)) xscale(range(-5 5)) ylabel(#5) xlabel(#5)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Overall_No-JB-PL_Income.gph", replace
+
+
+
+
+*=====================================================================
+* URBAN AREAS: PCA ANALAYSIS OF W1
+*=====================================================================
+* 1) All variables
+use "${gsdTemp}/pca_data_w1.dta", clear
+keep if type==1
+mca hhsize hhh_age pgender pliteracy tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal   hunger_never lhood_salaried  remit12m n_assets_owned 
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Mogadishu"),  msize(small) mcolor(blue)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Urban"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NE-Urban"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Urban Areas - All variables") legend(on order(1 "Mogadishu" 2 "NW" 3 "NE")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 5)) xscale(range(-5 10)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Urban_All_Vars.gph", replace
+
+
+* 2)Household composition/characteristics
+use "${gsdTemp}/pca_data_w1.dta", clear
+keep if type==1
+mca hhsize hhh_age pgender pliteracy
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Mogadishu"),  msize(small) mcolor(blue)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Urban"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NE-Urban"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Urban Areas - HH Characteristics") legend(on order(1 "Mogadishu" 2 "NW" 3 "NE")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-40 5)) xscale(range(-45 5)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Urban_HH.gph", replace
+
+* 3) Dwelling characteristics
+use "${gsdTemp}/pca_data_w1.dta", clear
+keep if type==1
+mca tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal  
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Mogadishu"),  msize(small) mcolor(blue)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Urban"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NE-Urban"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Urban Areas - Dwelling Characteristics") legend(on order(1 "Mogadishu" 2 "NW" 3 "NE")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-5 5)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Urban_Dwelling.gph", replace
+
+* 4) Income, assets and hunger 
+use "${gsdTemp}/pca_data_w1.dta", clear
+keep if type==1
+mca hunger_never lhood_salaried  remit12m n_assets_owned
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Mogadishu"),  msize(small) mcolor(blue)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Urban"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NE-Urban"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Urban Areas - Income/Hunger") legend(on order(1 "Mogadishu" 2 "NW" 3 "NE")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-5 10)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Urban_Income.gph", replace
+
+
+
+
+*=====================================================================
+* URBAN AREAS (WITHOUT PUNTLAND): PCA ANALAYSIS OF W1
+*=====================================================================
+* 1) All variables
+use "${gsdTemp}/pca_data_w1.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+keep if type==1
+mca hhsize hhh_age pgender pliteracy tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal   hunger_never lhood_salaried  remit12m n_assets_owned 
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Mogadishu"),  msize(small) mcolor(blue)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Urban"),  msize(small) mcolor(dknavy)) , xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Urban Areas (w/o Puntland) - All variables") legend(on order(1 "Mogadishu" 2 "NW")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 5)) xscale(range(-5 15)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Urban_No-JB-PL_All_Vars.gph", replace
+
+* 2)Household composition/characteristics
+use "${gsdTemp}/pca_data_w1.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+keep if type==1
+mca hhsize hhh_age pgender pliteracy
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Mogadishu"),  msize(small) mcolor(blue)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Urban"),  msize(small) mcolor(dknavy)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Urban Areas (w/o Puntland) - HH Characteristics") legend(on order(1 "Mogadishu" 2 "NW" )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 5)) xscale(range(-40 5)) ylabel(#5) xlabel(#5)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Urban_No-JB-PL_HH.gph", replace
+
+* 3) Dwelling characteristics
+use "${gsdTemp}/pca_data_w1.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+keep if type==1
+mca tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal  
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Mogadishu"),  msize(small) mcolor(blue)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Urban"),  msize(small) mcolor(dknavy)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Urban Areas (w/o Puntland) - Dwelling Characteristics") legend(on order(1 "Mogadishu" 2 "NW" )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-4 3)) xscale(range(-3 3)) ylabel(#1) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Urban_No-JB-PL_Dwelling.gph", replace
+
+* 4) Income, assets and hunger 
+use "${gsdTemp}/pca_data_w1.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+keep if type==1
+mca hunger_never lhood_salaried  remit12m n_assets_owned
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="Mogadishu"),  msize(small) mcolor(blue)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Urban"),  msize(small) mcolor(dknavy)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Urban Areas (w/o Puntland) - Income/Hunger") legend(on order(1 "Mogadishu" 2 "NW" )) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-4 6)) ylabel(#5) xlabel(#2)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Urban_No-JB-PL_Income.gph", replace
+
+
+
+
+*=====================================================================
+* RURAL AREAS: PCA ANALAYSIS OF W1
+*=====================================================================
+* 1) All variables
+use "${gsdTemp}/pca_data_w1.dta", clear
+keep if type==2
+mca hhsize hhh_age pgender pliteracy tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal   hunger_never lhood_salaried  remit12m n_assets_owned 
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Rural"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NE-Rural"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Rural Areas - All variables") legend(on order(1 "NW" 2 "NE")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 5)) xscale(range(-5 5)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Rural_All_Vars.gph", replace
+
+
+* 2)Household composition/characteristics
+use "${gsdTemp}/pca_data_w1.dta", clear
+keep if type==2
+mca hhsize hhh_age pgender pliteracy
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Rural"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NE-Rural"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Rural Areas - HH Characteristics") legend(on order(1 "NW" 2 "NE")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-15 5)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Rural_HH.gph", replace
+
+* 3) Dwelling characteristics
+use "${gsdTemp}/pca_data_w1.dta", clear
+keep if type==2
+mca tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal  
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Rural"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NE-Rural"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Rural Areas - Dwelling Characteristics") legend(on order(1 "NW" 2 "NE")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-5 5)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Rural_Dwelling.gph", replace
+
+* 4) Income, assets and hunger 
+use "${gsdTemp}/pca_data_w1.dta", clear
+keep if type==2
+mca hunger_never lhood_salaried  remit12m n_assets_owned
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Rural"),  msize(small) mcolor(dknavy)) ///
+(scatter a2 a1 [aw=weight_adj] if (ind_profile=="NE-Rural"),  msize(small) mcolor(red)), xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Rural Areas - Income/Hunger") legend(on order(1 "NW" 2 "NE")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-5 5)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Rural_Income.gph", replace
+
+
+
+
+*=====================================================================
+* RURAL AREAS (WITHOUT PUNTLAND): PCA ANALAYSIS OF W1
+*=====================================================================
+* 1) All variables
+use "${gsdTemp}/pca_data_w1.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+keep if type==2
+mca hhsize hhh_age pgender pliteracy tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal   hunger_never lhood_salaried  remit12m n_assets_owned 
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Rural"),  msize(small) mcolor(dknavy)) , xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Rural Areas (w/o Puntland) - All variables") legend(on order(1 "NW")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-10 5)) xscale(range(-5 5)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Rural_No-JB-PL_All_Vars.gph", replace
+
+
+* 2)Household composition/characteristics
+use "${gsdTemp}/pca_data_w1.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+keep if type==2
+mca hhsize hhh_age pgender pliteracy
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Rural"),  msize(small) mcolor(dknavy)) , xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Rural Areas (w/o Puntland) - HH Characteristics") legend(on order(1 "NW")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-15 5)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Rural_No-JB-PL_HH.gph", replace
+
+* 3) Dwelling characteristics
+use "${gsdTemp}/pca_data_w1.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+keep if type==2
+mca tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal  
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Rural"),  msize(small) mcolor(dknavy)) , xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Rural Areas (w/o Puntland) - Dwelling Characteristics") legend(on order(1 "NW")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-5 5)) ylabel(#5) xlabel(#1)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Rural_No-JB-PL_Dwelling.gph", replace
+
+* 4) Income, assets and hunger 
+use "${gsdTemp}/pca_data_w1.dta", clear
+drop if inlist(ind_profile,"Jubbaland-Rural","Jubbaland-Urban","NE-Urban","NE-Rural")
+keep if type==2
+mca hunger_never lhood_salaried  remit12m n_assets_owned
+predict a1 a2
+twoway (scatter a2 a1 [aw=weight_adj] if (ind_profile=="NW-Rural"),  msize(small) mcolor(dknavy)) , xline(0) ///
+yline(0) scale(.9) note("Note: Area of symbol proportional to sampling weight")  title("Rural Areas (w/o Puntland) - Income/Hunger") legend(on order(1 "NW")) ///
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-5 5)) xscale(range(-6 4)) ylabel(#5) xlabel(#2)
+graph save "${gsdShared}/2-Output/PCA/Wave_1/Rural_No-JB-PL_Income.gph", replace
+
+
