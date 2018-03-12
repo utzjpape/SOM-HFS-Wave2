@@ -13,7 +13,7 @@ gen nomads=0
 append using "${gsdData}/0-RawTemp/hh_valid_keys_and_WPs.dta", force
 save "${gsdData}/0-RawTemp/hh_valid_keys_and_EAs_all.dta", replace
 
-local files hh_roster_separated hhroster_age motor ra_assets ra_assets_prev rf_food ///
+local files hh_roster_separated motor ra_assets ra_assets_prev rf_food ///
 	rf_food_cereals rf_food_fruit rf_food_meat rf_food_vegetables rl_livestock rl_livestock_pre ///
 	rnf_nonfood shocks
 qui foreach file in `files' {
@@ -22,6 +22,10 @@ qui foreach file in `files' {
 	save "${gsdData}/0-RawTemp/`file'_manual_cleaning_all.dta", replace
 }
 
+* Include education data in hhm level data 
+use "${gsdData}/0-RawTemp/hhroster_age_after_phone_survey.dta", clear
+append using "${gsdData}/0-RawTemp/hhroster_age_nomads_after_phone_survey.dta", force
+save "${gsdData}/0-RawTemp/hhroster_age_manual_cleaning_all.dta", replace
 
 ********************************************************************
 *Obtain keys for valid and successful submissions from valid EAs 
