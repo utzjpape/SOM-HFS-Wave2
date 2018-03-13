@@ -2885,6 +2885,7 @@ erase "${gsdOutput}/W1W2-comparison_raw3_NW-Urban.xls"
 *=====================================================================
 *PCA analysis: Urban
 use "${gsdTemp}/pca_data_w2.dta", clear
+*keep if inlist(ind_profile,"Mogadishu","NE-Urban","NW-Urban","NE-Rural","NW-Rural","IDP")
 keep if type==1
 mca hhsize hhh_age pgender pliteracy tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal tmarket_10orless street_light hunger_never lhood_salaried assist__2 remit12m n_assets_owned 
 predict a1 a2
@@ -2901,6 +2902,7 @@ save "${gsdTemp}/pca_hhs_exclude_urban.dta", replace
 
 *PCA analysis: Rural
 use "${gsdTemp}/pca_data_w2.dta", clear
+*keep if inlist(ind_profile,"Mogadishu","NE-Urban","NW-Urban","NE-Rural","NW-Rural","IDP")
 keep if type==2
 mca hhsize hhh_age pgender pliteracy tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal tmarket_10orless street_light hunger_never lhood_salaried assist__2 remit12m n_assets_owned 
 predict a1 a2
@@ -2917,6 +2919,7 @@ save "${gsdTemp}/pca_hhs_exclude_rural.dta", replace
 
 *PCA analysis: IDPs & Nomads
 use "${gsdTemp}/pca_data_w2.dta", clear
+*keep if inlist(ind_profile,"Mogadishu","NE-Urban","NW-Urban","NE-Rural","NW-Rural","IDP")
 keep if type==3 | type==4
 mca hhsize hhh_age pgender pliteracy tenure_own house_type_apt water_pipe cook_charcoal toilet_flush_pit floor_cement roof_metal tmarket_10orless street_light hunger_never lhood_salaried assist__2 remit12m n_assets_owned 
 predict a1 a2
