@@ -52,20 +52,23 @@ replace migr_pasture=.z if hhm_away_m<=0 | hhm_away_m>=.
 replace nomad=.z if migr_pasture!=1
 replace migr_reason=.z if hhm_relation==1 | hh_alwayslived!=0
 replace migr_from=.z if hhm_relation==1 | migr_reason!=1
+
+
 foreach var in hhm_read hhm_write hhm_edu_current hhm_edu_k_current hhm_edu_reason hhm_edu_disp hhm_edu_ever hhm_edu_years hhm_edu_years_kdk hhm_edu_level absent_duration_yn absent_reason {
 	replace `var'=.z if hhm_age<=5 | hhm_age>=.
 }
 replace hhm_edu_reason=.z if hhm_edu_current!=0 | hhm_age>20
 replace hhm_edu_disp=.z if migr_idp!=1
 
-*Correct change in the questionnaire 
-
-*Correct an incorrect skip pattern
+*Correct changes in the questionnaire & correct an incorrect skip pattern
 replace hhm_edu_ever=1 if migr_idp==0 & hhm_edu_current==1 & hhm_age>5 
-replace hhm_edu_ever=.z if (hhm_edu_current!=0 | hhm_edu_disp!=0) & !inlist(hhm_edu_ever,0,1)
-replace hhm_edu_years_kdk=.z if hhm_edu_ever!=1 & hhm_edu_current!=1 & hhm_edu_disp!=1
+replace hhm_edu_years_kdk=.z if hhm_edu_ever!=1 & hhm_edu_current!=1 & hhm_edu_disp!=1 & hhm_edu_ever!=.
+replace hhm_edu_years_kdk=. if hhm_edu_ever==.
 replace hhm_edu_years=.z if hhm_edu_years_kdk>=.
+replace hhm_edu_years=. if hhm_edu_ever==.
 replace hhm_edu_level=.z if  hhm_edu_ever!=1 & hhm_edu_current!=1 & hhm_edu_disp!=1
+replace hhm_edu_level=. if hhm_edu_ever==.
+
 replace absent_duration_yn=.z if hhm_edu_current!=1 | hhm_age>18
 replace absent_reason=.z if absent_duration_yn!=1
 foreach var in hhm_resp emp_7d_paid emp_7d_busi emp_7d_help emp_7d_farm emp_7d_appr emp_7d_active emp_7d_temp emp_7d_inac emp_12m_active emp_12m_detail emp_ever_active emp_ever_detail  {
@@ -138,6 +141,5 @@ label var emp_7d_active "Active household member in the last 7 days"
 label var unemp_7d "Unemployed household member in the last 7 days"
 rename (hhroster_age__id) (hhm_id)
 drop migr_idp hhr_id
-
 save "${gsdData}/0-RawOutput/hhm_clean.dta", replace
 

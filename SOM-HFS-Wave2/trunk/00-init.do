@@ -119,7 +119,7 @@ else {
 }
 
 *install packages used in the process
-local commands = "labmask insheetjson missings diff labmv outreg2 geodist vincenty fastgini tabout logout svylorenz shp2dta spmap"
+local commands = "labmask insheetjson missings diff labmv outreg2 geodist vincenty fastgini tabout logout svylorenz shp2dta spmap distinct"
 foreach c of local commands {
 	qui capture which `c' 
 	qui if _rc!=0 {
