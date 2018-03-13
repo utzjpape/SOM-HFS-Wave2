@@ -167,6 +167,10 @@ merge 1:1 strata ea block hh using "${gsdTemp}/poor_structural_w1_analysis.dta",
 mean poorPPP [pweight=hhweight], over(ind_profile)
 save "${gsdTemp}/poor_structural_w1_hhq-poverty.dta", replace
 
+
+**************************************
+*MI ENDS 
+***********************************
    
 *Estimate each consumption separately 
 use "${gsdTemp}/poor_structural_w1_analysis.dta", clear
@@ -721,6 +725,12 @@ mean poorPPP [pweight=hhweight]
 merge 1:1 strata ea block hh using "${gsdTemp}/poor_structural_w2_analysis.dta", nogen assert(match) keepusing(ind_profile)
 mean poorPPP [pweight=hhweight], over(ind_profile)
 save "${gsdTemp}/poor_structural_w2_hhq-poverty.dta", replace
+
+*******************************************
+* MI ENDS 
+*******************************************
+
+
 
 *Estimate each consumption separately 
 use "${gsdTemp}/poor_structural_w2_analysis.dta", clear
