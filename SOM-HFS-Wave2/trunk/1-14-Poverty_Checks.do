@@ -4,7 +4,7 @@ set more off
 set seed 23081980 
 set sortseed 11041955
 
-/*
+
 *=====================================================================
 * POVERTY EXCLUDING DURABLES W2
 *=====================================================================
@@ -88,7 +88,7 @@ mi estimate: mean poorPPP [pweight=hhweight]
 merge 1:1 strata ea block hh using "${gsdData}/1-CleanOutput/hh.dta", nogen assert(match) keepusing(ind_profile)
 mi estimate: mean poorPPP [pweight=hhweight], over(ind_profile)
 save "${gsdTemp}/mi-analysis_w2_case1.dta", replace
-*/
+
 
 *=====================================================================
 * POVERTY IN W2 INCLUDING +1 AND +2 HOUSEHOLD MEMBERS
