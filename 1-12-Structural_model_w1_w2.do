@@ -75,10 +75,10 @@ save "${gsdTemp}/poor_structural_w1_analysis.dta", replace
 ******************************************
 
 *Multiple imputation with log consumption 
-local model = "mog_dummy type hhsize hhh_gender hhh_age hhh_age2 hhh_edu pgender pworking_age pdependent pliteracy lfp_7d_hh emp_7d_hh house_type_cat water treated_water cook toilet_type hh_floor hh_roof hh_ownership remit12m hh_hunger income_source_dum"
+local model = "mog_dummy type hhsize hhh_gender hhh_age hhh_edu pgender pworking_age pdependent pliteracy lfp_7d_hh emp_7d_hh house_type_cat water treated_water cook toilet_type hh_floor hh_roof hh_ownership remit12m hh_hunger income_source_dum"
 *Exclude the consumption of NE regions
 replace tc_core=ln(tc_core)
-gen mi_tc_core=tc_core if (ind_profile!=2 & ind_profile!=4 & ind_profile!=6)
+gen mi_tc_core=tc_core if (ind_profile!=2 & ind_profile!=4)
 mi set wide
 mi register imputed mi_tc_core
 mi register regular `model'
@@ -630,10 +630,10 @@ save "${gsdTemp}/poor_structural_w2_analysis.dta", replace
 ******************************************
 
 *Multiple imputation with log consumption 
-local model = "dummy_region type host hhsize hhh_gender hhh_age hhh_age2 hhh_literacy pgender pworking_age pdependent pliteracy lfp_7d_hh emp_7d_hh house_type_cat water treated_water hh_cook hh_toilet hh_floor hh_roof hh_ownership hh_hunger remit12m migr_disp income_source_dum electricity  tmarket acc_bank1 dum_assit" 
+local model = "dummy_region type host hhsize hhh_gender hhh_age hhh_literacy pgender pworking_age pdependent pliteracy lfp_7d_hh emp_7d_hh house_type_cat water treated_water hh_cook hh_toilet hh_floor hh_roof hh_ownership hh_hunger remit12m migr_disp income_source_dum electricity  tmarket acc_bank1 dum_assit" 
 *Exclude the consumption of NE regions
 replace tc_core=ln(tc_core)
-gen mi_tc_core=tc_core if !inlist(ind_profile,2,4,6,9,10,13)
+gen mi_tc_core=tc_core if !inlist(ind_profile,2,4,9,10)
 mi set wide
 mi register imputed mi_tc_core
 mi register regular `model'
