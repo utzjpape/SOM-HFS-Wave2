@@ -10,9 +10,8 @@ if "${gsdData}"=="" {
 *Decide which parts of the pipeline should be run
 local runimport = 0
 
-*API Download of data 
+*API Download of data for Urban, Rural and IDP households
 if (`runimport'==1) {
-	*Urban, Rural and IDP households
 	run "${gsdDo}/api_download.do"
 	api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(1) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}") curl("${gsdBin}") 
 	api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(2) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/v2") curl("${gsdBin}") 
@@ -21,14 +20,25 @@ if (`runimport'==1) {
 	api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(9) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/v9") curl("${gsdBin}") 
 	api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(10) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/v10") curl("${gsdBin}") 
 	api_download wbhfssom, quid(f9defff5dcf94c5d93df6e7438656cac) quv(11) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/v11") curl("${gsdBin}") 
-	*Nomads
+}
+
+
+* API Download of education phone survey data
+if (`runimport'==1)  {
+	run "${gsdDo}/api_download.do"
+	api_download wbhfssom, quid(21cafde6df224ec8bd0be429d919bc40) quv(5) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/Phone Survey - v5") curl("${gsdBin}") 
+	api_download wbhfssom, quid(21cafde6df224ec8bd0be429d919bc40) quv(6) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/Phone Survey - v6") curl("${gsdBin}")
+}
+
+*API Download of data for Nomads 
+if (`runimport'==1) {
+	run "${gsdDo}/api_download.do"
 	api_download wbhfssom, quid(a539b55e361e41e9b8b549402c6e54d2) quv(1) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/Nomads - v1") curl("${gsdBin}") 
 	api_download wbhfssom, quid(a539b55e361e41e9b8b549402c6e54d2) quv(2) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/Nomads - v2") curl("${gsdBin}") 
 	api_download wbhfssom, quid(a539b55e361e41e9b8b549402c6e54d2) quv(4) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/Nomads - v4") curl("${gsdBin}") 
-    *Listing form 
+    *Listing form
 	api_download wbhfssom, quid(22c77f1a675547ccb9eb878812bfe1ab) quv(1) username(HQ_API) password(z7Ko1A#m%yPe) directory("${gsdDownloads}/Nomads - Listing") curl("${gsdBin}") 
 }
-
 
 *Manual cleaning of submissions
 run "${gsdDo}/0-1-manual_cleaning.do"
@@ -37,8 +47,8 @@ run "${gsdDo}/0-1-manual_cleaning.do"
 run "${gsdDo}/0-2-obtain_valid_keys.do"
 run "${gsdDo}/0-3-obtain_valid_EAs_and_EBs.do"
 
-*Update the monitoring Dashboard 
-*run "${gsdDo}/0-4-create_monitoring_dashboard.do"
+*Include education 
+run "${gsdDo}/0-4-Include_education.do"
 
 *Obtain key for valid and successul submissions 
 run "${gsdDo}/0-5-keep_valid_successful_submissions.do"
@@ -74,7 +84,7 @@ run "${gsdDo}/0-11-anonymize_dataset.do"
 *Obtain the average exchange rate
 run "${gsdDo}/0-12-exchange_rate.do"
 
-*Prepare FSNAU prices with COICOP codes
+*Prepare MPS prices with COICOP codes
 run "${gsdDo}/0-13-COICOP_MPS.do"
 
 *Clean the consumption datasets
