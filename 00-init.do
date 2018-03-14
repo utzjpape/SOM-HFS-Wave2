@@ -1,4 +1,4 @@
-
+*Wave 2
 *Initialize work environment
 
 global suser = c(username)
@@ -73,6 +73,15 @@ else if ("${suser}"=="Agnès") {
 	local swdLocal = "D:/Dropbox/WB SHFS II/9. Data, Data Monitoring/1. Inputs, Codes and Outputs Pipeline/Code"
 	*Box directory where the Data folder can be located
 	local swdBox = "D:/Dropbox/WB SHFS II/9. Data, Data Monitoring/1. Inputs, Codes and Outputs Pipeline/Data"
+}
+else if (inlist("${suser}","wb310938","WB310938")) {
+	*Ambika
+	*Local directory of your checked out copy of the code
+	local swdLocal = "C:\Users\wb310938\OneDrive - WBG\AS WBG Files\Code\SOM-HFS-Wave2"
+	*Box directory where the Data folder can be located
+	local swdBox = "C:\Users\wb310938\WBG\Utz Johann Pape - Wave2\DataBox"
+	* cURL directory
+	local curl = "C:\Users\wb310938\Documents\curl"             
 }
 	
 else {
