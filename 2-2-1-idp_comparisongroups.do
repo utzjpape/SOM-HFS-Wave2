@@ -43,5 +43,5 @@ save "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", replace
 ********************************************************
 use "${gsdData}/1-CleanTemp/hhm_all.dta", clear 
 svyset ea [pweight=weight_adj], strata(strata)
-merge m:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", assert(match) nogen keepusing( comparisonidp urbanrural genidp quintileidp)
+merge m:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", assert(match) nogen keepusing( comparisonidp urbanrural genidp quintileidp migr_idp)
 save "${gsdData}/1-CleanTemp/hhm_all_idpanalysis.dta", replace
