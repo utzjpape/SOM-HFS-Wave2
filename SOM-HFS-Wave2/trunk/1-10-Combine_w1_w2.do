@@ -17,8 +17,9 @@ ren house_ownership tenure
 append using "${gsdData}/1-CleanOutput/hh.dta", gen(t)
 la def lt 0 "Wave1" 1 "Wave2", replace
 la val t lt 
-* Update IDP variable to include Wave 1 IDPs
+* Update IDP variable to include Wave 1 IDPs; don't count nomads as IDPs
 replace migr_idp = 1 if ind_profile==6 & t==0
+replace migr_idp =0 if ind_profile ==13
 * Label overall groups
 la def ltype 1 "Urban" 2 "Rural" 3 "IDP" 4 "Nomads"
 la val type ltype
