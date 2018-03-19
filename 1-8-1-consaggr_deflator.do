@@ -11,6 +11,7 @@ set sortseed 11021955
 local lis = "food nonfood"
 foreach cat of local lis {
 	use "${gsdData}/1-CleanTemp/`cat'.dta", clear
+	drop if inlist(strata,32,34,35)
 	*ensure that food and non-food have the same format
 	if ("`cat'"=="food") {
 		ren unit_price uprice
@@ -22,7 +23,7 @@ foreach cat of local lis {
 		gen uprice = cons_value
 	}
 	ren mod_opt mod_hh
-	local lj = "IDP Nomadic (u):Banadir (u):Nugaal (u):Bari+Mudug (u):Woqooyi_Galbeed (u):Awdal+Sanaag+Sool+Togdheer (u):Hiraan+MiddleShabelle+Galgaduud (u):Gedo+LowerJuba+MiddleJuba (u):Bay+Bakool+LowerShabelle (r):Bari+Mudug+Nugaal (r):Awdal+Togdheer+Woqooyi (r):Hiraan+MiddleShabelle+Galgaduud (r):Gedo+LowerJuba+MiddleJuba (r):Bay+Bakool+LowerShabelle"
+	local lj = "IDP Nomadic (u):Banadir (u):Nugaal (u):Bari+Mudug (u):Woqooyi_Galbeed (u):Awdal+Sanaag+Sool+Togdheer (u):Hiraan+MiddleShabelle+Galgaduud (u):Gedo+LowerJuba+MiddleJuba (u):Bay+Bakool+LowerShabelle (r):Bari+Mudug+Nugaal (r):Awdal+Togdheer+Woqooyi (r):Hiraan+MiddleShabelle+Galgaduud (r):Bay+Bakool+LowerShabelle"
 	keep strata ea block hh weight mod_item mod_hh itemid cons_value uprice astrata
 	*calculate core and optional module consumption per hh
 	bys strata ea block hh: egen tcore = total(cons_value) if mod_item==0
