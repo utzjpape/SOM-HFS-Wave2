@@ -47,6 +47,7 @@ foreach k in `ind' {
 	recode remit12m (missing=0)
 	*Prepare smaller dataset
 	rename (mod_opt type) (opt_mod hh_ptype)
+	replace hh_ptype=3 if hh_ptype==4
 	keep region astrata ind_profile strata ea block hh hhsize weight opt_mod pchild psenior hhempl hhsex hhedu hh_type hh_drinkwater hh_floor hh_ownership hh_hunger remit12m cons_f? cons_nf? cons_d hh_ptype
 	drop if weight>=.
 	*Prepare consumption variables
@@ -75,22 +76,11 @@ foreach k in `ind' {
 	egen cons_nf =  rowtotal(mi_cons_nf?)
 	label var cons_f "Collected food consumption pc pd curr USD"
 	label var cons_nf "Collected non-food consumption pc pd curr USD"
-	* How to deal with these aggregates? 
-	xtile pmi_cons_f0 = mi_cons_f0 [pweight=weight], nquantiles(4)
-	xtile pmi_cons_nf0 = mi_cons_nf0 [pweight=weight], nquantiles(4)
-	xtile pmi_cons_d = mi_cons_d [pweight=weight], nquantiles(4)
-	xtile pmi_cons_f0_ex`k' = cons_f0 [pweight=weight] if inlist(ind_profile,`k'), nquantiles(4)
-	xtile pmi_cons_nf0_ex`k' = cons_nf0 [pweight=weight] if inlist(ind_profile,`k'), nquantiles(4)
-	xtile pmi_cons_d_ex`k' = cons_d [pweight=weight] if inlist(ind_profile,`k'), nquantiles(4)
-	foreach v in pmi_cons_nf0 pmi_cons_f0 pmi_cons_d {
-		replace `v' = `v'_ex`k' if mi(`v')
-	}
-
+	
 	********************************************************************
 	*Build the model and run the imputation
 	********************************************************************
 	local model = "hhsize pchild psenior i.hhsex i.hhempl hhedu i.hh_type i.hh_drinkwater i.hh_floor i.hh_ownership i.hh_hunger i.region i.hh_ptype i.remit12m"
-	local model = "i.pmi_cons_f0 i.pmi_cons_nf0 i.pmi_cons_d `model'"
 	*Create core consumption for comparison
 	save "${gsdData}/1-CleanTemp/mi-pre_`k'.dta", replace
 	*Run imputation
