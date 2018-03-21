@@ -13,15 +13,36 @@ local n = 100
 *Prepare household dataset
 ********************************************************************
 use "${gsdData}/1-CleanTemp/hh.dta", clear
-cap drop if ind_profile==10 | ind_profile==6 | ind_profile==13 
+*Create ind_profile variable
+gen ind_profile=6 if astrata==3
+replace ind_profile=5 if astrata==22
+replace ind_profile=4 if astrata==21
+replace ind_profile=3 if astrata==14 | astrata==15
+replace ind_profile=2 if astrata==12 | astrata==13 
+replace ind_profile=1 if astrata==11
+label define lind_profile 1 "Mogadishu (Urban)" 2 "North-east Urban (Nugaal,Bari,Mudug)" 3 "North-west Urban (Woqooyi G,Awdal,Sanaag,Sool,Togdheer)" 4 "North-east Rural (Bari,Mudug,Nugaal)" 5 "North-west Rural (Awdal,Sanaag,Sool,Togdheer,Woqooyi)" 6 "IDP Settlements"
+label values ind_profile lind_profile
+label var ind_profile "Indicator: Mogadishu, North-East urban/rural, North-West urban/rural & IDPs"
+cap drop if ind_profile==6
 levelsof ind_profile, local(ind)
 foreach k in `ind' {
 	use "${gsdData}/1-CleanTemp/hh.dta", clear
-	cap drop if ind_profile==10 | ind_profile==6 | ind_profile==13
+	merge 1:1 strata ea block hh using "${gsdData}/1-CleanOutput/hh.dta", keepusing(opt_mod type) nogen assert(match using) keep(match)
 	merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_fcons.dta", keepusing(cons*) nogen assert(match using) keep(match)
 	merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_nfcons.dta", keepusing(cons*) nogen assert(match using) keep(match)
 	merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_durables.dta", keepusing(cons_d) nogen assert(match using) keep(match)
 	merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhm-hh.dta", keepusing(pchild psenior hhsex hhempl hhedu hhh_literacy) nogen assert(match using) keep(match)
+    *Create ind_profile variable
+	gen ind_profile=6 if astrata==3
+	replace ind_profile=5 if astrata==22
+	replace ind_profile=4 if astrata==21
+	replace ind_profile=3 if astrata==14 | astrata==15
+	replace ind_profile=2 if astrata==12 | astrata==13 
+	replace ind_profile=1 if astrata==11
+	label define lind_profile 1 "Mogadishu (Urban)" 2 "North-east Urban (Nugaal,Bari,Mudug)" 3 "North-west Urban (Woqooyi G,Awdal,Sanaag,Sool,Togdheer)" 4 "North-east Rural (Bari,Mudug,Nugaal)" 5 "North-west Rural (Awdal,Sanaag,Sool,Togdheer,Woqooyi)" 6 "IDP Settlements"
+	label values ind_profile lind_profile
+	label var ind_profile "Indicator: Mogadishu, North-East urban/rural, North-West urban/rural & IDPs"
+	cap drop if ind_profile==6
 	*Ensure core food consumption
 	assert cons_f0 > 0 | missing(cons_f0) 
 	foreach v of var cons_f1 cons_f2 cons_f3 cons_f4 cons_nf? cons_d {
@@ -39,21 +60,15 @@ foreach k in `ind' {
 	rename hhh_literacy hhedu
 
 	*Clean variables for model
-	recode housingtype (1/2=1 "Apartament") (3/4=2 "House") (5/6=3 "Hut") (7/max=4 "Other") (missing=4), gen(hh_type) label(lhh_type)
+	recode house_type (1/2=1 "Apartament") (3/4=2 "House") (5/6=3 "Hut") (7/max=4 "Other") (missing=4), gen(hh_type) label(lhh_type)
 	recode drink_water (1/3=1 "Piped") (4=2 "Tap") (5/9=3 "Tap or well") (10/max=4 "Delivered") (missing=4), gen(hh_drinkwater) label(lhh_drinkwater)
 	recode floor_material (1/2=1 "Solid") (3=2 "Mud") (4/max=3 "Wood/other") (missing=3), gen(hh_floor) label(lhh_floor)
-	recode tenure (1=1 "Rent") (2=2 "Own") (3/5=3 "Provided") (6/max=4 "Occupation") (missing=4), gen(hh_ownership) label(lhh_ownership)
+	recode house_ownership (1=1 "Rent") (2=2 "Own") (3/4=3 "Occupy") (5/max=4 "Other") (missing=4), gen(hh_ownership) label(lhh_ownership)
 	recode hunger (1=0 "Never") (2=1 "Rarely") (3/max=2 "Often") (missing=2), gen(hh_hunger) label(lhh_hunger)
 	recode remit12m (missing=0)
 	*Prepare smaller dataset
-	rename (mod_opt type) (opt_mod hh_ptype)
-	replace hh_ptype=3 if hh_ptype==4
-	drop region
-	gen region=0
-	replace region=1 if inlist(ind_profile,2,4)
-	replace region=2 if inlist(ind_profile,3,5)
-	replace region=3 if inlist(ind_profile,7,8)
-	replace region=4 if inlist(ind_profile,11,12)
+	rename (type) (hh_ptype)
+	gen region=(ind_profile==2 | ind_profile==4)
 	keep region astrata ind_profile strata ea block hh hhsize weight opt_mod pchild psenior hhempl hhsex hhedu hh_type hh_drinkwater hh_floor hh_ownership hh_hunger remit12m cons_f? cons_nf? cons_d hh_ptype
 	drop if weight>=.
 	*Prepare consumption variables
@@ -90,7 +105,7 @@ foreach k in `ind' {
 	xtile pmi_cons_nf0_ex`k' = cons_nf0 [pweight=weight] if inlist(ind_profile,`k'), nquantiles(4)
 	xtile pmi_cons_d_ex`k' = cons_d [pweight=weight] if inlist(ind_profile,`k'), nquantiles(4)
 	foreach v in pmi_cons_nf0 pmi_cons_f0 pmi_cons_d {
-	replace `v' = `v'_ex`k' if mi(`v')
+		replace `v' = `v'_ex`k' if mi(`v')
 	}
 	********************************************************************
 	*Build the model and run the imputation
@@ -146,10 +161,10 @@ foreach k in `ind' {
 	*Include the poverty line and obtain the poverty status
 	********************************************************************
 	*Add exchange rate
-	gen team=1 
-	merge m:1 team using "${gsdData}/1-CleanInput/HFS Exchange Rate Survey.dta", nogen keepusing(global_er) assert(match using) keep(match)
-	merge m:1 team using "${gsdData}/1-CleanTemp/inflation.dta", nogen keepusing(gg) assert(match using) keep(match)
-	drop team
+	gen zone = 3
+	merge m:1 zone using "${gsdData}/1-CleanInput/HFS Exchange Rate Survey.dta", nogen keepusing(global_er) assert(match using) keep(match)
+	merge m:1 zone using "${gsdData}/1-CleanTemp/inflation.dta", nogen keepusing(gg) assert(match using) keep(match)
+	drop zone
 	*Poverty line 1.90 USD in USD PPP (2011) using private consumption PPP conversion factor
 	*in 2011: 1 PPP USD was worth 10,731 SSh PPP
 	*Inflation from 2011 to Dec 2017: 1.684297
@@ -234,7 +249,16 @@ foreach k in `ind' {
 }
 
 use "${gsdData}/1-CleanOutput/hh.dta", clear
-cap drop if ind_profile==10 | ind_profile==6 | ind_profile==13
+gen ind_profile=6 if astrata==3
+replace ind_profile=5 if astrata==22
+replace ind_profile=4 if astrata==21
+replace ind_profile=3 if astrata==14 | astrata==15
+replace ind_profile=2 if astrata==12 | astrata==13 
+replace ind_profile=1 if astrata==11
+label define lind_profile 1 "Mogadishu (Urban)" 2 "North-east Urban (Nugaal,Bari,Mudug)" 3 "North-west Urban (Woqooyi G,Awdal,Sanaag,Sool,Togdheer)" 4 "North-east Rural (Bari,Mudug,Nugaal)" 5 "North-west Rural (Awdal,Sanaag,Sool,Togdheer,Woqooyi)" 6 "IDP Settlements"
+label values ind_profile lind_profile
+label var ind_profile "Indicator: Mogadishu, North-East urban/rural, North-West urban/rural & IDPs"
+cap drop if ind_profile==6
 levelsof ind_profile, local(ind)
 foreach k in `ind' {
 	merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhq-poverty_`k'.dta", keepusing(poorPPP_`k' poorPPP_prob_`k') nogen keep(match)
@@ -242,11 +266,11 @@ foreach k in `ind' {
 ren poorPPP_prob poorPPP_prob_0
 gen pweight = weight*hhsize
 svyset ea [pweight=pweight], strata(strata) singleunit(centered)
-foreach k of numlist 0/5 7/9 11/12 {
+foreach k of numlist 0/5 {
 	tabout ind_profile using "${gsdOutput}/Test_Imputation_raw`k'.xls", svy sum c(mean poorPPP_prob_`k' se) f(3) sebnone h2("Poverty, imputing region `k'") replace
 	
 }
-foreach k of numlist 0/5 7/9 11/12 {
+foreach k of numlist 0/5 {
 	insheet using "${gsdOutput}/Test_Imputation_raw`k'.xls", clear nonames tab
 	replace v1=v2 if v2==""
 	ren v2 p_`k'
@@ -257,11 +281,11 @@ foreach k of numlist 0/5 7/9 11/12 {
 }
 use "${gsdTemp}/Test_Imputation_raw0.dta"
 sort n
-foreach k of numlist 0/5 7/9 11/12 {
+foreach k of numlist 0/5 {
 	merge 1:1 v1 using "${gsdTemp}/Test_Imputation_raw`k'.dta", nogen assert(match) keepusing(p_`k')
 	
 }
 sort n
 drop n 
 drop if v1==""
-export excel using "${gsdOutput}/Impute_outliers_v1.xlsx", sheetreplace sheet("Raw_Impute_Test") firstrow(variables)
+export excel using "C:\Users\WB484006\OneDrive - WBG\Code\SOM\Wave 2\Output/Impute_outliers_v1.xlsx", sheetreplace sheet("Raw_Impute_Test") firstrow(variables)
