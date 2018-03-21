@@ -9,6 +9,8 @@ set sortseed 11042955
 *Household members roster for all households 
 ********************************************************************
 use "${gsdData}/0-RawTemp/hhroster_age_valid_successful_complete.dta", clear
+* Clean gender based on first name
+run "${gsdDo}/manualcleaning_gender.do"
 drop hh_list hhm_relation_other birthplace_specify legal_id_type__1000 legal_id_type__n98 legal_id_type__n99 legal_id_spec hhm_edu_level_other absent_specify emp_7d_inac_sp hhm_job_search_no_spec emp_inac_sub_spec hhm_job_obs_spec hhm_job_support_spec emp_12m_additional__n98 emp_12m_additional__n99 resum_empl_reason_spec delivery_spec deliveryassist_spec interview__key hhm_away_m_int hhm_edu_reason_sp
 drop emp_7d_p emp_7d_a emp_7d_f emp_7d_b emp_7d_h emp_7d_a_yn emp_7d_p_yn emp_7d_f_yn emp_7d_b_yn emp_7d_h_yn emp_7d_count emp_7d_prim_int
 
@@ -136,6 +138,8 @@ local variables2 legal_id_type__1 legal_id_type__2 legal_id_type__3 legal_id_typ
 foreach variable in `variables2' {
 	label values `variable' lyesno
 }
+
+
 label var hhroster_age__id "Household member ID"
 label var emp_7d_active "Active household member in the last 7 days"
 label var unemp_7d "Unemployed household member in the last 7 days"
