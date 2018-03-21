@@ -240,6 +240,9 @@ restore
 *Generate Aggregate Variables, and collapse to HH level, save 
 ********************************************************************
 * Generate HH head variables
+merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", nogen assert(match) keepusing(hhr_id)
+gen hhr_gender = gender if hhm_id==hhr_id
+gen hhr_age = age if hhm_id==hhr_id
 gen hhh_gender = gender if ishead==1
 gen hhh_age = age if ishead==1
 replace hhh_age=. if hhh_age < 16
@@ -280,7 +283,7 @@ foreach var of local collapselist_min {
 
 
 * Collapse without weights since "count" command will create sum of weights in household; weights come in when merging this with hh.dta
-collapse (mean) penrol=enrol penrol_p=enrol_p penrol_s=enrol_s pgender=gender pworking_age=working_age no_children no_adults no_old_age pliteracy=literacy page_cat_broad_1=age_cat_broad_1 page_cat_broad_2=age_cat_broad_2 page_cat_broad_3=age_cat_broad_3 page_cat_broad_4=age_cat_broad_4 (count) hhsize=hhmid (min) hhh_gender hhh_age hhh_edu (max) lfp_7d_hh=lfp_7d emp_7d_hh=emp_7d hhh_outstate, by(strata ea block hh)
+collapse (mean) penrol=enrol penrol_p=enrol_p penrol_s=enrol_s pgender=gender pworking_age=working_age no_children no_adults no_old_age pliteracy=literacy page_cat_broad_1=age_cat_broad_1 page_cat_broad_2=age_cat_broad_2 page_cat_broad_3=age_cat_broad_3 page_cat_broad_4=age_cat_broad_4 (count) hhsize=hhmid (min) hhh_gender hhh_age hhh_edu hhr_gender hhr_age (max) lfp_7d_hh=lfp_7d emp_7d_hh=emp_7d hhh_outstate, by(strata ea block hh)
 
 replace lfp_7d_hh=0 if mi(lfp_7d_hh)
 replace emp_7d_hh=0 if mi(emp_7d_hh)
@@ -295,6 +298,8 @@ foreach var of local collapselist_min  {
 
 
 * New Labels 
+la var hhr_gender "Respondent gender"
+la var hhr_age "Respondent age"
 la var hhsize "Number of members in HH"
 la var pgender "Share of males in HH"
 la var pworking_age "Proportion of working age members in HH"

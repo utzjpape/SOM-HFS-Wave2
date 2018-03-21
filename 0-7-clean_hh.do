@@ -763,18 +763,18 @@ save "${gsdTemp}/hh_pre_clean.dta", replace
 * Export data for updated sampling frame
 *********************************************************************
 drop if type==4
-ren (id_household id_structure id_block) (hh_id str_id bl_id)
+ren (ea id_household id_structure id_block) (PSU_ID HH_ID STR_ID SSU_ID)
 * there is one HH in the relevant structure, so hh_id has to be 1
-drop if hh_id<0
-replace hh_id=1 if hh_id==.b
+drop if HH_ID<0
+replace HH_ID=1 if HH_ID==.b
 drop if mi(n_str)
-bysort strata ea bl_id str_id: egen no_hh = mean(n_hh)
-bysort strata ea bl_id: egen no_str = mean(n_str)
-bysort strata ea: egen no_bl = mean(n_bl)
-assert no_bl==n_bl
+bysort strata PSU_ID SSU_ID STR_ID: egen no_hh = mean(n_hh)
+bysort strata PSU_ID SSU_ID: egen no_str = mean(n_str)
+bysort strata PSU_ID: egen no_SSU = mean(n_bl)
+assert no_SSU==n_bl
 gen strata_id = strata
-order hh_id hhsize no_hh str_id no_str bl_id no_bl ea strata strata_id long_x lat_y alt_z acc_xy gps_comment
-keep hh_id hhsize no_hh str_id no_str bl_id no_bl ea strata strata_id long_x lat_y alt_z acc_xy gps_comment
+order HH_ID hhsize no_hh STR_ID no_str SSU_ID no_SSU PSU_ID strata strata_id long_x lat_y alt_z acc_xy gps_comment
+keep HH_ID hhsize no_hh STR_ID no_str SSU_ID no_SSU PSU_ID strata strata_id long_x lat_y alt_z acc_xy gps_comment
 save "${gsdData}/0-RawOutput/hh_str_bl_ea.dta", replace
 export delim using "${gsdOutput}/hh_str_bl_ea.csv", replace 
 
