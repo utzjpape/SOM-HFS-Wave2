@@ -69,8 +69,8 @@ foreach k in `ind' {
 	*Prepare smaller dataset
 	rename (type) (hh_ptype)
 	gen region=(ind_profile==2 | ind_profile==4)
-	keep region astrata ind_profile strata ea block hh hhsize weight opt_mod pchild psenior hhempl hhsex hhedu hh_type hh_drinkwater hh_floor hh_ownership hh_hunger remit12m cons_f? cons_nf? cons_d hh_ptype
-	drop if weight>=.
+	keep region astrata ind_profile strata ea block hh hhsize weight_cons opt_mod pchild psenior hhempl hhsex hhedu hh_type hh_drinkwater hh_floor hh_ownership hh_hunger remit12m cons_f? cons_nf? cons_d hh_ptype
+	drop if weight_cons>=.
 	*Prepare consumption variables
 	*Make sure missing modules have missing consumption
 	forvalues i = 1/4 {
@@ -98,12 +98,12 @@ foreach k in `ind' {
 	label var cons_f "Collected food consumption pc pd curr USD"
 	label var cons_nf "Collected non-food consumption pc pd curr USD"
 	* How to deal with these aggregates? 
-	xtile pmi_cons_f0 = mi_cons_f0 [pweight=weight], nquantiles(4)
-	xtile pmi_cons_nf0 = mi_cons_nf0 [pweight=weight], nquantiles(4)
-	xtile pmi_cons_d = mi_cons_d [pweight=weight], nquantiles(4)
-	xtile pmi_cons_f0_ex`k' = cons_f0 [pweight=weight] if inlist(ind_profile,`k'), nquantiles(4)
-	xtile pmi_cons_nf0_ex`k' = cons_nf0 [pweight=weight] if inlist(ind_profile,`k'), nquantiles(4)
-	xtile pmi_cons_d_ex`k' = cons_d [pweight=weight] if inlist(ind_profile,`k'), nquantiles(4)
+	xtile pmi_cons_f0 = mi_cons_f0 [pweight=weight_cons], nquantiles(4)
+	xtile pmi_cons_nf0 = mi_cons_nf0 [pweight=weight_cons], nquantiles(4)
+	xtile pmi_cons_d = mi_cons_d [pweight=weight_cons], nquantiles(4)
+	xtile pmi_cons_f0_ex`k' = cons_f0 [pweight=weight_cons] if inlist(ind_profile,`k'), nquantiles(4)
+	xtile pmi_cons_nf0_ex`k' = cons_nf0 [pweight=weight_cons] if inlist(ind_profile,`k'), nquantiles(4)
+	xtile pmi_cons_d_ex`k' = cons_d [pweight=weight_cons] if inlist(ind_profile,`k'), nquantiles(4)
 	foreach v in pmi_cons_nf0 pmi_cons_f0 pmi_cons_d {
 		replace `v' = `v'_ex`k' if mi(`v')
 	}
@@ -131,7 +131,7 @@ foreach k in `ind' {
 	use "${gsdTemp}/mi_`k'.dta", clear
 	*prepare variables to merge
 	merge m:1 astrata using "${gsdData}/1-CleanTemp/food-deflator.dta", nogen assert(match) keep(match)
-	gen hhweight = weight * hhsize
+	gen hhweight = weight_cons * hhsize
 	*iterate over modules
 	foreach cat in f nf {
 		forvalues i=1/4 {
@@ -224,7 +224,7 @@ foreach k in `ind' {
 	*Analysis on extract dataset
 	use "${gsdTemp}/mi-extract_`k'.dta", clear
 	fastgini tc_imp [pweight=hhweight]
-	collapse (mean) tc_* mi_cons_f? mi_cons_nf? mi_cons_d (mean) poorPPP_prob_`k' = poorPPP poorPPP125_prob = poorPPP125 poorPPP_vulnerable_10_prob = poorPPP_vulnerable_10 poorPPP_vulnerable_20_prob = poorPPP_vulnerable_20, by(strata ea block hh hhsize weight hhweight opt_mod plinePPP plinePPP125)
+	collapse (mean) tc_* mi_cons_f? mi_cons_nf? mi_cons_d (mean) poorPPP_prob_`k' = poorPPP poorPPP125_prob = poorPPP125 poorPPP_vulnerable_10_prob = poorPPP_vulnerable_10 poorPPP_vulnerable_20_prob = poorPPP_vulnerable_20, by(strata ea block hh hhsize weight_cons hhweight opt_mod plinePPP plinePPP125)
 	svyset ea [pweight=hhweight], strata(strata)
 	mean poorPPP_prob_`k' [pweight=hhweight]
 	mean poorPPP_vulnerable_10_prob [pweight=hhweight]
@@ -264,7 +264,7 @@ foreach k in `ind' {
 	merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhq-poverty_`k'.dta", keepusing(poorPPP_`k' poorPPP_prob_`k') nogen keep(match)
 }
 ren poorPPP_prob poorPPP_prob_0
-gen pweight = weight*hhsize
+gen pweight = weight_cons*hhsize
 svyset ea [pweight=pweight], strata(strata) singleunit(centered)
 foreach k of numlist 0/5 {
 	tabout ind_profile using "${gsdOutput}/Test_Imputation_raw`k'.xls", svy sum c(mean poorPPP_prob_`k' se) f(3) sebnone h2("Poverty, imputing region `k'") replace
