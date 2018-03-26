@@ -60,8 +60,6 @@ run "${gsdDo}/0-6-completeness_submissions.do"
 run "${gsdDo}/0-7-clean.do"
 
 *Prepare the master sample 
-*run "${gsdDo}/0-8-prepare_master_sample.do"
-/*
 capture confirm file "${gsdData}\0-RawTemp\master_sample.dta"
 scalar define check=_rc
 if check==0 {
@@ -70,7 +68,6 @@ if check==0 {
 else {
 	run "${gsdDo}/0-8-prepare_master_sample.do"
 }
-*/
 
 *Obtain the sampling weights
 run "${gsdDo}/0-9-estimate_sample_weights.do"
@@ -109,3 +106,7 @@ run "${gsdDo}/1-8-4-consaggr_test.do"
 
 *Clean household level dataset, integrate aggregates from previous cleaning files
 run "${gsdDo}/1-9-clean_hh.do" 
+
+*Produce a combined dataset for Wave 1 and 2
+run "${gsdDo}/1-10-Combine_w1_w2.do" 
+
