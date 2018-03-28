@@ -76,6 +76,18 @@ drop weight
 cap drop dependent
 gen dependent = age<15 | age>64
 la var dependent "Dependents"
+
+*Age Dependency ratio (World Bank Definition)
+bys strata ea block hh: egen no_dep= count(age_cat_broad) if inlist(age_cat_broad,1,2,4)
+bys strata ea block hh: egen no_dependent = mean(no_dep)
+bys strata ea block hh: egen no_w_age = count(age_cat_broad) if inlist(age_cat_broad,3)
+bys strata ea block hh: egen no_working_age = mean(no_w_age)
+replace no_dependent=0 if no_dependent==.
+replace no_working_age=0 if no_working_age==.
+cap drop age_dependency_ratio
+gen age_dependency_ratio=no_dependent/no_working_age
+lab var age_dependency_ratio "Dependency Ratio (World Bank Definition)"
+
 merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1_w2.dta", assert(match) keep(match) keepusing(type weight_adj reg_pess ind_profile type) nogen
 *Create comparable wave 1 and wave 2 sample
 gen comparable_w1_w2=1 if inlist(ind_profile,1,2,3,4,5,6)
