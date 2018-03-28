@@ -95,14 +95,18 @@ save "${gsdTemp}/hh_final.dta", replace
 *Anonymize hhm data
 ********************************************************************
 use "${gsdData}/0-RawOutput/hhm_clean.dta", replace
-merge m:1 interview__id using "${gsdTemp}/hh_final.dta", assert(match) keepusing(region strata ea block hh enum team astrata) nogenerate
+merge m:1 interview__id using "${gsdTemp}/hh_final.dta", keep(match) keepusing(region strata ea block hh enum team astrata) nogenerate
 order region strata ea block hh enum team
 drop interview__id
+*Drop rural Jubbaland 
+drop if strata==32 | strata==34
 save "${gsdData}/1-CleanInput/hhm.dta", replace
 use "${gsdData}/0-RawOutput/hhm_separated_clean.dta", replace
 merge m:1 interview__id using "${gsdTemp}/hh_final.dta", keep(match master) keepusing(region strata ea block hh enum team) nogenerate
 order region strata ea block hh enum team
 drop interview__id
+*Drop rural Jubbaland 
+drop if strata==32 | strata==34
 save "${gsdData}/1-CleanInput/hhm_separated.dta", replace
 
 
@@ -114,6 +118,8 @@ foreach x in "nfood" "shocks" "food" "livestock" "livestock_pre" "motor" "assets
 	merge m:1 interview__id using "${gsdTemp}/hh_final.dta", keep(match) keepusing(region strata ea block hh enum team astrata) nogenerate
 	order region strata ea block hh enum team
 	drop interview__id
+	*Drop rural Jubbaland 
+	drop if strata==32 | strata==34
 	save "${gsdData}/1-CleanInput/`x'.dta", replace
 }
 
@@ -124,6 +130,7 @@ foreach x in "nfood" "shocks" "food" "livestock" "livestock_pre" "motor" "assets
 use "${gsdTemp}/hh_final.dta", clear
 export delim interview__id region strata ea block hh lat_y long_x using "${gsdData}/0-RawTemp/Wave2_hh_coordinates.csv", replace
 keep interview__id region strata ea block hh lat_y long_x
+drop if strata==32 | strata==34
 save "${gsdData}/0-RawTemp/Wave2_hh_coordinates.dta", replace
 
 
@@ -133,6 +140,7 @@ save "${gsdData}/0-RawTemp/Wave2_hh_coordinates.dta", replace
 use "${gsdTemp}/hh_final.dta", clear
 drop interview__id lat_y long_x n_str str_no_success n_str_no_success__* n_hh hh_no_success n_hh_no_success__*
 drop n_bl n_ints int_no return EAs_toinclude Nb_itwstobeconducted Nb_blocks_EA Dummy_oneblock id_wp water_point water_point_confirm loc_wp__Latitude loc_wp__Longitude loc_wp__Accuracy loc_wp__Altitude loc_wp__Timestamp loc_wp_check hhid_nomad listing_round listing_day res_name phone original_hhid_nomad original_listing_round original_listing_day phone_to_call consent_tracking barcode_tracking tracking_phone_yn tracking_phone enum_name status_wp WPs_toinclude not_within_WP id_listing_day id_listing_round listing_day_original listing_round_original main_wp rank_rep_wp sample_initial_wp sample_final_wp o_wp o_wp_2 o_wp_3 r_wp final_main_wp final_rep_wp final_rank_rep_wp target_itw_wp nb_val_succ_itw_wp wp_status wp_valid nb_interviews_wp nb_treat1_wp nb_treat2_wp nb_treat3_wp nb_treat4_wp nb_valid_interviews_wp nb_valid_treat1_wp nb_valid_treat2_wp nb_valid_treat3_wp nb_valid_treat4_wp nb_success_interviews_wp nb_success_treat1_wp nb_success_treat2_wp nb_success_treat3_wp nb_success_treat4_wp nb_valid_success_itws_wp nb_valid_success_treat1_wp nb_valid_success_treat2_wp nb_valid_success_treat3_wp nb_valid_success_treat4_wp
+drop if strata==32 | strata==34
 save "${gsdData}/1-CleanInput/hh.dta", replace
 
 

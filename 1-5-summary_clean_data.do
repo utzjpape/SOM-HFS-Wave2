@@ -9,7 +9,8 @@ set sortseed 13041965
 *Create tables to report for food 
 ********************************************************************
 use "${gsdData}/1-CleanTemp/food.dta" , clear
-merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", assert(match) nogen keepusing(hhsize type)
+merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", keep(match) nogen keepusing(hhsize type)
+drop if inlist(strata,31,33,38,40,42)
 replace cons_usd = cons_usd/hhsize 
 replace cons_usd=. if cons_usd==0
 rename (unit_price cons_usd) (unit_price_cleaned cons_usd_cleaned)
@@ -52,7 +53,8 @@ foreach v of local va {
 *Create tables to report for non-food 
 ********************************************************************
 use "${gsdData}/1-CleanTemp/nonfood.dta" , clear
-merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", assert(match) nogen keepusing(hhsize type)
+merge m:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", keep(match) nogen keepusing(hhsize type)
+drop if inlist(strata,31,33,38,40,42)
 replace pr_usd= pr_usd/hhsize 
 replace pr_usd=. if pr_usd==0
 rename (pr_usd) (pr_usd_cleaned)

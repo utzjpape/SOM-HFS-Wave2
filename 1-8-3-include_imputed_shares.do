@@ -70,7 +70,7 @@ foreach cat in food nonfood {
     drop if weight>=. 
     drop if mod_opt==.
 	merge m:1 itemid using "${gsdTemp}/shares_`cat'.dta", assert(match) nogen keepusing(share_`cat')
-	merge m:1 strata ea block hh mod_item using "${gsdTemp}/mi_`cat'_collapsed.dta", assert(match) nogen keepusing(mi_cons_`cat') 
+	merge m:1 strata ea block hh mod_item using "${gsdTemp}/mi_`cat'_collapsed.dta", keep(match) nogen keepusing(mi_cons_`cat') 
 	*include hh size and order the dataset
 	merge m:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhq-poverty.dta", keep(match) nogen keepusing(hhsize)
 	order strata ea block hh weight hhsize mod_opt itemid mod_item cons_usd share_`cat' mi_cons_`cat'

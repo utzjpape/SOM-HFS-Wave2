@@ -61,7 +61,12 @@ run "${gsdDo}/0-7-clean.do"
 
 *Prepare the master sample 
 capture confirm file "${gsdData}\0-RawTemp\master_sample.dta"
-scalar define check=_rc
+scalar define check_1=_rc
+capture confirm file "${gsdData}\0-RawTemp\master_idps_camps.dta"
+scalar define check_2=_rc
+gen check=check_1+check_2
+scalar define check=check_1+check_2
+di check
 if check==0 {
 	display "Master Sample already obtained: No need to re-run this part of the code"
 }
