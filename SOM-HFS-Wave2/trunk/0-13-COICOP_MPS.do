@@ -36,3 +36,19 @@ collapse (mean) dec17 feb16, by(coicop)
 save "${gsdData}/1-CleanTemp/mps_prices.dta", replace
 
 
+
+********************************************************************
+*Save a file matching itemid and COICOP codes
+********************************************************************
+import excel "${gsdDataRaw}/Match_Items_COICOP.xlsx", sheet("W2_Food") firstrow case(lower) clear
+drop name 
+rename code itemid
+save "${gsdTemp}/COICOP_food.dta", replace 
+import excel "${gsdDataRaw}/Match_Items_COICOP.xlsx", sheet("W2_Nonfood") firstrow case(lower) clear
+drop name 
+rename code itemid
+save "${gsdTemp}/COICOP_nonfood.dta", replace 
+use "${gsdTemp}/COICOP_food.dta", clear
+append using "${gsdTemp}/COICOP_nonfood.dta"
+save "${gsdData}/1-CleanInput/COICOP_Codes.dta", replace 
+

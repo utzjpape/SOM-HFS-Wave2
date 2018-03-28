@@ -7,41 +7,6 @@ set sortseed 11041955
 
 
 *=====================================================================
-* HHM level dataset
-*=====================================================================
-use "${gsdData}/1-CleanInput/SHFS2016/hhm.dta", clear
-ren weight weight_unadjusted
-gen enrolled=edu_status==1 if inrange(age, 6, 17)
-la var enrolled "Enrolled at school age (6-17)"
-append using "${gsdData}/1-CleanOutput/hhm.dta", gen(t)
-order t
-drop reg_pess
-la def lt 0 "Wave1" 1 "Wave2", replace
-la val t lt 
-drop weight
-cap drop dependent
-gen dependent = age<15 | age>64
-la var dependent "Dependents"
-merge m:1 t strata ea block hh using "${gsdData}/1-CleanTemp/hh_all.dta", assert(match) keep(match) keepusing(type weight_adj reg_pess ind_profile type) nogen
-*Create comparable wave 1 and wave 2 sample
-gen comparable_w1_w2=1 if inlist(ind_profile,1,2,3,4,5,6)
-replace comparable_w1_w2=0 if comparable_w1_w2==.
-replace comparable_w1_w2=0 if ind_profile==6 & t==1 & !inlist(strata,4,5,6) 
-label values comparable_w1_w2 lyesno
-save "${gsdData}/1-CleanOutput/hhm_w1_w2.dta", replace
-
-
-*=====================================================================
-* Auxiliary hhq-poverty data set
-*=====================================================================
-use "${gsdData}/1-CleanInput/SHFS2016/hhq-poverty.dta", clear
-append using "${gsdData}/1-CleanTemp/hhq-poverty.dta", gen(t)
-merge 1:1 t strata ea block hh using "${gsdData}/1-CleanTemp/hh_all.dta", assert(match) keep(match) keepusing(type weight_adj reg_pess)
-save "${gsdData}/1-CleanOutput/hhq-poverty_w1_w2.dta", replace 
-
-
-
-*=====================================================================
 * HH level dataset 
 *=====================================================================
 use "${gsdData}/1-CleanInput/SHFS2016/hh.dta", clear
@@ -85,6 +50,45 @@ replace comparable_w1_w2=0 if ind_profile==6 & t==1 & !inlist(strata,4,5,6)
 label values comparable_w1_w2 lyesno
 save "${gsdTemp}/hh_w1_w2.dta", replace
 
+
+*=====================================================================
+* Auxiliary hhq-poverty data set
+*=====================================================================
+use "${gsdData}/1-CleanInput/SHFS2016/hhq-poverty.dta", clear
+append using "${gsdData}/1-CleanTemp/hhq-poverty.dta", gen(t)
+merge 1:1 t strata ea block hh using "${gsdTemp}/hh_w1_w2.dta", assert(match) keep(match) keepusing(type weight_adj reg_pess)
+save "${gsdData}/1-CleanOutput/hhq-poverty_w1_w2.dta", replace 
+
+
+*=====================================================================
+* HHM level dataset
+*=====================================================================
+use "${gsdData}/1-CleanInput/SHFS2016/hhm.dta", clear
+ren weight weight_unadjusted
+gen enrolled=edu_status==1 if inrange(age, 6, 17)
+la var enrolled "Enrolled at school age (6-17)"
+append using "${gsdData}/1-CleanOutput/hhm.dta", gen(t)
+order t
+drop reg_pess
+la def lt 0 "Wave1" 1 "Wave2", replace
+la val t lt 
+drop weight
+cap drop dependent
+gen dependent = age<15 | age>64
+la var dependent "Dependents"
+merge m:1 t strata ea block hh using "${gsdTemp}/hh_w1_w2.dta", assert(match) keep(match) keepusing(type weight_adj reg_pess ind_profile type) nogen
+*Create comparable wave 1 and wave 2 sample
+gen comparable_w1_w2=1 if inlist(ind_profile,1,2,3,4,5,6)
+replace comparable_w1_w2=0 if comparable_w1_w2==.
+replace comparable_w1_w2=0 if ind_profile==6 & t==1 & !inlist(strata,4,5,6) 
+label values comparable_w1_w2 lyesno
+save "${gsdData}/1-CleanOutput/hhm_w1_w2.dta", replace
+
+
+
+*=====================================================================
+* HH level dataset 
+*=====================================================================
 * Additional recode of variables that make sense between W1 and W2
 *HHM level variables
 use "${gsdData}/1-CleanOutput/hhm_w1_w2.dta", clear
@@ -102,8 +106,6 @@ bys t strata ea block hh: egen n_dependent=sum(dependent)
 collapse (max) n_literate dum_iliterate_adult_hh pliteracy_25 n_dependent, by(t strata ea block hh)
 label var pliteracy_25 "Literacy HHM 30 years or more"
 save "${gsdTemp}/hhm_literacy.dta", replace
-
-
 *House type
 use "${gsdTemp}/hh_w1_w2.dta", clear
 gen house_type_comparable=.
@@ -170,37 +172,16 @@ tab house_type, gen(house_type__)
 *Cooking source
 drop cooking 
 ren cook2 cooking
-ta cooking, gen(cooking__)
-*Water
-ta water, gen(water__)
-*Tenure
-ta tenure1, gen(tenure__)
-*Floor
-ta floor_material, gen(floor__)
-*Roof
-ta roof_material, gen(roof__) 
-
-*Include dummy for categorical variables
-ta house_type_comparable, gen(house_type_comparable__)
-ta cook_comparable, gen(cook_comparable)
-ta floor_comparable, gen(floor_comparable)
-
-* replace in SLHS to show missing
-replace tenure_own_rent = -99 if t==-1
-
-*Fix labels
-la var hhsize "Household size"
-foreach i of varlist cooking__* water__* tenure__* floor__* roof__* house_type_comparable__* cook_comparable* floor_comparable*{
-local a : variable label `i'
-local a: subinstr local a "==" ": "
-label var `i' "`a'"
-}
 la var n_dependent "No. Dependents"
 la var dum_iliterate_adult_hh "All illiterate adults"
 la var n_literate "No. Literate"
 la var adult_male "No. Adult males"
 la var youth_male "No. Youth males"
 la var child_boy "No. Child boys"
+la var comparable_w1_w2 "HH in comparable region between W1 & 2"
+order comparable_w1_w2 , after(type)
+drop supp_som_usd supp_som_pcpd
+
 * save HH data set
 save "${gsdData}/1-CleanOutput/hh_w1_w2.dta", replace
 

@@ -13,8 +13,14 @@ local n = 100
 *Prepare household dataset
 ********************************************************************
 use "${gsdData}/1-CleanTemp/hh.dta", clear
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_fcons_all.dta", keepusing(cons*) nogen assert(match) keep(match)
+rename cons_f* cons_all_f*
 merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_fcons.dta", keepusing(cons*) nogen assert(match) keep(match)
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_nfcons_all.dta", keepusing(cons*) nogen assert(match) keep(match)
+rename cons_nf* cons_all_nf*
 merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_nfcons.dta", keepusing(cons*) nogen assert(match) keep(match)
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_durables_all.dta", keepusing(cons_d) nogen assert(match)
+rename cons_d cons_all_d
 merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_durables.dta", keepusing(cons_d) nogen assert(match)
 merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhm-hh.dta", keepusing(pchild psenior hhsex hhempl hhedu hhh_literacy) nogen assert(match)
 *Ensure core food consumption
@@ -23,7 +29,7 @@ foreach v of var cons_f1 cons_f2 cons_f3 cons_f4 cons_nf? cons_d {
 	replace `v' = .c if cons_f0 == 0
 }
 *Require positive food core consumption (otherwise, we assume data is missing)
-drop if missing(cons_f0)
+drop if missing(cons_f0) & !inlist(ind_profile,9,4)
 *Prepare model variables
 replace hhempl = 0 if missing(hhempl)
 replace hhsex = 1 if missing(hhsex)
@@ -42,7 +48,7 @@ recode hunger (1=0 "Never") (2=1 "Rarely") (3/max=2 "Often") (missing=2), gen(hh
 recode remit12m (missing=0)
 *Prepare smaller dataset
 rename (mod_opt type) (opt_mod hh_ptype)
-keep region astrata strata ea block hh hhsize weight opt_mod pchild psenior hhempl hhsex hhedu hh_type hh_drinkwater hh_floor hh_ownership hh_hunger remit12m cons_f? cons_nf? cons_d hh_ptype
+keep ind_profile region astrata strata ea block hh hhsize weight opt_mod pchild psenior hhempl hhsex hhedu hh_type hh_drinkwater hh_floor hh_ownership hh_hunger remit12m cons_f? cons_nf? cons_d hh_ptype cons_all_*
 drop if weight>=.
 *Prepare consumption variables
 *Make sure missing modules have missing consumption
@@ -56,13 +62,13 @@ forvalues i = 0/4 {
 	replace cons_nf`i' = cons_nf`i' / hhsize / 7
 	label var cons_f`i' "Collected food consumption mod `i' pc pd curr USD"
 	label var cons_nf`i' "Collected non-food consumption mod `i' pc pd curr USD"
-	gen mi_cons_f`i' = cons_f`i'
-	gen mi_cons_nf`i' = cons_nf`i'
+	gen mi_cons_f`i' = cons_f`i' if !inlist(ind_profile,4,9)
+	gen mi_cons_nf`i' = cons_nf`i' if !inlist(ind_profile,4,9)
 	label var mi_cons_f`i' "Imputed food consumption mod `i' pc pd curr USD"
 	label var mi_cons_nf`i' "Imputed non-food consumption mod `i' pc pd curr USD"
 }
 replace cons_d = cons_d / hhsize / 7
-gen mi_cons_d = cons_d
+gen mi_cons_d = cons_d if !inlist(ind_profile,4,9)
 label var cons_d "Consumption flow of durables pc pd curr USD"
 label var mi_cons_d "Imputed consumption flow of durables pc pd curr USD"
 *Create some aggregates
@@ -70,9 +76,10 @@ egen cons_f =  rowtotal(mi_cons_f?)
 egen cons_nf =  rowtotal(mi_cons_nf?)
 label var cons_f "Collected food consumption pc pd curr USD"
 label var cons_nf "Collected non-food consumption pc pd curr USD"
-xtile pmi_cons_f0 = mi_cons_f0 [pweight=weight], nquantiles(4)
-xtile pmi_cons_nf0 = mi_cons_nf0 [pweight=weight], nquantiles(4)
-xtile pmi_cons_d = mi_cons_d [pweight=weight], nquantiles(4)
+xtile pmi_cons_f0 = cons_all_f0 [pweight=weight], nquantiles(4)
+xtile pmi_cons_nf0 = cons_all_nf0 [pweight=weight], nquantiles(4)
+xtile pmi_cons_d = cons_all_d [pweight=weight], nquantiles(4)
+drop cons_all_*
 
 
 ********************************************************************
@@ -86,11 +93,11 @@ save "${gsdData}/1-CleanTemp/mi-pre.dta", replace
 use "${gsdData}/1-CleanTemp/mi-pre.dta", clear
 xtset, clear
 mi set wide
-mi register imputed mi_cons_f1 mi_cons_f2 mi_cons_f3 mi_cons_f4 mi_cons_nf1 mi_cons_nf2 mi_cons_nf3 mi_cons_nf4
-mi register regular hh* mi_cons_f0 mi_cons_nf0 mi_cons_d
+mi register imputed mi_cons_f1 mi_cons_f2 mi_cons_f3 mi_cons_f4 mi_cons_nf1 mi_cons_nf2 mi_cons_nf3 mi_cons_nf4 mi_cons_f0 mi_cons_nf0 mi_cons_d
+mi register regular hh* 
 *Multi-variate normal imputation using MCMC 
 set seed 23081985 
-mi impute mvn mi_cons_f1 mi_cons_f2 mi_cons_f3 mi_cons_f4 mi_cons_nf1 mi_cons_nf2 mi_cons_nf3 mi_cons_nf4 = `model', add(`n') burnin(1000)
+mi impute mvn mi_cons_f1 mi_cons_f2 mi_cons_f3 mi_cons_f4 mi_cons_nf1 mi_cons_nf2 mi_cons_nf3 mi_cons_nf4 mi_cons_f0 mi_cons_nf0 mi_cons_d  = `model',  add(`n') burnin(1000)
 save "${gsdTemp}/mi.dta", replace
 
 
@@ -102,8 +109,9 @@ use "${gsdTemp}/mi.dta", clear
 merge m:1 astrata using "${gsdData}/1-CleanTemp/food-deflator.dta", nogen assert(match) keep(match)
 gen hhweight = weight * hhsize
 *iterate over modules
+local n = 100
 foreach cat in f nf {
-	forvalues i=1/4 {
+	forvalues i=0/4 {
 		*need to take floor to make sure rounding does not result in negative averages
 		egen double xtag`cat'`i' = rowtotal(_*_mi_cons_`cat'`i')
 		forvalues j=1/`n' {
@@ -111,6 +119,13 @@ foreach cat in f nf {
 			replace _`j'_mi_cons_`cat'`i' = _`j'_mi_cons_`cat'`i' - floor(xtag`cat'`i' /`n'*10^5)/10^5 if xtag`cat'`i'<0
 		}
 	}
+}
+*Durable goods 
+local n = 100
+egen double xtagd = rowtotal(_*_mi_cons_d)
+forvalues j=1/`n' {
+	*scale up to get average being zero (without losing the variance)
+	replace _`j'_mi_cons_d = _`j'_mi_cons_d - floor(xtagd /`n'*10^5)/10^5 if xtagd<0
 }
 drop xtag*
 mi passive: egen mi_cons_f = rowtotal(mi_cons_f?)

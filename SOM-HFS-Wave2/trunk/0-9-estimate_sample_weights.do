@@ -195,6 +195,8 @@ gen p4=1/tot_n_hhs
 *Estimate Probability of selection and sampling weights 
 gen prob_sel=p1*p2*p3*p4
 gen weight_temp=1/prob_sel
+*Drop rural Jubbaland
+drop if strata==32 | strata==34
 keep interview__id weight_temp
 save "${gsdTemp}\sweights_urban_rural.dta", replace
 
@@ -653,7 +655,7 @@ append using "${gsdTemp}\sweights_host.dta"
 append using "${gsdTemp}\sweights_idp.dta"
 append using "${gsdTemp}\sweights_nomads.dta"
 *Include strata and households from PESS
-merge 1:1 interview__id using "${gsdData}\0-RawOutput\hh_clean.dta", nogen assert(match) keepusing(strata)
+merge 1:1 interview__id using "${gsdData}\0-RawOutput\hh_clean.dta", nogen keep(match) keepusing(strata)
 rename strata strata_id
 preserve
 use "${gsdData}\0-RawTemp\master_sample.dta", clear
@@ -683,4 +685,6 @@ use "${gsdData}\0-RawOutput\hh_clean.dta", clear
 merge 1:1 interview__id using "${gsdTemp}\weights_all_hhs.dta", nogen keep(master match)
 order weight, after(block_id)
 label var weight "Household weight"
+*Drop rural Jubbaland
+drop if strata==32 | strata==34
 save "${gsdData}\0-RawTemp\hh_sweights.dta", replace
