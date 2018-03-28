@@ -6,14 +6,6 @@
 use "${gsdData}/1-CleanTemp/hhm_all_idpanalysis.dta", clear 
 svyset ea [pweight=weight_adj], strata(strata)
 
-*Prepare variables
-recode age (0/14 = 1 "Under 15 years") ( 15/24 = 2 "15-24 years") (25/64 = 3 "25-64 years") (65/120 =4 "Above 64 years"), gen(age_g_idp) label(lage_g_idp)
-*working age 
-gen age_3_idp = age_g_idp
-replace age_3_idp = age_3_idp -1 if inlist(age_3_idp, 3, 4)
-lab def age3 1 "Below15" 2 "From15to64" 3 "Above64"
-lab val age_3_idp age3
-
 *1. Population pyramids 
 
 *Urbanoverall (excluding IDPs)
@@ -52,43 +44,41 @@ qui tabout gender using "${gsdOutput}/Raw_Fig1.xls" if inlist(comparisonidp , 1,
 use "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", clear 
 svyset ea [pweight=weight_adj], strata(strata)
 
-*Generate dependency ratio for wave 2.
-
 *% of female headed households 
-qui tabout hhh_gender comparisonidp using "${gsdOutput}/Raw_Fig2.xls"  , replace svy percent c(col lb ub) f(3)  npos(col) sebnone h1("hhh_gender_composition")
+qui tabout hhh_gender comparisonidp using "${gsdOutput}/Raw_Fig2.xls"  , replace svy percent c(col lb ub) f(4)  npos(col) sebnone h1("hhh_gender_composition")
 *urban and rural 2017 (excluding idps)
-qui tabout hhh_gender urbanrural using "${gsdOutput}/Raw_Fig2.xls" , append svy percent c(col lb ub) f(3)  npos(col) sebnone h1("hhh_gender_composition")
+qui tabout hhh_gender urbanrural using "${gsdOutput}/Raw_Fig2.xls" , append svy percent c(col lb ub) f(4)  npos(col) sebnone h1("hhh_gender_composition")
 *national (excluding idps)
-qui tabout hhh_gender t using "${gsdOutput}/Raw_Fig2.xls" if migr_idp !=1, append svy percent c(col lb ub) f(3)  npos(col) sebnone h1("hhh_gender_composition")
+qui tabout hhh_gender t using "${gsdOutput}/Raw_Fig2.xls" if migr_idp !=1, append svy percent c(col lb ub) f(4)  npos(col) sebnone h1("hhh_gender_composition")
 
 *Dependency ratio-overall
-qui tabout comparisonidp  using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean dependency_ratio lb ub) npos(col) append h2("dependency_ratio") f(4)
-qui tabout urbanrural  using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean dependency_ratio lb ub) npos(col) append h2("dependency_ratio") f(4)
-qui tabout t  using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean dependency_ratio lb ub) npos(col) append h2("dependency_ratio") f(4)
+qui tabout comparisonidp  using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean age_dependency_ratio lb ub) npos(col) append h2("age_dependency_ratio") f(4)
+qui tabout urbanrural  using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean age_dependency_ratio lb ub) npos(col) append h2("age_dependency_ratio") f(4)
+qui tabout t  using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean age_dependency_ratio lb ub) npos(col) append h2("age_dependency_ratio") f(4)
 *Dependency ratio by hhh gender
-qui tabout hhh_gender if comparisonidp==1 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean dependency_ratio lb ub) npos(col) append h2("Noncamp_GendHH_depratio") f(4)
-qui tabout hhh_gender if comparisonidp==2 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean dependency_ratio lb ub) npos(col) append h2("Camp2016_GendHH_depratio") f(4)
-qui tabout hhh_gender if comparisonidp==3 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean dependency_ratio lb ub) npos(col) append h2("Camp_GendHH_depratio") f(4)
-qui tabout hhh_gender if comparisonidp==4 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean dependency_ratio lb ub) npos(col) append h2("Host_GendHH_depratio") f(4)
-qui tabout hhh_gender if comparisonidp==5 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean dependency_ratio lb ub) npos(col) append h2("Nonhost_GendHH_depratio") f(4)
-qui tabout hhh_gender if urbanrural ==1 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean dependency_ratio lb ub) npos(col) append h2("Urban_GendHH_depratio") f(4)
-qui tabout hhh_gender if urbanrural ==2 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean dependency_ratio lb ub) npos(col) append h2("Rural_GendHH_depratio") f(4)
-qui tabout hhh_gender if t ==1 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean dependency_ratio lb ub) npos(col) append h2("National_GendHH_depratio") f(4)
+qui tabout hhh_gender if comparisonidp==1 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean age_dependency_ratio lb ub) npos(col) append h2("Noncamp_GendHH_depratio") f(4)
+qui tabout hhh_gender if comparisonidp==2 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean age_dependency_ratio lb ub) npos(col) append h2("Camp2016_GendHH_depratio") f(4)
+qui tabout hhh_gender if comparisonidp==3 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean age_dependency_ratio lb ub) npos(col) append h2("Camp_GendHH_depratio") f(4)
+qui tabout hhh_gender if comparisonidp==4 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean age_dependency_ratio lb ub) npos(col) append h2("Host_GendHH_depratio") f(4)
+qui tabout hhh_gender if comparisonidp==5 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean age_dependency_ratio lb ub) npos(col) append h2("Nonhost_GendHH_depratio") f(4)
+qui tabout hhh_gender if urbanrural ==1 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean age_dependency_ratio lb ub) npos(col) append h2("Urban_GendHH_depratio") f(4)
+qui tabout hhh_gender if urbanrural ==2 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean age_dependency_ratio lb ub) npos(col) append h2("Rural_GendHH_depratio") f(4)
+qui tabout hhh_gender if t ==1 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean age_dependency_ratio lb ub) npos(col) append h2("National_GendHH_depratio") f(4)
 
 *Household size
 *Household size-overall
-qui tabout comparisonidp  using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean dependency_ratio lb ub) npos(col) append h2("HHsize") f(4)
-qui tabout urbanrural  using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean dependency_ratio lb ub) npos(col) append h2("HHsize") f(4)
-qui tabout t  using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean dependency_ratio lb ub) npos(col) append h2("HHsize") f(4)
+qui tabout comparisonidp  using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean hhsize lb ub) npos(col) append h2("HHsize") f(4)
+qui tabout urbanrural  using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean hhsize lb ub) npos(col) append h2("HHsize") f(4)
+qui tabout t  using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean hhsize lb ub) npos(col) append h2("HHsize") f(4)
 *Household size by hhh gender
-qui tabout hhh_gender if comparisonidp==1 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean dependency_ratio lb ub) npos(col) append h2("Noncamp_GendHH_hhsize") f(4)
-qui tabout hhh_gender if comparisonidp==2 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean dependency_ratio lb ub) npos(col) append h2("Camp2016_GendHH_hhsize") f(4)
-qui tabout hhh_gender if comparisonidp==3 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean dependency_ratio lb ub) npos(col) append h2("Camp_GendHH_hhsize") f(4)
-qui tabout hhh_gender if comparisonidp==4 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean dependency_ratio lb ub) npos(col) append h2("Host_GendHH_hhsize") f(4)
-qui tabout hhh_gender if comparisonidp==5 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean dependency_ratio lb ub) npos(col) append h2("Nonhost_GendHH_hhsize") f(4)
-qui tabout hhh_gender if urbanrural ==1 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean dependency_ratio lb ub) npos(col) append h2("Urban_GendHH_hhsize") f(4)
-qui tabout hhh_gender if urbanrural ==2 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean dependency_ratio lb ub) npos(col) append h2("Rural_GendHH_hhsize") f(4)
-qui tabout hhh_gender if t ==1 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean dependency_ratio lb ub) npos(col) append h2("National_GendHH_hhsize") f(4)
+qui tabout hhh_gender if comparisonidp==1 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean hhsize lb ub) npos(col) append h2("Noncamp_GendHH_hhsize") f(4)
+qui tabout hhh_gender if comparisonidp==2 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean hhsize lb ub) npos(col) append h2("Camp2016_GendHH_hhsize") f(4)
+qui tabout hhh_gender if comparisonidp==3 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean hhsize lb ub) npos(col) append h2("Camp_GendHH_hhsize") f(4)
+qui tabout hhh_gender if comparisonidp==4 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean hhsize lb ub) npos(col) append h2("Host_GendHH_hhsize") f(4)
+qui tabout hhh_gender if comparisonidp==5 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean hhsize lb ub) npos(col) append h2("Nonhost_GendHH_hhsize") f(4)
+qui tabout hhh_gender if urbanrural ==1 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean hhsize lb ub) npos(col) append h2("Urban_GendHH_hhsize") f(4)
+qui tabout hhh_gender if urbanrural ==2 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean hhsize lb ub) npos(col) append h2("Rural_GendHH_hhsize") f(4)
+qui tabout hhh_gender if t ==1 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean hhsize lb ub) npos(col) append h2("National_GendHH_hhsize") f(4)
 
 *Place raw data into the excel figures file
 foreach i of num 1 2 {
