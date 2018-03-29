@@ -76,12 +76,18 @@ egen cons_f =  rowtotal(mi_cons_f?)
 egen cons_nf =  rowtotal(mi_cons_nf?)
 label var cons_f "Collected food consumption pc pd curr USD"
 label var cons_nf "Collected non-food consumption pc pd curr USD"
-xtile pmi_cons_f0 = cons_all_f0 [pweight=weight], nquantiles(4)
-xtile pmi_cons_nf0 = cons_all_nf0 [pweight=weight], nquantiles(4)
-xtile pmi_cons_d = cons_all_d [pweight=weight], nquantiles(4)
+xtile pmi_cons_f0 = mi_cons_f0 [pweight=weight], nquantiles(4)
+xtile pmi_cons_nf0 = mi_cons_nf0 [pweight=weight], nquantiles(4)
+xtile pmi_cons_d = mi_cons_d [pweight=weight], nquantiles(4)
+foreach k of numlist 4 9 {
+	xtile pmi_cons_f0_ex`k' = cons_all_f0 [pweight=weight] if inlist(ind_profile,`k'), nquantiles(4)
+	xtile pmi_cons_nf0_ex`k' = cons_all_nf0 [pweight=weight] if inlist(ind_profile,`k'), nquantiles(4)
+	xtile pmi_cons_d_ex`k' = cons_all_d [pweight=weight] if inlist(ind_profile,`k'), nquantiles(4)
+	foreach v in pmi_cons_nf0 pmi_cons_f0 pmi_cons_d {
+		replace `v' = `v'_ex`k' if mi(`v')
+	}
+}
 drop cons_all_*
-
-
 ********************************************************************
 *Build the model and run the imputation
 ********************************************************************
