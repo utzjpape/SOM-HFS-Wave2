@@ -365,7 +365,6 @@ gen total=1
 gen fatxdrought = drought_SPI*fatalities
 global controls rural hhsize fatalities fatxdrought pliteracy remit12m hhh_gender i.tenure1 pgender i.floor_material i.roof_material 
 keep if rural==1
-keep if inlist(reg_pess, 1,3,13,16,17,18)
 reg ltc_core t drought_SPI droughtxpost rural hhsize fatalities fatxdrought pliteracy remit12m hhh_gender pgender [pw=pweight], vce(robust)
 qreg ltc_core t drought_SPI droughtxpost  hhsize fatalities fatxdrought pliteracy remit12m hhh_gender pgender [pw=pweight], q(.5) vce(robust)
 grqreg fatalities , ci ols olsci   graphregion(color(white)) 
@@ -387,7 +386,7 @@ foreach t in total urban rural {
 	svy: probit poorPPP t drought_SPI droughtxpost $controls 
 	outreg2 using "${gsdOutput}/DroughtImpact_raw4_`t'.xls", append ctitle("1-2-2 - probit poorPPP with controls, full `t' sample")label excel keep(t drought_SPI droughtxpost) nocons
 	* 2-1-1 - log core consumption without controls, overlapping sample
-	keep if inlist(reg_pess, 1,3,4,11,12,13,16,17,18)
+	keep if inlist(ind_profile, 1,2,3,4,5)
 	svy: reg ltc_core t drought_SPI droughtxpost
 	outreg2 using "${gsdOutput}/DroughtImpact_raw4_`t'.xls", append ctitle("2-1-1 - log core consumption without controls, overlapping `t' sample")label excel keep(t drought_SPI droughtxpost) nocons
 	* 2-1-2 - log core consumption with full set of controls, overlapping sample
@@ -400,7 +399,7 @@ foreach t in total urban rural {
 	svy: probit poorPPP t drought_SPI droughtxpost i.reg_pess $controls
 	outreg2 using "${gsdOutput}/DroughtImpact_raw4_`t'.xls", append ctitle("2-2-2 - probit poorPPP with controls, overlapping `t' sample")label excel keep(t drought_SPI droughtxpost) nocons
 	* 3-1-1 - log core consumption without controls, overlapping sample w/o PLD
-	keep if inlist(reg_pess, 1,3,13,16,17,18)
+	keep if inlist(ind_profile, 1,3,5)
 	svy: reg ltc_core t drought_SPI droughtxpost
 	outreg2 using "${gsdOutput}/DroughtImpact_raw4_`t'.xls", append ctitle("3-1-1 - log core consumption without controls, overlapping `t' sample w/o PLD")label excel keep(t drought_SPI droughtxpost) nocons
 	* 3-1-2 - log core consumption with full set of controls, overlapping sample w/o PLD
@@ -457,8 +456,11 @@ gen pweight=weight_cons*hhsize
 svyset ea [pweight=pweight], strata(strata)
 egen drought = group(t drought_SPI), label
 gen ltc_core = log(tc_core)
+* keep only urban and rural
 drop if inlist(type,3,4) 
 drop if migr_idp==1
+* drop NE
+drop if inlist(ind_profile,2,4)
 gen tc_imp1 = tc_imp if t==0
 gen tc_imp2 = tc_imp if t==1
 twoway  (lpolyci tc_imp2 SPI, ciplot(rline)) (lpolyci tc_imp1 SPI, ciplot(rline))
@@ -481,6 +483,8 @@ merge 1:1 t strata ea block hh using "${gsdData}/1-CleanTemp/SPI_w1w2.dta", noge
 merge 1:1 t strata ea block hh using "${gsdData}/1-CleanTemp/hhq-poverty_all.dta", nogen assert(match master) keepusing(tc_core)
 gen pweight=weight_cons*hhsize
 svyset ea [pweight=pweight], strata(strata)
+* drop NE
+drop if inlist(ind_profile,2,4)
 tabout SPI_cat  using "${gsdOutput}/DroughtImpact_raw5-2.xls" if t==0, svy sum c(mean tc_imp lb ub) sebnone f(3) h2("Drought Cat & consumption - W1") npos(col) replace
 tabout SPI_cat  using "${gsdOutput}/DroughtImpact_raw5-2.xls" if t==1, svy sum c(mean tc_imp lb ub) sebnone f(3) h2("Drought Cat & consumption - W2") npos(col) append
 insheet using "${gsdOutput}/DroughtImpact_raw5-2.xls", clear
