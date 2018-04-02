@@ -160,8 +160,6 @@ qui tabout tempreturn genidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(co
 qui tabout tempreturn quintileidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("VisitedBack")
 qui tabout tempreturn reasonidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("VisitedBack")
 
-*Documentation
-
 ************************
 *HHM indicators
 ************************
