@@ -45,6 +45,16 @@ else if (inlist("${suser}","wb310938","WB310938")) {
 	* cURL directory
 	local curl = "C:\Users\wb310938\Documents\curl"             
 }
+
+else if (inlist("${suser}","wb418088","WB418088")) {
+	*Wendy
+	*Local directory of your checked out copy of the code
+	local swdLocal = "C:\Users\wb418088\OneDrive - WBG\Somalia\SOM Data"
+	*Box directory where the Data folder can be located
+	local swdBox = "C:\Users\WB418088\WBG\Utz Johann Pape - Sh-SOM-HFS\Wave2\DataBox"
+	* cURL directory
+	*local curl = "C:\Users\wb418088\Documents\curl"             
+}
 	
 else {
 	di as error "Configure work environment in 00-init.do before running the code."
