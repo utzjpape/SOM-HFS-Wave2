@@ -75,7 +75,7 @@ save "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", replace
 ********************************************************
 use "${gsdData}/1-CleanOutput/hhm_w1_w2.dta", clear 
 svyset ea [pweight=weight_adj], strata(strata)
-merge m:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", assert(match) nogen keepusing( comparisonidp urbanrural genidp quintileidp migr_idp)
+merge m:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", assert(match) nogen keepusing( comparisonidp urbanrural genidp quintileidp migr_idp reasonidp)
 
 *Prepare variables
 recode age (0/14 = 1 "Under 15 years") ( 15/24 = 2 "15-24 years") (25/64 = 3 "25-64 years") (65/120 =4 "Above 64 years"), gen(age_g_idp) label(lage_g_idp)

@@ -84,7 +84,7 @@ qui tabout dmove_no_push__1 quintileidp using "${gsdOutput}/Raw_Fig7.xls", svy c
 qui tabout dmove_no_push__1 reasonidp using "${gsdOutput}/Raw_Fig7.xls", svy c(col lb ub) npos(col) append h1("Security") f(4) 
 foreach x of num 2 3 5 6 7 {
 	local label : variable label move_no_push__`x'
-	local start = strpos("`label'","1")
+	local start = strpos("`label'","0")
 	local h3 = substr("`label'",`start'+1, . )
 	qui tabout dmove_no_push__`x' comparisonidp using "${gsdOutput}/Raw_Fig7.xls", svy c(col lb ub) npos(col) append h1("`h3'") f(4) 
 	qui tabout dmove_no_push__`x' genidp using "${gsdOutput}/Raw_Fig7.xls", svy c(col lb ub) npos(col) append h1("`h3'") f(4) 
@@ -99,7 +99,7 @@ qui tabout dmove_no_pull__1 quintileidp using "${gsdOutput}/Raw_Fig8.xls", svy c
 qui tabout dmove_no_pull__1 reasonidp using "${gsdOutput}/Raw_Fig8.xls", svy c(col lb ub) npos(col) append h1("ArmedConflictArea") f(4) 
 forval x = 2/11 {
 	local label : variable label move_no_pull__`x'
-	local start = strpos("`label'","2")
+	local start = strpos("`label'","1")
 	local h3 = substr("`label'",`start'+1, . )
 	qui tabout dmove_no_pull__`x' comparisonidp using "${gsdOutput}/Raw_Fig8.xls", svy c(col lb ub) npos(col) append h1("`h3'") f(4) 
 	qui tabout dmove_no_pull__`x' genidp using "${gsdOutput}/Raw_Fig8.xls", svy c(col lb ub) npos(col) append h1("`h3'") f(4) 
@@ -114,7 +114,7 @@ qui tabout dmove_yes_push__1 quintileidp using "${gsdOutput}/Raw_Fig9.xls", svy 
 qui tabout dmove_yes_push__1 reasonidp using "${gsdOutput}/Raw_Fig9.xls", svy c(col lb ub) npos(col) append h1("ArmedConflictArea") f(4) 
 forval x = 2/11 {
 	local label : variable label move_yes_push__`x'
-	local start = strpos("`label'","3")
+	local start = strpos("`label'","4")
 	local h3 = substr("`label'",`start'+1, . )
 	qui tabout dmove_yes_push__`x' comparisonidp using "${gsdOutput}/Raw_Fig9.xls", svy c(col lb ub) npos(col) append h1("`h3'") f(4) 
 	qui tabout dmove_yes_push__`x' genidp using "${gsdOutput}/Raw_Fig9.xls", svy c(col lb ub) npos(col) append h1("`h3'") f(4) 
@@ -129,8 +129,8 @@ qui tabout dmove_yes_pull__1 quintileidp using "${gsdOutput}/Raw_Fig10.xls", svy
 qui tabout dmove_yes_pull__1 reasonidp using "${gsdOutput}/Raw_Fig10.xls", svy c(col lb ub) npos(col) append h1("BetterSecurity") f(4) 
 forval x = 2/7 {
 	local label : variable label move_yes_pull__`x'
-	local start = strpos("`label'","55")
-	local h3 = substr("`label'",`start'+2, . )
+	local start = strpos("`label'","6")
+	local h3 = substr("`label'",`start'+1, . )
 	qui tabout dmove_yes_pull__`x' comparisonidp using "${gsdOutput}/Raw_Fig10.xls", svy c(col lb ub) npos(col) append h1("`h3'") f(4) 
 	qui tabout dmove_yes_pull__`x' genidp using "${gsdOutput}/Raw_Fig10.xls", svy c(col lb ub) npos(col) append h1("`h3'") f(4) 
 	qui tabout dmove_yes_pull__`x' quintileidp using "${gsdOutput}/Raw_Fig10.xls", svy c(col lb ub) npos(col) append h1("`h3'") f(4) 
@@ -138,7 +138,7 @@ forval x = 2/7 {
 }
 
 *Place raw data into the excel figures file
-foreach i of num 10 {
+foreach i of num 7/10 {
 	insheet using "${gsdOutput}/Raw_Fig`i'.xls", clear nonames
 	export excel using "${gsdOutput}/Figures_SOM.xlsx", sheetreplace sheet("Raw_Fig`i'") 
 	rm "${gsdOutput}/Raw_Fig`i'.xls"
