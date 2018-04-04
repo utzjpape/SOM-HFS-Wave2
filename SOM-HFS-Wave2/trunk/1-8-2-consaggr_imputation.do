@@ -88,10 +88,14 @@ foreach k of numlist 4 9 {
 	}
 }
 drop cons_all_*
+* Create regional-by-population type disaggregation 
+recode ind_profile (4=2) (9=11), gen(ind_profile_impute)
+gen rural = hh_ptype==2
 ********************************************************************
 *Build the model and run the imputation
 ********************************************************************
-local model = "hhsize pchild psenior i.hhsex i.hhempl hhedu i.hh_type i.hh_drinkwater i.hh_floor i.hh_ownership i.hh_hunger i.region i.hh_ptype i.remit12m"
+* Change aggregation 
+local model = "hhsize pchild psenior i.hhsex i.hhempl hhedu i.hh_type i.hh_drinkwater i.hh_floor i.hh_ownership i.ind_profile_impute rural i.hh_hunger i.remit12m"
 local model = "i.pmi_cons_f0 i.pmi_cons_nf0 i.pmi_cons_d `model'"
 *Create core consumption for comparison
 save "${gsdData}/1-CleanTemp/mi-pre.dta", replace
