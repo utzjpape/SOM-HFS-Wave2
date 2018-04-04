@@ -37,9 +37,19 @@ replace urbanrural =. if !inlist(type, 1,2)
 la val urbanrural ltype
 la var urbanrural "Urban or rural (excludes IDPs and Nomads)"
 
+gen national = t
+*Remove IDPs and nomads
+replace national = . if migr_idp ==1 | ind_profile ==13
+lab def lnational 0 "Wave 1" 1 "National" 
+la val national lnational
+la var national "National W2, excluding nomads and IDPs"
+ta national
+*This adds up. The variable has about 1500 obs missing, which are IDPs, and another 500, which are nomads.
+
 *3. W2 Camp IDP disaggregations
 *HHH gender
 gen genidp = hhh_gender
+*Set to missing for anyone not a camp IDP of w2.
 replace genidp =. if !(migr_idp ==1 & t ==1 & ind_profile == 6)
 la var genidp "HHH Gender of W2 Camp IDP"
 la def lgenidp 0 "Woman headed" 1 "Man headed"
@@ -59,13 +69,13 @@ tab disp_reason
 recode disp_reason (1=1 "Armed conflict in village") (2=2 "Armed conflict in other village") (3=3 "Increased violence but not conflict") (4=4 "Discrimination") (5=5 "Drought / famine / flood") (6/1000 = 6 "Other"), gen(disp_reason_concise) label(disp_reason_concise)
 tab disp_reason_concise
 *Conflict and drought idps comparison groups
-gen reasonidp = 1 if inlist(disp_reason_concise, 1, 2, 3, 4) & !missing(comparisonidp)
+gen reasonidp = 1 if inlist(disp_reason_concise, 1, 2, 3) & !missing(comparisonidp)
 replace reasonidp = 2 if inlist(disp_reason_concise, 5) & !missing(comparisonidp)
-la def lreasonidp 1 "Conflict, violence or discrimination" 2 "Drought, famine or flood" 
+la def lreasonidp 1 "Conflict or violence" 2 "Drought, famine or flood" 
 la val reasonidp lreasonidp
 la var reasonidp "Reasons for displacement: W2 camp and noncamp IDPs"
 
-*4. Merge in essential variables from hhm. 
+*5. Merge in essential variables from hhm. 
 cap drop age_dependency_ratio
 merge 1:1 strata ea block hh using "${gsdTemp}/collapsedhhmdepratio.dta", nogen assert(match) keepusing(age_dependency_ratio)
 save "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", replace 
@@ -75,7 +85,7 @@ save "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", replace
 ********************************************************
 use "${gsdData}/1-CleanOutput/hhm_w1_w2.dta", clear 
 svyset ea [pweight=weight_adj], strata(strata)
-merge m:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", assert(match) nogen keepusing( comparisonidp urbanrural genidp quintileidp migr_idp reasonidp)
+merge m:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", assert(match) nogen keepusing( comparisonidp urbanrural genidp quintileidp migr_idp reasonidp national)
 
 *Prepare variables
 recode age (0/14 = 1 "Under 15 years") ( 15/24 = 2 "15-24 years") (25/64 = 3 "25-64 years") (65/120 =4 "Above 64 years"), gen(age_g_idp) label(lage_g_idp)
