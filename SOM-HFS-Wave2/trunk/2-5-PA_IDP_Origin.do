@@ -37,9 +37,9 @@ gen day = substr(disp_date,9,2)
 egen displacementdate = concat (year month) if !strpos(disp_date, ".z") & !missing(month) & !missing(year), p(-) 
 label var displacementdate "Date of displacement (month wise)"
 *Duration of displacement
-*Survey date - use Nov 2017 as approx survey date (Survey ran Nov - Dec 2017, check with Gonzalo)
-gen month2 = "11"
-gen year2 = 2017
+*Survey date - use Jan 2018 as approx survey date (Survey ran Nov - Dec 2017,with last few obs in Jan 2018.)
+gen month2 = "01"
+gen year2 = 2018
 egen surveydate = concat(year2 month2), p(-)
 *HRF to SIF
 gen sdate = monthly(surveydate, "YM")
@@ -74,14 +74,14 @@ replace d_arrive_duration = . if d_arrive_duration <0
 *put in year format
 gen duration_arrive_year = d_arrive_duration/12
 *Check that durations are not negative (some are since date of displ is in Dec. 2017 or Jan.2018.)
-*assert duration_arrive_year >= 0 if inlist(comparisonidp, 1, 2, 3)
-*assert durationyear >= 0 if inlist(comparisonidp, 1, 2, 3)
+assert duration_arrive_year >= 0 if inlist(comparisonidp, 1, 2, 3)
+assert durationyear >= 0 if inlist(comparisonidp, 1, 2, 3)
 *br ind_profile disp_date if durationyear <=0
 
 *Reason for displacement-concise (including reasonidp for sake of excel table constuction ease; no need to graph it)
 qui tabout disp_reason_concise comparisonidp using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) replace h1("ReasonShort") f(4) 
 *qui tabout disp_reason_concise urbanrural using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) append h1("ReasonShort") f(4) 
-*qui tabout disp_reason_concise t using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) append h1("ReasonShort") f(4) 
+*qui tabout disp_reason_concise national using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) append h1("ReasonShort") f(4) 
 qui tabout disp_reason_concise genidp using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) append h1("ReasonShort") f(4) 
 qui tabout disp_reason_concise quintileidp using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) append h1("ReasonShort") f(4) 
 qui tabout disp_reason_concise reasonidp using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) append h1("ReasonShort") f(4) 
@@ -89,7 +89,7 @@ qui tabout disp_reason_concise reasonidp using "${gsdOutput}/Raw_Fig3.xls", svy 
 *Reason for displacement-detailed (including reasonidp for sake of excel table constuction ease; no need to graph it)
 qui tabout disp_reason comparisonidp using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) append h1("ReasonLong") f(4) 
 *qui tabout disp_reason urbanrural using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) append h1("ReasonLong") f(4) 
-*qui tabout disp_reason t using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) append h1("ReasonLong") f(4) 
+*qui tabout disp_reason national using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) append h1("ReasonLong") f(4) 
 qui tabout disp_reason genidp using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) append h1("ReasonLong") f(4) 
 qui tabout disp_reason quintileidp using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) append h1("ReasonLong") f(4) 
 qui tabout disp_reason reasonidp using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) append h1("ReasonLong") f(4) 
@@ -97,7 +97,7 @@ qui tabout disp_reason reasonidp using "${gsdOutput}/Raw_Fig3.xls", svy percent 
 *Reason for coming here
 qui tabout disp_arrive_reason comparisonidp using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) append h1("ReasonArrive") f(4) 
 *qui tabout disp_arrive_reason urbanrural using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) append h1("ReasonArrive") f(4) 
-*qui tabout disp_arrive_reason t using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) append h1("ReasonArrive") f(4) 
+*qui tabout disp_arrive_reason national using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) append h1("ReasonArrive") f(4) 
 qui tabout disp_arrive_reason genidp using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) append h1("ReasonArrive") f(4) 
 qui tabout disp_arrive_reason quintileidp using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) append h1("ReasonArrive") f(4) 
 qui tabout disp_arrive_reason reasonidp using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) append h1("ReasonArrive") f(4) 
@@ -105,7 +105,7 @@ qui tabout disp_arrive_reason reasonidp using "${gsdOutput}/Raw_Fig3.xls", svy p
 *Location now
 qui tabout reg_pess comparisonidp using "${gsdOutput}/Raw_Fig4.xls", svy percent c(col lb ub) npos(col) replace h1("LocNow") f(4) 
 *qui tabout reg_pess urbanrural using "${gsdOutput}/Raw_Fig4.xls", svy percent c(col lb ub) npos(col) append h1("LocNow") f(4) 
-*qui tabout reg_pess t using "${gsdOutput}/Raw_Fig4.xls", svy percent c(col lb ub) npos(col) append h1("LocNow") f(4) 
+*qui tabout reg_pess national using "${gsdOutput}/Raw_Fig4.xls", svy percent c(col lb ub) npos(col) append h1("LocNow") f(4) 
 qui tabout reg_pess genidp using "${gsdOutput}/Raw_Fig4.xls", svy percent c(col lb ub) npos(col) append h1("LocNow") f(4) 
 qui tabout reg_pess quintileidp using "${gsdOutput}/Raw_Fig4.xls", svy percent c(col lb ub) npos(col) append h1("LocNow") f(4) 
 qui tabout reg_pess reasonidp using "${gsdOutput}/Raw_Fig4.xls", svy percent c(col lb ub) npos(col) append h1("LocNow") f(4) 
@@ -113,7 +113,7 @@ qui tabout reg_pess reasonidp using "${gsdOutput}/Raw_Fig4.xls", svy percent c(c
 *Location before -- relative to current region
 qui tabout disp_from_new comparisonidp using "${gsdOutput}/Raw_Fig4.xls", svy percent c(col lb ub) npos(col) append h1("LocRelative") f(4) 
 *qui tabout disp_from_new urbanrural using "${gsdOutput}/Raw_Fig4.xls", svy percent c(col lb ub) npos(col) append h1("LocRelative") f(4) 
-*qui tabout disp_from_new t using "${gsdOutput}/Raw_Fig4.xls", svy percent c(col lb ub) npos(col) append h1("LocRelative") f(4) 
+*qui tabout disp_from_new national using "${gsdOutput}/Raw_Fig4.xls", svy percent c(col lb ub) npos(col) append h1("LocRelative") f(4) 
 qui tabout disp_from_new genidp using "${gsdOutput}/Raw_Fig4.xls", svy percent c(col lb ub) npos(col) append h1("LocRelative") f(4) 
 qui tabout disp_from_new quintileidp using "${gsdOutput}/Raw_Fig4.xls", svy percent c(col lb ub) npos(col) append h1("LocRelative") f(4) 
 qui tabout disp_from_new reasonidp using "${gsdOutput}/Raw_Fig4.xls", svy percent c(col lb ub) npos(col) append h1("LocRelative") f(4) 
@@ -122,43 +122,57 @@ qui tabout disp_from_new reasonidp using "${gsdOutput}/Raw_Fig4.xls", svy percen
 qui tabout displacementdate comparisonidp using "${gsdOutput}/Raw_Fig5.xls" , svy percent c(col lb ub) f(4) npos(col) sebnone replace h1("DispDate")
 *qui tabout displacementdate genidp using "${gsdOutput}/Raw_Fig5.xls" , svy percent c(col lb ub) f(4) npos(col) sebnone append h1("DispDate")
 *qui tabout displacementdate quintileidp using "${gsdOutput}/Raw_Fig5.xls" , svy percent c(col lb ub) f(4) npos(col) sebnone append h1("DispDate")
-*qui tabout displacementdate reasonidp using "${gsdOutput}/Raw_Fig5.xls" , svy percent c(col lb ub) f(4) npos(col) sebnone append h1("DispDate")
+qui tabout displacementdate reasonidp using "${gsdOutput}/Raw_Fig5.xls" , svy percent c(col lb ub) f(4) npos(col) sebnone append h1("DispDate")
+qui tabout displacementdate reasonidp using "${gsdOutput}/Raw_Fig5.xls" if comparisonidp ==3, svy percent c(col lb ub) f(4) npos(col) sebnone append h1("DispDateCampReason")
 
 *When did the household first arrive at the current location?
 qui tabout displacement_arrive_date comparisonidp using "${gsdOutput}/Raw_Fig5.xls" , svy percent c(col lb ub) f(4) npos(col) sebnone append h1("ArriveDate")
 *qui tabout displacement_arrive_date genidp using "${gsdOutput}/Raw_Fig5.xls" , svy percent c(col lb ub) f(4) npos(col) sebnone append h1("ArriveDate")
 *qui tabout displacement_arrive_date quintileidp using "${gsdOutput}/Raw_Fig5.xls" , svy percent c(col lb ub) f(4) npos(col) sebnone append h1("ArriveDate")
-*qui tabout displacement_arrive_date reasonidp using "${gsdOutput}/Raw_Fig5.xls" , svy percent c(col lb ub) f(4) npos(col) sebnone append h1("ArriveDate")
+qui tabout displacement_arrive_date reasonidp using "${gsdOutput}/Raw_Fig5.xls" , svy percent c(col lb ub) f(4) npos(col) sebnone append h1("ArriveDate")
+qui tabout displacement_arrive_date reasonidp using "${gsdOutput}/Raw_Fig5.xls" if comparisonidp ==3, svy percent c(col lb ub) f(4) npos(col) sebnone append h1("ArriveDateCampReason")
+
+*Duration of displacement
+qui tabout comparisonidp  using "${gsdOutput}/Raw_Fig6.xls" if inlist(comparisonidp, 1, 3) , svy sum c(mean durationyear lb ub) npos(col) replace h2("DurationDisp") f(4)
+qui tabout genidp  using "${gsdOutput}/Raw_Fig6.xls", svy sum c(mean durationyear lb ub) npos(col) append h2("DurationDisp") f(4)
+qui tabout quintileidp using "${gsdOutput}/Raw_Fig6.xls", svy sum c(mean durationyear lb ub) npos(col) append h2("DurationDisp") f(4)
+qui tabout reasonidp  using "${gsdOutput}/Raw_Fig6.xls", svy sum c(mean durationyear lb ub) npos(col) append h2("DurationDisp") f(4)
+
+*Duration of arrival
+qui tabout comparisonidp using "${gsdOutput}/Raw_Fig6.xls" if inlist(comparisonidp, 1, 3), svy sum c(mean duration_arrive_year lb ub) npos(col) append h2("DurationArrive") f(4)
+qui tabout genidp  using "${gsdOutput}/Raw_Fig6.xls", svy sum c(mean duration_arrive_year lb ub) npos(col) append h2("DurationArrive") f(4)
+qui tabout quintileidp using "${gsdOutput}/Raw_Fig6.xls", svy sum c(mean duration_arrive_year lb ub) npos(col) append h2("DurationArrive") f(4)
+qui tabout reasonidp  using "${gsdOutput}/Raw_Fig6.xls", svy sum c(mean duration_arrive_year lb ub) npos(col) append h2("DurationArrive") f(4)
 
 *Number of times the household was displaced
-qui tabout disp_times comparisonidp using "${gsdOutput}/Raw_Fig5.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("DispTimes")
-qui tabout disp_times genidp using "${gsdOutput}/Raw_Fig5.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("DispTimes")
-qui tabout disp_times quintileidp using "${gsdOutput}/Raw_Fig5.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("DispTimes")
-qui tabout disp_times reasonidp using "${gsdOutput}/Raw_Fig5.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("DispTimes")
+qui tabout disp_times comparisonidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("DispTimes")
+qui tabout disp_times reasonidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("DispTimes")
+qui tabout disp_times genidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("DispTimes")
+qui tabout disp_times quintileidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("DispTimes")
 
 *Whom did you arrive with (household level or individual level?)
-qui tabout disp_arrive_with comparisonidp using "${gsdOutput}/Raw_Fig5.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("Arrive_With")
-qui tabout disp_arrive_with genidp using "${gsdOutput}/Raw_Fig5.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("Arrive_With")
-qui tabout disp_arrive_with quintileidp using "${gsdOutput}/Raw_Fig5.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("Arrive_With")
-qui tabout disp_arrive_with reasonidp using "${gsdOutput}/Raw_Fig5.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("Arrive_With")
+qui tabout disp_arrive_with comparisonidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("Arrive_With")
+qui tabout disp_arrive_with reasonidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("Arrive_With")
+qui tabout disp_arrive_with genidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("Arrive_With")
+qui tabout disp_arrive_with quintileidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("Arrive_With")
 
 *Want to move
-qui tabout newmove_want comparisonidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone replace h1("ReturnIntention")
+qui tabout newmove_want comparisonidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("ReturnIntention")
+qui tabout newmove_want reasonidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("ReturnIntention")
 qui tabout newmove_want genidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("ReturnIntention")
 qui tabout newmove_want quintileidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("ReturnIntention")
-qui tabout newmove_want reasonidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("ReturnIntention")
 
 *When would you move
 qui tabout newmove_want_time comparisonidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("TimeReturn")
+qui tabout newmove_want_time reasonidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("TimeReturn")
 qui tabout newmove_want_time genidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("TimeReturn")
 qui tabout newmove_want_time quintileidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("TimeReturn")
-qui tabout newmove_want_time reasonidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("TimeReturn")
 
 *Have you gone back?
 qui tabout tempreturn comparisonidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("VisitedBack")
+qui tabout tempreturn reasonidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("VisitedBack")
 qui tabout tempreturn genidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("VisitedBack")
 qui tabout tempreturn quintileidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("VisitedBack")
-qui tabout tempreturn reasonidp using "${gsdOutput}/Raw_Fig6.xls", svy percent c(col lb ub) f(4) npos(col) sebnone append h1("VisitedBack")
 
 ************************
 *HHM indicators

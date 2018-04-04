@@ -115,3 +115,10 @@ run "${gsdDo}/1-9-clean_hh.do"
 *Produce a combined dataset for Wave 1 and 2
 run "${gsdDo}/1-10-Combine_w1_w2.do" 
 
+*Conduct IDP analysis
+run "${gsdDo}/2-5-PA_IDP_Comparison_Groups.do"   
+run "${gsdDo}/2-5-PA_IDP_Demographics.do" 
+run "${gsdDo}/2-5-PA_IDP_Origin.do" 
+run "${gsdDo}/2-5-PA_IDP_Push_Pull_Factors.do" 
+run "${gsdDo}/2-5-PA_IDP_Documents.do" 
+run "${gsdDo}/2-5-PA_IDP_Separation.do" 
