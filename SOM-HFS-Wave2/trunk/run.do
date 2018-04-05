@@ -109,13 +109,24 @@ run "${gsdDo}/1-8-2-consaggr_imputation.do"
 run "${gsdDo}/1-8-3-include_imputed_shares.do"
 run "${gsdDo}/1-8-4-consaggr_test.do"
 
+
+*Decide which parts of the pipeline should be run
+local run_imputation_robustness = 0
+
+*Robustness for the imputation 
+if (`run_imputation_robustness'==1) {
+	run "${gsdDo}/1-8-5-consaggr_imputation_robustness.do" 
+}
+
+
 *Clean household level dataset, integrate aggregates from previous cleaning files
 run "${gsdDo}/1-9-clean_hh.do" 
 
 *Produce a combined dataset for Wave 1 and 2
 run "${gsdDo}/1-10-Combine_w1_w2.do" 
 
-*Conduct IDP analysis
+/*
+Conduct IDP analysis
 run "${gsdDo}/2-5-PA_IDP_Comparison_Groups.do"   
 run "${gsdDo}/2-5-PA_IDP_Demographics.do" 
 run "${gsdDo}/2-5-PA_IDP_Origin.do" 
