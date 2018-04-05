@@ -45,11 +45,11 @@ use "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", clear
 svyset ea [pweight=weight_adj], strata(strata)
 
 *% of female headed households 
-qui tabout hhh_gender comparisonidp using "${gsdOutput}/Raw_Fig2.xls"  , replace svy percent c(col lb ub) f(4)  npos(col) sebnone h1("hhh_gender_composition")
+qui tabout hhh_gender comparisonidp using "${gsdOutput}/Raw_Fig2.xls"  , replace svy percent c(col lb ub) f(6) npos(col) sebnone h1("hhh_gender_composition")
 *urban and rural 2017 (excluding idps)
-qui tabout hhh_gender urbanrural using "${gsdOutput}/Raw_Fig2.xls" , append svy percent c(col lb ub) f(4)  npos(col) sebnone h1("hhh_gender_composition")
+qui tabout hhh_gender urbanrural using "${gsdOutput}/Raw_Fig2.xls" , append svy percent c(col lb ub) f(6) npos(col) sebnone h1("hhh_gender_composition")
 *national (excluding idps)
-qui tabout hhh_gender national using "${gsdOutput}/Raw_Fig2.xls", append svy percent c(col lb ub) f(4)  npos(col) sebnone h1("hhh_gender_composition")
+qui tabout hhh_gender national using "${gsdOutput}/Raw_Fig2.xls", append svy percent c(col lb ub) f(4) npos(col) sebnone h1("hhh_gender_composition")
 
 *Dependency ratio-overall
 qui tabout comparisonidp  using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean age_dependency_ratio lb ub) npos(col) append h2("age_dependency_ratio") f(4)
@@ -69,7 +69,7 @@ qui tabout hhh_gender if national ==1 using "${gsdOutput}/Raw_Fig2.xls", svy sum
 *Household size-overall
 qui tabout comparisonidp  using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean hhsize lb ub) npos(col) append h2("HHsize") f(4)
 qui tabout urbanrural  using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean hhsize lb ub) npos(col) append h2("HHsize") f(4)
-qui tabout t  using "${gsdOutput}/Raw_Fig2.xls" if migr_idp !=1, svy sum c(mean hhsize lb ub) npos(col) append h2("HHsize") f(4)
+qui tabout national  using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean hhsize lb ub) npos(col) append h2("HHsize") f(4)
 *Household size by hhh gender
 qui tabout hhh_gender if comparisonidp==1 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean hhsize lb ub) npos(col) append h2("Noncamp_GendHH_hhsize") f(4)
 qui tabout hhh_gender if comparisonidp==2 using "${gsdOutput}/Raw_Fig2.xls", svy sum c(mean hhsize lb ub) npos(col) append h2("Camp2016_GendHH_hhsize") f(4)
