@@ -20,6 +20,8 @@ replace tempreturn= disp_temp_return if disp_temp_return ==0
 replace tempreturn = . if tempreturn == 1000
 label def ltempreturn 0 "Not gone back" 1 "Visit family" 2 "Check property status" 3 "Plant and harvest" 4 "Business" 5 "Information about location" 6 "Resettle" 7 "Pasture for livestock"
 lab values tempreturn ltempreturn
+recode tempreturn (3 4 5 6 7 =.)
+ta tempreturn
 
 *Reason for arriving at location
 *arrive reason
