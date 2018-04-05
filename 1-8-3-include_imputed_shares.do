@@ -165,6 +165,12 @@ assert imputed==0 if mod_opt==mod_item | mod_item==0
 assert cons_usd_org==.z if imputed==1
 assert cons_usd_imp>0 if imputed==1
 assert cons_usd_org== cons_usd_imp & cons_usd_imp==0 if cons==.
+rename region reg_pess
+la var reg_pess "Region (PESS)"
+rename tag_curr_change curr_change_tag  
+replace curr_change_tag=0 if curr_change_tag==.
+la var curr_change_tag "Entry flagged: issues w/currency"
+order reg_pess astrata 
 save "${gsdData}/1-CleanOutput/food.dta", replace
 
 
@@ -222,4 +228,10 @@ assert imputed==0 if mod_opt==mod_item | mod_item==0
 assert purc_usd_org==.z if imputed==1
 assert purc_usd_imp>0 if imputed==1
 assert purc_usd_org==purc_usd_imp & purc_usd_imp==0 if purc==.
+rename region reg_pess
+la var reg_pess "Region (PESS)"
+rename tag_curr_change curr_change_tag  
+replace curr_change_tag=0 if curr_change_tag==.
+la var curr_change_tag "Entry flagged: issues w/currency"
+order reg_pess astrata 
 save "${gsdData}/1-CleanOutput/nonfood.dta", replace
