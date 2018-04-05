@@ -177,7 +177,7 @@ gen emp_hrs_cat = ceil(emp_hrs/10)
 recode emp_hrs_cat (0=1) 
 label define lemp_hrs_cat 1 "1-10" 2 "11-20" 3 "21-30" 4 "31-40" 5 "41-50" 6 "51-60" 7 "61-70" 8 "71-80" 9 "81-90" 10 "91-100", replace
 label values emp_hrs_cat lemp_hrs_cat
-
+la var emp_hrs_cat "Hrs worked category (10-hrs intervals)"
 
 *Number of children, adults, old-age
 bys strata ea block hh: egen no_chi= count(age_cat_broad) if inlist(age_cat_broad,1,2)
@@ -216,9 +216,15 @@ order team strata ea block hh hhmid enum
 
 preserve
 save "${gsdData}/1-CleanTemp/hhm.dta", replace
+assert hhm_id==hhh_id if ishead==1
+drop hhmid
 ren region reg_pess
 la var reg_pess "Region (PESS)"
+order reg_pess astrata strata ea block hh enum team hhm_id ishead gender age age_cat_narrow age_cat_broad working_age pschool_age sschool_age gen_young adult literacy enrolled enrolled25 edu_status edu_level_broad active_12m_imp emp_7d unemp_7d emp_12m emp_ever lfp_7d lfp_7d_youth lfp_7d_adult emp_7d_youth emp_7d_adult unemp_7d_youth unemp_7d_adult uemp_7d emp_hrs emp_hrs_cat
+drop hhh_id age_cat_broad_* no_chi no_adu no_old no_children no_adults no_old_age youth hhsize
+rename hhm_id hhmid
 save "${gsdData}/1-CleanOutput/hhm.dta", replace
+
 
 *Prepare household member dataset for imputation
 use "${gsdData}/1-CleanOutput/hhm.dta", clear
@@ -227,9 +233,10 @@ gen nchild = age<15 if !missing(age)
 gen nsenior = age>64 if !missing(age)
 gen hhsex = gender if ishead
 gen hhedu = hhm_edu_ever if ishead
-merge 1:1 strata ea block hh hhmid using "${gsdData}/1-CleanTemp/hhm.dta", nogen assert(match) keepusing(active_12m_imp)
+rename hhmid hhm_id
+merge 1:1 strata ea block hh hhm_id using "${gsdData}/1-CleanTemp/hhm.dta", nogen assert(match) keepusing(active_12m_imp)
 gen hhempl=active_12m_imp if ishead
-collapse (sum) nchild nsenior hhh_literacy (min) hhsex hhempl hhedu (count) hhsize = hhmid, by(strata ea block hh)
+collapse (sum) nchild nsenior hhh_literacy (min) hhsex hhempl hhedu (count) hhsize = hhm_id, by(strata ea block hh)
 gen pchild = nchild / hhsize
 gen psenior = nsenior / hhsize
 drop nchild nsenior

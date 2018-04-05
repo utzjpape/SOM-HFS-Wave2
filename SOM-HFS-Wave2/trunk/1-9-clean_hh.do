@@ -103,41 +103,55 @@ save "${gsdTemp}/hh_pre_final.dta", replace
 use "${gsdData}/1-CleanInput/assets_prev.dta", clear
 merge m:1  strata ea block hh using "${gsdTemp}/hh_pre_final.dta", nogen keep(match) keepusing(weight) 
 order region strata ea block hh enum weight astrata
+rename region reg_pess
+la var reg_pess "Region (PESS)"
 drop team
 save "${gsdData}/1-CleanOutput/assets_prev.dta", replace
 
 use "${gsdData}/1-CleanInput/hhm_separated.dta", clear
 merge m:1  strata ea block hh using "${gsdTemp}/hh_pre_final.dta", nogen keep(match) keepusing(weight) 
 order region strata ea block hh enum weight 
+rename region reg_pess
+la var reg_pess "Region (PESS)"
 drop team
 save "${gsdData}/1-CleanOutput/hhm_separated.dta", replace
 
 use "${gsdData}/1-CleanInput/livestock.dta", clear
 merge m:1  strata ea block hh using "${gsdTemp}/hh_pre_final.dta", nogen keep(match) keepusing(weight) 
 order region strata ea block hh enum weight astrata
+rename region reg_pess
+la var reg_pess "Region (PESS)"
 drop team
 save "${gsdData}/1-CleanOutput/livestock.dta", replace
 
 use "${gsdData}/1-CleanInput/livestock_pre.dta", clear
 merge m:1  strata ea block hh using "${gsdTemp}/hh_pre_final.dta", nogen keep(match) keepusing(weight) 
 order region strata ea block hh enum weight astrata
+rename region reg_pess
+la var reg_pess "Region (PESS)"
 drop team
 save "${gsdData}/1-CleanOutput/livestock_pre.dta", replace
 
 use "${gsdData}/1-CleanInput/motor.dta", clear
 merge m:1  strata ea block hh using "${gsdTemp}/hh_pre_final.dta", nogen keep(match) keepusing(weight) 
 order region strata ea block hh enum weight astrata
+rename region reg_pess
+la var reg_pess "Region (PESS)"
 drop team
 save "${gsdData}/1-CleanOutput/motor.dta", replace
 
 use "${gsdData}/1-CleanInput/shocks.dta", clear
 merge m:1  strata ea block hh using "${gsdTemp}/hh_pre_final.dta", nogen keep(match) keepusing(weight) 
 order region strata ea block hh enum weight astrata
+rename region reg_pess
+la var reg_pess "Region (PESS)"
 drop team
 save "${gsdData}/1-CleanOutput/shocks.dta", replace
 
 use "${gsdData}/1-CleanTemp/assets.dta", clear
 order cons_d cf_median cons_flow drate drate_median own_median, after(itemid)
+rename region reg_pess
+la var reg_pess "Region (PESS)"
 save "${gsdData}/1-CleanOutput/assets.dta", replace
 
 
@@ -206,13 +220,18 @@ order penrol, after(penrol_s)
 label var no_children "No of Children in Households" 
 label var no_adults "No of Adults in Households" 
 label var no_old_age "No of Elderly in Households"
-drop nadults 
+drop nadults settle_dispute_satis legal_id_disp 
 order region strata ea block hh enum beh_treat_opt type type_idp_host ind_profile mod_opt weight poorPPP_prob poorPPP plinePPP poorPPP_vulnerable_10_prob poorPPP_vulnerable_20_prob quintiles_tc tc_imp tc_imp_f tc_imp_nf tc_imp_d pgi pseverity hhsize no_children no_adults no_old_age hhh_gender hhh_age pgender hhh_edu penrol_p penrol_s penrol pworking_age pliteracy lfp_7d_hh emp_7d_hh 
 ren region reg_pess 
 order astrata, after(ind_profile)
 order hhh_outstate, after(hhh_age) 
 order enum_team, after(enum)
+order beh_treat_opt, after(astrata)
 la var reg_pess "Region (PESS)"
+la var hhh_id "HH Head member ID"
+la var supp_som_usd "Value of support provided in past 12 month (USD)"
+la var supp_som_pcpd "Value of support provided per capita per day (USD)"
+
 
 *********************************************************
 *Declare survey & save 
