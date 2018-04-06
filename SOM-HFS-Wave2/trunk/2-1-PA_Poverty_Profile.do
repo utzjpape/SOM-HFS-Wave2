@@ -6,92 +6,118 @@ set sortseed 11041955
 
 
 
+**************************************************
+*   PREPARE DATASETS 
+**************************************************
+
+// Household level 
+use "${gsdData}/1-CleanOutput/hh.dta", clear
+gen hhweight=weight*hhsize
+svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
+*Poverty measures
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhq-poverty.dta", nogen assert(master match) keepusing(poorPPP125_prob)
+*GINI
+fastgini tc_imp [pweight=hhweight]
+return list 
+gen gini=r(gini)
+label var gini "GINI Coefficient from tc_imp"
+*WASH indicators
+gen improved_sanitation=(inlist(toilet,1,2,3,6,7,9)) 
+replace improved_sanitation=. if toilet>=.
+label values improved_sanitation lyesno
+label var improved_sanitation "HH has improved sanitation"
+gen improved_water=(inlist(water,1,2,3))
+replace improved_water=. if water>=.
+label values improved_water lyesno
+label var improved_water "HH has improved source of drinking water"
+save "${gsdTemp}/hh_PA_Poverty_Profile.dta", replace
+
+// Household member level 
+use "${gsdData}/1-CleanOutput/hhm.dta", clear
+merge m:1 strata ea block hh using "${gsdData}/1-CleanOutput/hh.dta", assert(match) nogen keepusing(weight ind_profile type)
+svyset ea [pweight=weight], strata(strata) singleunit(centered)
+*Education variables
+gen adult_literacy_rate=literacy if age>=15
+label values adult_literacy_rate lliteracy
+label var adult_literacy_rate "Adult (15+) literacy rate"
+gen attainment_primary =(hhm_edu_level>=8) 
+replace attainment_primary=. if  hhm_edu_level>=. | age<25
+replace attainment_primary=0 if  hhm_edu_level==.z
+label values attainment_primary lyesno
+label var attainment_primary "Completed primary (aged 25+)"
+gen attainment_secondary=(hhm_edu_level>=12) 
+replace attainment_secondary=. if  hhm_edu_level>=. | age<25
+replace attainment_secondary=0 if  hhm_edu_level==.z
+label values attainment_secondary  lyesno
+label var attainment_secondary  "Completed secondary (aged 25+)"
+*Labor indicators
+gen employment=(active_12m_imp==1)
+replace employment=. if lfp_7d==0
+replace employment=. if age<15
+label values employment lyesno
+label var employment "HHM employed (aged 15+)"
+save "${gsdTemp}/hhm_PA_Poverty_Profile.dta", replace
 
 
 
 
+**************************************************
+*   CROSS-COUNTRY COMPARISONS
+**************************************************
 
-
-save "${gsdTemp}/WB_clean_all.dta", replace 
-
-
-
-
-
-* Cross-country comparison
+*Prepare dataset with data from low-income countries in Africa
 use "${gsdTemp}/WB_clean_all.dta", clear
 merge 1:1 countryname using "${gsdData}/1-CleanInput/Country_comparison.dta", nogen
-keep if country_aggr=="AFRICA" & income_cat=="L"
+keep if countryname=="Somalia" | (country_aggr=="AFRICA" & income_cat=="L")
 
-set obs 27
-replace countryname = "SOMALI" in 27
-replace countrycode = "SOM" in 27
-replace poverty = 51.47 in 27
-replace l_y_poverty = 2016 in 27
-replace gap = 21.5 in 27
-replace l_y_gap = 2016 in 27
-replace gini = 37.29 in 27
-replace l_y_gini = 2016 in 27
-replace gdppc_c = 503.37 in 27
-replace l_y_gdppc_c = 2016 in 27
-replace adult_literacy_rate = 54.9 in 27
-replace l_y_adult_literacy_rate =2016 in 27
+*Include GDP per head for Somali regions (Source: http://www.worldbank.org/en/country/somalia/overview)
+replace gdppc_c = 450 if  countryname=="Somalia"
+export excel using "${gsdOutput}/PA_Poverty_Profile_1.xlsx", replace firstrow(variables)
 
-replace enrollment_primary =52.9 in 27
-replace l_y_enrollment_primary =2016 in 27
+*Prepare the respective data for Somali regions
+use "${gsdTemp}/hh_PA_Poverty_Profile.dta", clear
+svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
+tabout type using "${gsdOutput}/PA_Poverty_Profile_2.xls", svy sum c(mean poorPPP_prob se) sebnone f(3) npos(col) h2(Poverty incidence) replace
+tabout type using "${gsdOutput}/PA_Poverty_Profile_2.xls", svy sum c(mean pgi se) sebnone f(3) npos(col) h2(Poverty gap) append
+tabout type using "${gsdOutput}/PA_Poverty_Profile_2.xls", svy sum c(mean gini se) sebnone f(3) npos(col) h2(GINI coefficient) append
+svyset ea [pweight=weight], strata(strata) singleunit(centered)
+tabout type using "${gsdOutput}/PA_Poverty_Profile_2.xls", svy sum c(mean improved_sanitation se) sebnone f(3) npos(col) h2(Improved Sanitation) append
+tabout type using "${gsdOutput}/PA_Poverty_Profile_2.xls", svy sum c(mean improved_water se) sebnone f(3) npos(col) h2(Improved Water) append
+tabout type using "${gsdOutput}/PA_Poverty_Profile_2.xls", svy sum c(mean electricity se) sebnone f(3) npos(col) h2(Access to electricity) append
 
-replace lfp =37.7 in 27
-replace l_y_lfp = 2016 in 27
-replace employment = 19.8 in 27
-replace l_y_employment = 2016 in 27
-
-replace attainment_primary = 15.5 in 27
-replace l_y_attainment_primary = 2016 in 27
-replace attainment_secondary = 6.9 in 27
-replace l_y_attainment_secondary = 2016 in 27
-
-replace improved_water = 58.0 in 27
-replace l_y_improved_water = 2016 in 27
-
-replace improved_sanitation = 10.4 in 27
-replace l_y_improved_sanitation = 2016 in 27
-
-foreach indicator in poverty gap gini remittances population lfp gdppc gdppc_c employment adult_literacy_rate enrollment_primary attainment_primary attainment_secondary improved_water improved_sanitation{
-	egen avg_`indicator' = mean(`indicator')
-}
-order countryname countrycode poverty avg_poverty l_y_poverty gap avg_gap l_y_gap gini avg_gini l_y_gini remittances avg_remittances l_y_remittances population avg_population l_y_population lfp avg_lfp l_y_lfp gdppc avg_gdppc l_y_gdppc gdppc_c avg_gdppc_c l_y_gdppc employment avg_employment l_y_employment adult_literacy_rate avg_adult_literacy_rate l_y_adult_literacy_rate enrollment_primary avg_enrollment_primary l_y_enrollment_primary attainment_primary avg_attainment_primary l_y_attainment_primary attainment_secondary avg_attainment_secondary l_y_attainment_secondary improved_water avg_improved_water l_y_improved_water improved_sanitation avg_improved_sanitation l_y_improved_sanitation 
-
-export excel using "${gsdOutput}/Monetary_Poverty_Figures_Final.xlsx", sheetreplace firstrow(variables) sheet("Cross-Country_Comparison_source")
-
-* Poverty Measures
-
-use "${gsdData}/1-CleanOutput/hh.dta", clear
-merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhq-poverty.dta", nogen assert(master match) keepusing(poorPPP125_prob)
-
-gen sub_region=6 if astrata==3
-replace sub_region=5 if astrata==22
-replace sub_region=3 if astrata==21
-replace sub_region=4 if astrata==14 | astrata==15
-replace sub_region=2 if astrata==12 | astrata==13 
-replace sub_region=1 if astrata==11
-label define lsub_region 1 "Mogadishu" 2 "N-E Urban" 4 "N-W Urban" 3 "N-E Rural" 5 "N-W Rural" 6 "IDP Camps"
-label values sub_region lsub_region
-label var sub_region "Indicator: Mogadishu, North-East urban/rural, North-West urban/rural & IDPs"
- 
-gen region=1 if astrata==11
-replace region=2 if astrata==12 | astrata==13 | astrata==21
-replace region=3 if astrata==14 | astrata==15 | astrata==22
-replace region=4 if astrata==3
-
-label define lregion 1 "Mogadishu" 2 "North-East" 3 "North-West" 4 "IDP Camps"
-label values region lregion
-label var region "Indicator: Mogadishu, North-East, North-West, & IDPs"
- 
-gen pweight = weight_cons * hhsize
-svyset ea [pweight=pweight], strata(strata)
+use "${gsdTemp}/hhm_PA_Poverty_Profile.dta", clear
+svyset ea [pweight=weight], strata(strata) singleunit(centered)
+tabout type using "${gsdOutput}/PA_Poverty_Profile_2.xls", svy sum c(mean adult_literacy_rate se) sebnone f(3) npos(col) h2(Adult Literay rate) append
+tabout type using "${gsdOutput}/PA_Poverty_Profile_2.xls", svy sum c(mean enrolled25 se) sebnone f(3) npos(col) h2(Enrolment rate) append
+tabout type using "${gsdOutput}/PA_Poverty_Profile_2.xls", svy sum c(mean attainment_primary  se) sebnone f(3) npos(col) h2(Educational attainment - Primary) append
+tabout type using "${gsdOutput}/PA_Poverty_Profile_2.xls", svy sum c(mean attainment_secondary  se) sebnone f(3) npos(col) h2(Educational attainment - Secondary) append
+tabout type using "${gsdOutput}/PA_Poverty_Profile_2.xls", svy sum c(mean lfp_7d se) sebnone f(3) npos(col) h2(Labor force participation) append
+tabout type using "${gsdOutput}/PA_Poverty_Profile_2.xls", svy sum c(mean employment se) sebnone f(3) npos(col) h2(Employment) append
 
 
-* Poverty Headcount ratio
+
+**************************************************
+*   MONETARY POVERTY
+**************************************************
+
+use "${gsdTemp}/hh_PA_Poverty_Profile.dta", clear
+svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
+
+*Poverty incidence 
+tabout type using "${gsdOutput}/PA_Poverty_Profile_3.xls", svy sum c(mean poorPPP_prob se) sebnone f(3) npos(col) h2(Poverty incidence) replace
+
+tabout type using "${gsdOutput}/PA_Poverty_Profile_3.xls", svy sum c(mean poorPPP_prob se) sebnone f(3) npos(col) h2(Poverty incidence) append
+
+
+
+ind_profile / type Gender HH head / remittances status 
+
+child 
+youth 
+extreme 
+vulnerable 
+adult equivalent 
+
 
 *By location
 qui tabout sub_region using "${gsdOutput}/Monetary_Poverty_source.xls", svy sum c(mean poorPPP_prob se lb ub) sebnone f(3) h2(Poverty headcount ratio by sub_region) replace
@@ -124,6 +150,45 @@ qui tabout region using "${gsdOutput}/Monetary_Poverty_source.xls", svy sum c(me
 qui tabout type using "${gsdOutput}/Monetary_Poverty_source.xls", svy sum c(mean poorPPP_vulnerable_10_prob se lb ub) sebnone f(3) h2(Vulnerable People - Poverty headcount ratio by region and type of area) append
 qui tabout region using "${gsdOutput}/Monetary_Poverty_source.xls", svy sum c(mean poorPPP_vulnerable_20_prob se lb ub) sebnone f(3) h2(Vulnerable People - Poverty headcount ratio by region and type of area) append
 qui tabout type using "${gsdOutput}/Monetary_Poverty_source.xls", svy sum c(mean poorPPP_vulnerable_20_prob se lb ub) sebnone f(3) h2(Vulnerable People - Poverty headcount ratio by region and type of area) append
+
+
+
+
+**************************************************
+*   MULTIDIMENSIONAL DEPRIVATIONS
+**************************************************
+
+
+
+**************************************************
+*   INTEGRATE ALL SHEETS INTO ONE FILE
+**************************************************
+
+
+qui tabout poorPPP remit12m using "${gsdOutput}/Child_Poverty_1.xls" if child==1, svy c(freq se lb ub) sebnone h1(Child poverty - by remittances) append
+
+* Put all created sheets into one excel document
+foreach i of numlist 1/9 {
+	insheet using "${gsdOutput}/Child_Poverty_`i'.xls", clear nonames tab
+	export excel using "${gsdOutput}/Child_Poverty_Figures_Final.xlsx", sheetreplace sheet("Raw_Data_`i'") 
+	erase "${gsdOutput}/Child_Poverty_`i'.xls"
+}
+
+
+
+
+
+save "${gsdTemp}/WB_clean_all.dta", replace 
+
+
+
+**************************************************
+*   END
+**************************************************
+
+
+
+
 
 * Household size and age dependency ratio
 svyset ea [pweight=weight_cons], strata(strata)
