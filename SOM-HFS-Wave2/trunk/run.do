@@ -126,7 +126,18 @@ run "${gsdDo}/1-9-clean_hh.do"
 run "${gsdDo}/1-10-Combine_w1_w2.do" 
 
 /*
-Conduct IDP analysis
+
+*Poverty Assessment: Chapter 1 (Poverty Profile & Trends)
+run "${gsdDo}/2-1-PA_Cross-Country_Indicators.do"   
+run "${gsdDo}/2-1-PA_Poverty_Profile.do"   
+
+*Poverty Assessment: Chapter 2 (Drought Impact)
+
+*Poverty Assessment: Chapter 3 (Remittances)
+
+*Poverty Assessment: Chapter 4 (Social Protection)
+
+*Poverty Assessment: Chapter 5 (IDP analysis)
 run "${gsdDo}/2-5-PA_IDP_Comparison_Groups.do"   
 run "${gsdDo}/2-5-PA_IDP_Demographics.do" 
 run "${gsdDo}/2-5-PA_IDP_Origin.do" 
