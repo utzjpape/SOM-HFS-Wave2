@@ -54,13 +54,13 @@ if (`runimport'==1) {
 	save "${gsdTemp}/WB_data_remittances.dta", replace
 	wbopendata, language(en - English) country() topics() indicator(SP.POP.TOTL - Population, total) clear long
 	save "${gsdTemp}/WB_data_population.dta", replace
-	wbopendata, language(en - English) country() topics() indicator(SL.TLF.ACTI.ZS - Labor force participation rate, total (% of total population ages ages 15-64) (modeled ILO estimate)) clear long
+	wbopendata, language(en - English) country() topics() indicator(SL.TLF.CACT.NE.ZS - Labor force participation rate, total (% of total population ages 15+) (national estimate)) clear long
 	save "${gsdTemp}/WB_data_lfp.dta", replace 				 
 	wbopendata, language(en - English) country() topics() indicator(NY.GDP.PCAP.PP.CD - GDP per capita, PPP (current international $)) clear long
 	save "${gsdTemp}/WB_data_gdppc.dta", replace
 	wbopendata, language(en - English) country() topics() indicator(NY.GDP.PCAP.CD - GDP per capita (current $)) clear long
 	save "${gsdTemp}/WB_data_gdppc_c.dta", replace
-	wbopendata, language(en - English) country() topics() indicator(SL.EMP.TOTL.SP.ZS - Employment to population ratio, 15+, total (%) (modeled ILO estimate)) clear long
+	wbopendata, language(en - English) country() topics() indicator(SL.EMP.TOTL.SP.NE.ZS - Employment to population ratio, 15+, total (%) (national estimate)) clear long
 	save "${gsdTemp}/WB_data_employment.dta", replace 			
 	wbopendata, language(en - English) country() topics() indicator(SE.ADT.LITR.ZS - Adult literacy rate, population 15+ years, both sexes (%)) clear long
 	save "${gsdTemp}/WB_data_adult_literacy_rate.dta", replace
@@ -109,7 +109,7 @@ foreach indicator in poverty gap gini remittances population lfp gdppc gdppc_c e
 		rename sp_pop_totl `indicator'
 		}
 		else if "`indicator'" == "lfp" {
-		rename sl_tlf_acti_zs `indicator'
+		rename sl_tlf_cact_ne_zs `indicator'
 		}
 		else if "`indicator'" == "gdppc" {
 		rename ny_gdp_pcap_pp_cd `indicator'
@@ -118,7 +118,7 @@ foreach indicator in poverty gap gini remittances population lfp gdppc gdppc_c e
 		rename ny_gdp_pcap_cd `indicator' 
 		}
 		else if "`indicator'" == "employment" {
-		rename sl_emp_totl_sp_zs `indicator' 
+		rename sl_emp_totl_sp_ne_zs `indicator' 
 		}
 		else if "`indicator'" == "adult_literacy_rate" {
 		rename se_adt_litr_zs `indicator' 
