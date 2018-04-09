@@ -4,7 +4,7 @@
 *HHM indicators
 ************************
 use "${gsdData}/1-CleanTemp/hhm_all_idpanalysis.dta", clear 
-svyset ea [pweight=weight_adj], strata(strata)
+svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
 
 *1. Population pyramids 
 
@@ -42,7 +42,8 @@ qui tabout gender using "${gsdOutput}/Raw_Fig1.xls" if inlist(comparisonidp , 1,
 *HHQ indicators
 ************************
 use "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", clear 
-svyset ea [pweight=weight_adj], strata(strata)
+svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
+
 
 *% of female headed households 
 qui tabout hhh_gender comparisonidp using "${gsdOutput}/Raw_Fig2.xls"  , replace svy percent c(col lb ub) f(6) npos(col) sebnone h1("hhh_gender_composition")

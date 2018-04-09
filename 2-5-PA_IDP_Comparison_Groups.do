@@ -9,7 +9,7 @@ save "${gsdTemp}/collapsedhhmdepratio.dta", replace
 use "${gsdData}/1-CleanOutput/hh_w1_w2.dta", clear 
 *Dropping strata with single sampling unit to allow for CI calculation
 *replace strata =. if inlist(strata, 42, 48, 54)
-svyset ea [pweight=weight_adj], strata(strata)
+svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
 
 ********************************************************
 *Make comparison groups in HHQ.
@@ -77,6 +77,7 @@ la def lreasonidp 1 "Conflict or violence" 2 "Drought, famine or flood"
 la val reasonidp lreasonidp
 la var reasonidp "Reasons for displacement: W2 camp IDPs"
 
+/*
 *Fixing single-strata EAs to allow for standard error calculation
 *Removing strata with single EAs from all the relevant comparison groups
 replace comparisonidp = . if inlist(strata, 42, 48, 54)
@@ -91,6 +92,7 @@ replace comparisonidp =. if inlist(strata, 31, 39, 43, 57)
 replace comparisonidp =. if inlist(strata, 47)
 *Fixing the single-EA strata in the reasonidp variable.
 replace reasonidp = . if inlist(strata, 6)
+*/
 
 *5. Merge in essential variables from hhm. 
 cap drop age_dependency_ratio
@@ -102,7 +104,7 @@ save "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", replace
 *Merge comparison groups to HHM
 ********************************************************
 use "${gsdData}/1-CleanOutput/hhm_w1_w2.dta", clear 
-svyset ea [pweight=weight_adj], strata(strata)
+svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
 *Removing assert(match), since 3 single-EA strata were dropped.
 merge m:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", nogen keepusing( comparisonidp urbanrural genidp quintileidp migr_idp reasonidp national)
 
