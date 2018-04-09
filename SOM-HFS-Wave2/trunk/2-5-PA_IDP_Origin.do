@@ -4,7 +4,7 @@
 *HHQ indicators
 ************************
 use "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", clear 
-svyset ea [pweight=weight_adj], strata(strata)
+svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
 
 *Recode variables for better graphs
 gen newmove_want = move_want_yn
@@ -180,7 +180,7 @@ qui tabout tempreturn quintileidp using "${gsdOutput}/Raw_Fig6.xls", svy percent
 *HHM indicators
 ************************
 use "${gsdData}/1-CleanTemp/hhm_all_idpanalysis.dta", clear 
-svyset ea [pweight=weight_adj], strata(strata)
+svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
 
 *Place raw data into the excel figures file
 foreach i of num 3 4 5 6 {

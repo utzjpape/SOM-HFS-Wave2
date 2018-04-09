@@ -18,7 +18,7 @@ save "${gsdTemp}/separatedmem.dta", replace
 *HHQ indicators
 ************************
 use "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", clear 
-svyset ea [pweight=weight_adj], strata(strata)
+svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
 count
 merge 1:1 strata ea block hh using "${gsdTemp}/separatedmem.dta",  assert(match master) keepusing(numsep) nogen
 count
@@ -54,7 +54,7 @@ qui tabout hhm_unite quintileidp using "${gsdOutput}/Raw_Fig11.xls", svy  percen
 use "${gsdData}/1-CleanOutput/hhm_separated.dta", clear
 *Merge in weights and comparison variables ; set survey data
 merge m:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", keepusing(weight_adj comparisonidp genidp quintileidp reasonidp urbanrural t national tc_imp quintiles_tc) assert(match using)
-svyset ea [pw=weight], strata(strata)
+svyset ea [pw=weight], strata(strata) singleunit(centered)
 *Retain obs that are from hhm separated roster
 keep if _merge ==3
 drop _merge

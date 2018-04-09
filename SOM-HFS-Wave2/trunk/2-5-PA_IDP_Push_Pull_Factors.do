@@ -4,7 +4,7 @@
 *HHQ indicators
 ************************
 use "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", clear 
-svyset ea [pweight=weight_adj], strata(strata)
+svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
 
 *Label the variables
 do "${gsdDo}/label_multiselect_idp.do"

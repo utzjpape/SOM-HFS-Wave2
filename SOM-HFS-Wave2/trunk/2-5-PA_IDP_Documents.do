@@ -6,7 +6,7 @@
 use "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", clear 
 *SET POPULATION LEVEL WEIGHTS FOR THIS GRAPH TO MAKE IT COMPARABLE TO THE LEGAL ID GRAPH.
 gen weight_pop = hhsize*weight_adj
-svyset ea [pweight=weight_pop], strata(strata)
+svyset ea [pweight=weight_pop], strata(strata) singleunit(centered)
 
 *Lost legal documents
 *seems like legal_id_disp was not administered due to questionnaire coding error
@@ -23,7 +23,7 @@ qui tabout legal_id_access_disp quintileidp using "${gsdOutput}/Raw_Fig12.xls", 
 *HHM indicators
 ************************
 use "${gsdData}/1-CleanTemp/hhm_all_idpanalysis.dta", clear 
-svyset ea [pweight=weight_adj], strata(strata)
+svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
 
 *Do you have legal id?
 qui tabout legal_id comparisonidp using "${gsdOutput}/Raw_Fig12.xls", svy percent c(col lb ub) npos(col) append h1("HaveLegalID") f(4) 
