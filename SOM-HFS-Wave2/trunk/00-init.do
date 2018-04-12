@@ -1,4 +1,5 @@
 *Wave 2
+
 *Initialize work environment
 
 global suser = c(username)
