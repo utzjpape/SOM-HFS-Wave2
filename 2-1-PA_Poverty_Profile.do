@@ -9,13 +9,13 @@ set sortseed 11041955
 **************************************************
 *   PREPARE DATASETS 
 **************************************************
-
 // Household level 
 use "${gsdData}/1-CleanOutput/hh.dta", clear
 gen hhweight=weight*hhsize
 svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
 *Poverty measures
 merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhq-poverty.dta", nogen assert(master match) keepusing(poorPPP125_prob)
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhq-poverty_ae.dta", nogen assert(master match) keepusing(poorPPP_prob_AE)
 *GINI
 fastgini tc_imp [pweight=hhweight]
 return list 
@@ -30,11 +30,15 @@ gen improved_water=(inlist(water,1,2,3))
 replace improved_water=. if water>=.
 label values improved_water lyesno
 label var improved_water "HH has improved source of drinking water"
+*Drought affected households
+gen drought_affected=(shock_1==1 | shock_2==1)
+label values drought_affected lyesno
+la var drought_affected "HH reported to be affected by the drought"
 save "${gsdTemp}/hh_PA_Poverty_Profile.dta", replace
 
 // Household member level 
 use "${gsdData}/1-CleanOutput/hhm.dta", clear
-merge m:1 strata ea block hh using "${gsdData}/1-CleanOutput/hh.dta", assert(match) nogen keepusing(weight ind_profile type)
+merge m:1 strata ea block hh using "${gsdData}/1-CleanOutput/hh.dta", assert(match) nogen keepusing(weight ind_profile type poorPPP)
 svyset ea [pweight=weight], strata(strata) singleunit(centered)
 *Education variables
 gen adult_literacy_rate=literacy if age>=15
@@ -56,15 +60,18 @@ replace employment=. if lfp_7d==0
 replace employment=. if age<15
 label values employment lyesno
 label var employment "HHM employed (aged 15+)"
+*Child and youth 
+gen child=1 if age<=14 & !missing(age)
+replace child=0 if child==. & !missing(age)
+gen youth=1 if age<=24 & age>=15 & !missing(age)
+replace youth=0 if youth==. & !missing(age)
 save "${gsdTemp}/hhm_PA_Poverty_Profile.dta", replace
-
 
 
 
 **************************************************
 *   CROSS-COUNTRY COMPARISONS
 **************************************************
-
 *Prepare dataset with data from low-income countries in Africa
 use "${gsdTemp}/WB_clean_all.dta", clear
 merge 1:1 countryname using "${gsdData}/1-CleanInput/Country_comparison.dta", nogen
@@ -99,57 +106,102 @@ tabout type using "${gsdOutput}/PA_Poverty_Profile_2.xls", svy sum c(mean employ
 **************************************************
 *   MONETARY POVERTY
 **************************************************
-
 use "${gsdTemp}/hh_PA_Poverty_Profile.dta", clear
 svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
 
 *Poverty incidence 
-tabout type using "${gsdOutput}/PA_Poverty_Profile_3.xls", svy sum c(mean poorPPP_prob se) sebnone f(3) npos(col) h2(Poverty incidence) replace
+tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_3.xls", svy sum c(mean poorPPP_prob se) sebnone f(3) npos(col) h2(Poverty incidence by ind_profile) replace
+qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
+	tabout `var' using "${gsdOutput}/PA_Poverty_Profile_3.xls", svy sum c(mean poorPPP_prob se) sebnone f(3) npos(col) h2(Poverty incidence by `var') append
+}
+svy: mean poorPPP_prob, over(hhh_gender)
+test [poorPPP_prob]Female = [poorPPP_prob]Male
+svy: mean poorPPP_prob, over(remit12m)
+test [poorPPP_prob]Yes = [poorPPP_prob]No
+svy: mean poorPPP_prob, over(migr_idp)
+test [poorPPP_prob]Yes = [poorPPP_prob]No
+svy: mean poorPPP_prob, over(drought_affected)
+test [poorPPP_prob]Yes = [poorPPP_prob]No
+ 
+*Extreme poverty 
+tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_4.xls", svy sum c(mean poorPPP125_prob se) sebnone f(3) npos(col) h2(Extreme poverty incidence by ind_profile) replace
+qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
+	tabout `var' using "${gsdOutput}/PA_Poverty_Profile_4.xls", svy sum c(mean poorPPP125_prob se) sebnone f(3) npos(col) h2(Extreme poverty incidence by `var') append
+}
+svy: mean poorPPP125_prob, over(hhh_gender)
+test [poorPPP125_prob]Female = [poorPPP125_prob]Male
+svy: mean poorPPP125_prob, over(remit12m)
+test [poorPPP125_prob]Yes = [poorPPP125_prob]No
+svy: mean poorPPP125_prob, over(migr_idp)
+test [poorPPP125_prob]Yes = [poorPPP125_prob]No
+svy: mean poorPPP125_prob, over(drought_affected)
+test [poorPPP125_prob]Yes = [poorPPP125_prob]No
 
-tabout type using "${gsdOutput}/PA_Poverty_Profile_3.xls", svy sum c(mean poorPPP_prob se) sebnone f(3) npos(col) h2(Poverty incidence) append
+*Poverty incidence for an adult equivalent measure
+tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_5.xls", svy sum c(mean poorPPP_prob_AE se) sebnone f(3) npos(col) h2(Poverty incidence AE by ind_profile) replace
+qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
+	tabout `var' using "${gsdOutput}/PA_Poverty_Profile_5.xls", svy sum c(mean poorPPP_prob_AE se) sebnone f(3) npos(col) h2(Poverty incidence AE by `var') append
+}
+svy: mean poorPPP_prob_AE, over(hhh_gender)
+test [poorPPP_prob_AE]Female = [poorPPP_prob_AE]Male
+svy: mean poorPPP_prob_AE, over(remit12m)
+test [poorPPP_prob_AE]Yes = [poorPPP_prob_AE]No
+svy: mean poorPPP_prob_AE, over(migr_idp)
+test [poorPPP_prob_AE]Yes = [poorPPP_prob_AE]No
+svy: mean poorPPP_prob_AE, over(drought_affected)
+test [poorPPP_prob_AE]Yes = [poorPPP_prob_AE]No
+ 
+*Vulnerable by a 10% shock
+tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_6.xls", svy sum c(mean poorPPP_vulnerable_10_prob se) sebnone f(3) npos(col) h2(Vulnerable w/10% shock by ind_profile) replace
+qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
+	tabout `var' using "${gsdOutput}/PA_Poverty_Profile_6.xls", svy sum c(mean poorPPP_vulnerable_10_prob se) sebnone f(3) npos(col) h2(Vulnerable w/10% shocok by `var') append
+}
+svy: mean poorPPP_vulnerable_10_prob, over(hhh_gender)
+test [poorPPP_vulnerable_10_prob]Female = [poorPPP_vulnerable_10_prob]Male
+svy: mean poorPPP_vulnerable_10_prob, over(remit12m)
+test [poorPPP_vulnerable_10_prob]Yes = [poorPPP_vulnerable_10_prob]No
+svy: mean poorPPP_vulnerable_10_prob, over(migr_idp)
+test [poorPPP_vulnerable_10_prob]Yes = [poorPPP_vulnerable_10_prob]No
+svy: mean poorPPP_vulnerable_10_prob, over(drought_affected)
+test [poorPPP_vulnerable_10_prob]Yes = [poorPPP_vulnerable_10_prob]No
+
+*Vulnerable by a 20% shock
+tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_7.xls", svy sum c(mean poorPPP_vulnerable_20_prob se) sebnone f(3) npos(col) h2(Vulnerable w/20% shock by ind_profile) replace
+qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
+	tabout `var' using "${gsdOutput}/PA_Poverty_Profile_7.xls", svy sum c(mean poorPPP_vulnerable_20_prob se) sebnone f(3) npos(col) h2(Vulnerable w/20% shocok by `var') append
+}
+svy: mean poorPPP_vulnerable_20_prob, over(hhh_gender)
+test [poorPPP_vulnerable_20_prob]Female = [poorPPP_vulnerable_20_prob]Male
+svy: mean poorPPP_vulnerable_20_prob, over(remit12m)
+test [poorPPP_vulnerable_20_prob]Yes = [poorPPP_vulnerable_20_prob]No
+svy: mean poorPPP_vulnerable_20_prob, over(migr_idp)
+test [poorPPP_vulnerable_20_prob]Yes = [poorPPP_vulnerable_20_prob]No
+svy: mean poorPPP_vulnerable_20_prob, over(drought_affected)
+test [poorPPP_vulnerable_20_prob]Yes = [poorPPP_vulnerable_20_prob]No
 
 
 
-ind_profile / type Gender HH head / remittances status 
 
+
+
+
+
+
+
+
+svyset ea [pweight=weight], strata(strata) singleunit(centered)
 child 
 youth 
-extreme 
-vulnerable 
-adult equivalent 
 
 
-*By location
-qui tabout sub_region using "${gsdOutput}/Monetary_Poverty_source.xls", svy sum c(mean poorPPP_prob se lb ub) sebnone f(3) h2(Poverty headcount ratio by sub_region) replace
-qui tabout region using "${gsdOutput}/Monetary_Poverty_source.xls", svy sum c(mean poorPPP_prob se lb ub) sebnone f(3) h2(Poverty headcount ratio by region) append
-qui tabout type using "${gsdOutput}/Monetary_Poverty_source.xls", svy sum c(mean poorPPP_prob se lb ub) sebnone f(3) h2(Poverty headcount ratio by type of area) append
 
-*By hhh gender
-qui tabout hhh_gender using "${gsdOutput}/Monetary_Poverty_source.xls", svy sum c(mean poorPPP_prob se lb ub) sebnone f(3) h2(Poverty headcount ratio by gender of the household head) append
+pgi 
+pseverity
+GINI 
 
-* Extreme Poverty Headcount ratio
-qui tabout sub_region using "${gsdOutput}/Monetary_Poverty_source.xls", svy sum c(mean poorPPP125_prob se lb ub) sebnone f(3) h2(Extreme Poverty headcount ratio, by sub_region) append
-qui tabout region using "${gsdOutput}/Monetary_Poverty_source.xls", svy sum c(mean poorPPP125_prob se lb ub) sebnone f(3) h2(Extreme Poverty headcount ratio, by region) append
-qui tabout type using "${gsdOutput}/Monetary_Poverty_source.xls", svy sum c(mean poorPPP125_prob se lb ub) sebnone f(3) h2(Extreme Poverty headcount ratio, by type of area) append
-svy: mean poorPPP125_prob if poorPPP==1 & type==3
-
-* Poverty Gap Index
-qui tabout sub_region using "${gsdOutput}/Monetary_Poverty_source.xls" if weight_cons<., svy sum c(mean pgi se lb ub) sebnone f(3) npos(col) h2(Poverty Gap, by sub_region) append
-qui tabout region using "${gsdOutput}/Monetary_Poverty_source.xls" if weight_cons<., svy sum c(mean pgi se lb ub) sebnone f(3) npos(col) h2(Poverty Gap, by region) append
-qui tabout type using "${gsdOutput}/Monetary_Poverty_source.xls" if weight_cons<., svy sum c(mean pgi se lb ub) sebnone f(3) npos(col) h2(Poverty Gap, by type of area) append
-qui tabout hhh_gender using "${gsdOutput}/Monetary_Poverty_source.xls" if weight_cons<., svy sum c(mean pgi se lb ub) sebnone f(3) npos(col) h2(Poverty Gap, by gender of the household head) append
- 
-* Poverty Severity Index
-qui tabout sub_region using "${gsdOutput}/Monetary_Poverty_source.xls" if weight_cons<., svy sum c(mean pseverity se lb ub) sebnone f(3) npos(col) h2(Poverty Severity, by sub_region) append
-qui tabout region using "${gsdOutput}/Monetary_Poverty_source.xls" if weight_cons<., svy sum c(mean pseverity se lb ub) sebnone f(3) npos(col) h2(Poverty Severity, by region) append
-qui tabout type using "${gsdOutput}/Monetary_Poverty_source.xls" if weight_cons<., svy sum c(mean pseverity se lb ub) sebnone f(3) npos(col) h2(Poverty Severity, by type of area) append
-qui tabout hhh_gender using "${gsdOutput}/Monetary_Poverty_source.xls" if weight_cons<., svy sum c(mean pseverity se lb ub) sebnone f(3) npos(col) h2(Poverty Severity, by gender of the household head) append
-
-* Vulnerable People
-qui tabout region using "${gsdOutput}/Monetary_Poverty_source.xls", svy sum c(mean poorPPP_vulnerable_10_prob se lb ub) sebnone f(3) h2(Vulnerable People - Poverty headcount ratio by region and type of area) append
-qui tabout type using "${gsdOutput}/Monetary_Poverty_source.xls", svy sum c(mean poorPPP_vulnerable_10_prob se lb ub) sebnone f(3) h2(Vulnerable People - Poverty headcount ratio by region and type of area) append
-qui tabout region using "${gsdOutput}/Monetary_Poverty_source.xls", svy sum c(mean poorPPP_vulnerable_20_prob se lb ub) sebnone f(3) h2(Vulnerable People - Poverty headcount ratio by region and type of area) append
-qui tabout type using "${gsdOutput}/Monetary_Poverty_source.xls", svy sum c(mean poorPPP_vulnerable_20_prob se lb ub) sebnone f(3) h2(Vulnerable People - Poverty headcount ratio by region and type of area) append
+**************************************************
+*   POVERTY AND HOUSEHOLD CHARACTERISTICS
+**************************************************
 
 
 
