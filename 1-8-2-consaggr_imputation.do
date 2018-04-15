@@ -189,6 +189,10 @@ label var poorPPP_vulnerable_20 "Below 2011 PPP poverty line - Vulnerable, consu
 label define lpoorPPP_vulnerable_20 0 "Non-poor" 1 "Poor"
 label values poorPPP_vulnerable_20 lpoorPPP_vulnerable_20
 drop global_er gg
+*Check consumption aggregates
+assert round( mi_cons_d + mi_cons_f + mi_cons_nf - tc_imp , 0.001) == 0
+assert(round(tc_imp-tc_core, 0.001)>=0)
+assert(round(tc_summ-tc_core, 0.001)>=0)
 *Estimate poverty figures 
 mi xtset, clear
 mi svyset ea [pweight=hhweight], strata(strata)

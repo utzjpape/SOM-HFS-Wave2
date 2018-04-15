@@ -106,8 +106,9 @@ run "${gsdDo}/1-7-clean_remittances.do"
 *Consumption Aggregates Deflator and Imputation 
 run "${gsdDo}/1-8-1-consaggr_deflator.do"
 run "${gsdDo}/1-8-2-consaggr_imputation.do"
-run "${gsdDo}/1-8-3-include_imputed_shares.do"
-run "${gsdDo}/1-8-4-consaggr_test.do"
+run "${gsdDo}/1-8-3-consaggr_imputation_adult_equivalent"
+run "${gsdDo}/1-8-5-include_imputed_shares.do"
+run "${gsdDo}/1-8-6-consaggr_test.do"
 
 
 *Decide which parts of the pipeline should be run
@@ -115,7 +116,7 @@ local run_imputation_robustness = 0
 
 *Robustness for the imputation 
 if (`run_imputation_robustness'==1) {
-	run "${gsdDo}/1-8-5-consaggr_imputation_robustness.do" 
+	run "${gsdDo}/1-8-7-consaggr_imputation_robustness.do" 
 }
 
 
