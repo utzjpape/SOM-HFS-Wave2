@@ -119,7 +119,6 @@ use "${gsdTemp}/mi.dta", clear
 merge m:1 astrata using "${gsdData}/1-CleanTemp/food-deflator.dta", nogen assert(match) keep(match)
 gen hhweight = weight * hhsize
 *iterate over modules
-local n = 100
 foreach cat in f nf {
 	forvalues i=0/4 {
 		*need to take floor to make sure rounding does not result in negative averages
@@ -131,7 +130,6 @@ foreach cat in f nf {
 	}
 }
 *Durable goods 
-local n = 100
 egen double xtagd = rowtotal(_*_mi_cons_d)
 forvalues j=1/`n' {
 	*scale up to get average being zero (without losing the variance)
@@ -189,10 +187,6 @@ label var poorPPP_vulnerable_20 "Below 2011 PPP poverty line - Vulnerable, consu
 label define lpoorPPP_vulnerable_20 0 "Non-poor" 1 "Poor"
 label values poorPPP_vulnerable_20 lpoorPPP_vulnerable_20
 drop global_er gg
-*Check consumption aggregates
-assert round( mi_cons_d + mi_cons_f + mi_cons_nf - tc_imp , 0.001) == 0
-assert(round(tc_imp-tc_core, 0.001)>=0)
-assert(round(tc_summ-tc_core, 0.001)>=0)
 *Estimate poverty figures 
 mi xtset, clear
 mi svyset ea [pweight=hhweight], strata(strata)
