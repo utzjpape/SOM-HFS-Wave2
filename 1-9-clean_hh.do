@@ -63,7 +63,7 @@ order cons_nf0 cons_nf1 cons_nf2 cons_nf3 cons_nf4, after(cons_f4)
 merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_durables.dta", nogen assert(master match) keepusing(cons_d)
 order cons_d, after(cons_nf4)
 * add in imputed consumption and poverty figures
-merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhq-poverty.dta", assert(match master) keep(match master) nogen keepusing(poorPPP poorPPP_prob poorPPP_vulnerable_10_prob poorPPP_vulnerable_20_prob tc_imp plinePPP mi_cons_*)
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhq-poverty.dta", assert(match master) keep(match master) nogen keepusing(poorPPP poorPPP_prob poorPPP_vulnerable_10_prob poorPPP_vulnerable_20_prob tc_imp plinePPP mi_cons_* poorPPPFood poorPPPFood_prob plinePPPFood)
 order tc_imp poorPPP_prob poorPPP_vulnerable_10_prob poorPPP_vulnerable_20_prob poorPPP, after(weight)
 label define lpoorPPP 0 "Non-Poor" 1 "Poor", replace
 label values poorPPP lpoorPPP
@@ -240,7 +240,8 @@ la var supp_som_usd "Value of support provided in past 12 month (USD)"
 la var supp_som_pcpd "Value of support provided per capita per day (USD)"
 order mi_cons_*, after(tc_imp_d)
 order pgi pseverity, after(quintiles_tc)
-
+drop poorPPP_vulnerable_10_prob poorPPP_vulnerable_20_prob
+order plinePPP poorPPP_prob poorPPP plinePPPFood poorPPPFood_prob poorPPPFood, after(weight)
 
 *********************************************************
 *Declare survey & save 
