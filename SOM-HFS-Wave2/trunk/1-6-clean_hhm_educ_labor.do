@@ -254,6 +254,7 @@ gen hhh_gender = gender if ishead==1
 gen hhh_age = age if ishead==1
 replace hhh_age=. if hhh_age < 16
 gen hhh_edu = edu_level_broad if ishead==1 & !mi(hhh_age)
+gen hhh_lit = literacy if ishead==1 & !mi(literacy)
 recode lfp_7d emp_7d (missing=0) 
 * School enrollment dummy
 gen enrol = edu_status==1 if inrange(age, 6, 17)
@@ -290,7 +291,7 @@ foreach var of local collapselist_min {
 
 
 * Collapse without weights since "count" command will create sum of weights in household; weights come in when merging this with hh.dta
-collapse (mean) penrol=enrol penrol_p=enrol_p penrol_s=enrol_s pgender=gender pworking_age=working_age no_children no_adults no_old_age pliteracy=literacy page_cat_broad_1=age_cat_broad_1 page_cat_broad_2=age_cat_broad_2 page_cat_broad_3=age_cat_broad_3 page_cat_broad_4=age_cat_broad_4 (count) hhsize=hhmid (min) hhh_gender hhh_age hhh_edu hhr_gender hhr_age (max) lfp_7d_hh=lfp_7d emp_7d_hh=emp_7d hhh_outstate, by(strata ea block hh)
+collapse (mean) penrol=enrol penrol_p=enrol_p penrol_s=enrol_s pgender=gender pworking_age=working_age no_children no_adults no_old_age pliteracy=literacy page_cat_broad_1=age_cat_broad_1 page_cat_broad_2=age_cat_broad_2 page_cat_broad_3=age_cat_broad_3 page_cat_broad_4=age_cat_broad_4 (count) hhsize=hhmid (min) hhh_gender hhh_age hhh_edu hhr_gender hhr_age (max) lfp_7d_hh=lfp_7d emp_7d_hh=emp_7d hhh_outstate hhh_lit, by(strata ea block hh)
 
 replace lfp_7d_hh=0 if mi(lfp_7d_hh)
 replace emp_7d_hh=0 if mi(emp_7d_hh)
@@ -311,6 +312,7 @@ la var hhsize "Number of members in HH"
 la var pgender "Share of males in HH"
 la var pworking_age "Proportion of working age members in HH"
 la var pliteracy "Proportion literate in HH" 
+la var hhh_lit "Household head is literate"
 la var penrol "Proportion enrolled at school age (6,17)"
 la var penrol_p "Proportion enrolled at primary school age (6,13)"
 la var penrol_s "Proportion enrolled at secondary school age (14,17)"

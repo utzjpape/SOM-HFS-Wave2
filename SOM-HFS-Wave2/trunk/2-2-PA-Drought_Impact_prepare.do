@@ -74,6 +74,7 @@ use "${gsdData}/1-CleanTemp/Wave1_SPI.dta", clear
 append using "${gsdData}/1-CleanTemp/Wave2_SPI.dta", gen(t)
 la def lt 0 "Wave1" 1 "Wave2", replace
 la val t lt 
+drop type region
 save "${gsdData}/1-CleanTemp/SPI_w1w2.dta", replace
 
 * All SOM
@@ -100,6 +101,7 @@ save "${gsdData}/1-CleanTemp/SPI_SOM0.dta", replace
 * save in slightly different form for mapping
 use "${gsdTemp}/spi_combined_SOM0.dta", clear
 gen SPI = GRID_CODE/3
+su SPI
 gen SPI_cat = -3 if inrange(SPI, `r(min)', -2)
 replace SPI_cat = -2 if SPI>-2 & SPI<=-1.5
 replace SPI_cat = -1 if SPI>-1.5 & SPI<=-1
@@ -185,7 +187,36 @@ la var events "Conflict events past 9 months before data collection"
 la var fatalities "Conflict fatalities past 9 months before data collection"
 save "${gsdData}/1-CleanTemp/ACLED_w1w2.dta", replace
 
-
-
-
-
+* Humanitarian assistance
+* Food security cluster 1
+import excel "${gsdShared}\0-Auxiliary\HumanAssist.xlsx", sheet("FSC1") cellrange(A2:T21) firstrow clear
+destring January, replace
+recode TotalPopulationUNFPA2014-October (.=0)
+gen assist_FSC1_Oct17 = October/OctoberTarget
+la var assist_FSC1_Oct17 "Percentage of population reached through activities geared towards improving access to food and safety nets, Oct17"
+gen assist_FSC1_17 = (January + February + March + April + May + June + July + August + September + October) / (MonthlyTarget*4 + MayTarget + JuneTarget + JulyTarget + AugustTarget + SeptemberTarget + OctoberTarget) 
+keep assist_* reg_id
+ren reg_id reg_pess
+save "${gsdTemp}/FSC1.dta", replace
+* Food security cluster 2
+import excel "${gsdShared}\0-Auxiliary\HumanAssist.xlsx", sheet("FSC2") cellrange(A2) firstrow clear
+destring January, replace
+recode TotalPopulationUNFPA2014-October (.=0)
+gen assist_FSC2_MayAug17 = (May + June + July + August)/MayAugTarget
+la var assist_FSC2_MayAug17 "% of people reached through livelihood investment and asset activities May-Aug2017"
+gen assist_FSC2_17 = (January + February + March + April + May + June + July + August + September + October) / (JanApr + MayAug + SeptemberDec/2) 
+keep assist_* reg_id
+ren reg_id reg_pess
+save "${gsdTemp}/FSC2.dta", replace
+* Food security cluster 3
+import excel "${gsdShared}\0-Auxiliary\HumanAssist.xlsx", sheet("FSC3") cellrange(A2) firstrow clear
+recode TotalPopulationUNFPA2014-October (.=0)
+gen assist_FSC3_MayAug17 = (May + June + July)/MayJulyRevisedtarget
+la var assist_FSC3_MayAug17 "% of people reached through livelihood investment and asset activities May-Aug2017"
+gen assist_FSC3_1617 = (August2016January2017Cumul + February + March + April + May + June + July + September + October) / (EndseasontargetAug2016J + MayJulyRevisedtarget + SeptemberRevisedTarget/2) 
+keep assist_* reg_id
+ren reg_id reg_pess
+save "${gsdTemp}/FSC3.dta", replace
+merge 1:1 reg_pess using "${gsdTemp}/FSC2.dta", assert(match) nogen
+merge 1:1 reg_pess using "${gsdTemp}/FSC1.dta", assert(match) nogen
+save "${gsdData}/1-CleanTemp/FSC_HumReach.dta", replace
