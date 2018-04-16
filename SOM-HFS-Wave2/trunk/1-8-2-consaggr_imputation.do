@@ -216,7 +216,14 @@ save "${gsdTemp}/mi-extract.dta", replace
 *Analysis on extract dataset
 use "${gsdTemp}/mi-extract.dta", clear
 fastgini tc_imp [pweight=hhweight]
-collapse (mean) tc_* mi_cons_f? mi_cons_nf? mi_cons_d (mean) poorPPP_prob = poorPPP poorPPP125_prob = poorPPP125 poorPPP_vulnerable_10_prob = poorPPP_vulnerable_10 poorPPP_vulnerable_20_prob = poorPPP_vulnerable_20, by(strata ea block hh hhsize weight hhweight opt_mod plinePPP plinePPP125)
+collapse (mean) tc_* mi_cons_f? mi_cons_nf? mi_cons_d (mean) poorPPP_prob = poorPPP poorPPP125_prob = poorPPP125 poorPPP_vulnerable_10_prob = poorPPP_vulnerable_10 poorPPP_vulnerable_20_prob = poorPPP_vulnerable_20, by(strata ea block hh hhsize weight hhweight opt_mod plinePPP plinePPP125 deflator)
+*Replace aggregates for imputed regions
+gen pre_tc_core = (mi_cons_f0 + mi_cons_nf0)/deflator + mi_cons_d
+replace tc_core=pre_tc_core if tc_core>=.
+egen tot_tc_summ =rowtotal(mi_cons_f0 mi_cons_f1 mi_cons_f2 mi_cons_f3 mi_cons_f4 mi_cons_nf0 mi_cons_nf1 mi_cons_nf2 mi_cons_nf3 mi_cons_nf4) 
+gen pre_tc_summ=tot_tc_summ / deflator + mi_cons_d
+replace tc_summ=pre_tc_summ if tc_summ>=.
+drop deflator pre_tc_core tot_tc_summ pre_tc_summ
 svyset ea [pweight=hhweight], strata(strata)
 mean poorPPP_prob [pweight=hhweight]
 mean poorPPP_vulnerable_10_prob [pweight=hhweight]

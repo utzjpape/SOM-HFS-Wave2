@@ -63,7 +63,7 @@ order cons_nf0 cons_nf1 cons_nf2 cons_nf3 cons_nf4, after(cons_f4)
 merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_durables.dta", nogen assert(master match) keepusing(cons_d)
 order cons_d, after(cons_nf4)
 * add in imputed consumption and poverty figures
-merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhq-poverty.dta", assert(match master) keep(match master) nogen keepusing(poorPPP poorPPP_prob poorPPP_vulnerable_10_prob poorPPP_vulnerable_20_prob tc_imp plinePPP)
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhq-poverty.dta", assert(match master) keep(match master) nogen keepusing(poorPPP poorPPP_prob poorPPP_vulnerable_10_prob poorPPP_vulnerable_20_prob tc_imp plinePPP mi_cons_*)
 order tc_imp poorPPP_prob poorPPP_vulnerable_10_prob poorPPP_vulnerable_20_prob poorPPP, after(weight)
 label define lpoorPPP 0 "Non-Poor" 1 "Poor", replace
 label values poorPPP lpoorPPP
@@ -200,9 +200,16 @@ label var cons_d_imp "Consumption flow of durables (imputed) in curr USD: 7d"
 *order the variables and final arrangements 
 drop cons_f0_org-cons_d_org
 egen tc_imp_f=rowtotal(cons_f?_imp)
+egen tc_imp_f_mi=rowtotal(mi_cons_f*)
+replace tc_imp_f_mi=tc_imp_f_mi*hhsize*7
+replace tc_imp_f=tc_imp_f_mi if inlist(ind_profile,4,9)
 label var tc_imp_f "Total Food cons (imputed) in current USD: 7d"
 egen tc_imp_nf=rowtotal(cons_nf?_imp)
+egen tc_imp_nf_mi=rowtotal(mi_cons_nf*)
+replace tc_imp_nf_mi=tc_imp_nf_mi*hhsize*7
+replace tc_imp_nf=tc_imp_nf_mi if inlist(ind_profile,4,9)
 label var tc_imp_nf "Total Non-Food cons (imputed) in current USD: 7d"
+drop tc_imp_f_mi tc_imp_nf_mi
 gen tc_imp_d=cons_d_imp
 label var tc_imp_d "Consumption flow of durables (imputed) in current USD: 7d"
 order tc_imp_f tc_imp_nf tc_imp_d, after(tc_imp)
@@ -231,6 +238,8 @@ la var reg_pess "Region (PESS)"
 la var hhh_id "HH Head member ID"
 la var supp_som_usd "Value of support provided in past 12 month (USD)"
 la var supp_som_pcpd "Value of support provided per capita per day (USD)"
+order mi_cons_*, after(tc_imp_d)
+order pgi pseverity, after(quintiles_tc)
 
 
 *********************************************************
