@@ -171,11 +171,15 @@ label var plinePPP "2011 PPP 1.90 USD Poverty Line in 2017 USD Somalia"
 label var plinePPP125 "2011 PPP 1.25 USD Poverty Line in 2017 USD Somalia"
 label var plinePPP_vulnerable_10 "Poverty Line corresponding to shock to consumption equal to (1-1/1.1)"
 label var plinePPP_vulnerable_20 "Poverty Line corresponding to shock to consumption equal to (1-1/1.2)"
+*Derive proxy of food poverty line with the share of food consumption: share of food consumption .7268462
+gen plinePPPFood=plinePPP*.7268462
+la var plinePPPFood "2011 PPP Food Poverty line in 2017 USD Somalia"
 *Calculate poverty
 mi passive: gen poorPPP = tc_imp < plinePPP if !missing(tc_imp)
 mi passive: gen poorPPP125 = tc_imp < plinePPP125 if !missing(tc_imp)
 mi passive: gen poorPPP_vulnerable_10 = tc_imp < plinePPP_vulnerable_10 if !missing(tc_imp)
 mi passive: gen poorPPP_vulnerable_20 = tc_imp < plinePPP_vulnerable_20 if !missing(tc_imp)
+mi passive: gen poorPPPFood = tc_imp < plinePPPFood if !missing(tc_imp)
 mi svyset ea [pweight=hhweight], strata(strata)
 label var poorPPP "Below 2011 PPP poverty line"
 label define lpoorPPP 0 "Non-poor" 1 "Poor", replace
@@ -186,6 +190,9 @@ label values poorPPP_vulnerable_10 lpoorPPPlpoorPPP_vulnerable_10
 label var poorPPP_vulnerable_20 "Below 2011 PPP poverty line - Vulnerable, consumption shock 20"
 label define lpoorPPP_vulnerable_20 0 "Non-poor" 1 "Poor"
 label values poorPPP_vulnerable_20 lpoorPPP_vulnerable_20
+la var poorPPPFood "Being below 2011 PPP Food Poverty Line"
+label define lpoorPPPFood 0 "Non-poor" 1 "Poor"
+label values poorPPPFood lpoorPPPFood
 drop global_er gg
 *Estimate poverty figures 
 mi xtset, clear
@@ -194,6 +201,7 @@ mi estimate: mean poorPPP [pweight=hhweight]
 mi estimate: mean poorPPP125 [pweight=hhweight]
 mi estimate: mean poorPPP_vulnerable_10 [pweight=hhweight]
 mi estimate: mean poorPPP_vulnerable_20 [pweight=hhweight]
+mi estimate: mean poorPPPFood [pweight=hhweight]
 save "${gsdData}/1-CleanTemp/mi-analysis.dta", replace
 
 
@@ -213,35 +221,75 @@ forvalues i = 1/`n' {
 	append using "${gsdTemp}/mi_`i'.dta"
 }
 save "${gsdTemp}/mi-extract.dta", replace
+
 *Analysis on extract dataset
 use "${gsdTemp}/mi-extract.dta", clear
 fastgini tc_imp [pweight=hhweight]
-collapse (mean) tc_* mi_cons_f? mi_cons_nf? mi_cons_d (mean) poorPPP_prob = poorPPP poorPPP125_prob = poorPPP125 poorPPP_vulnerable_10_prob = poorPPP_vulnerable_10 poorPPP_vulnerable_20_prob = poorPPP_vulnerable_20, by(strata ea block hh hhsize weight hhweight opt_mod plinePPP plinePPP125 deflator)
+collapse (mean) tc_* mi_cons_f? mi_cons_nf? mi_cons_d (mean) poorPPP_prob = poorPPP poorPPP125_prob = poorPPP125 poorPPP_vulnerable_10_prob = poorPPP_vulnerable_10 poorPPP_vulnerable_20_prob = poorPPP_vulnerable_20 poorPPPFood_prob = poorPPPFood, by(strata ea block hh hhsize weight hhweight opt_mod plinePPP plinePPP125 plinePPPFood deflator)
 *Replace aggregates for imputed regions
 gen pre_tc_core = (mi_cons_f0 + mi_cons_nf0)/deflator + mi_cons_d
 replace tc_core=pre_tc_core if tc_core>=.
 egen tot_tc_summ =rowtotal(mi_cons_f0 mi_cons_f1 mi_cons_f2 mi_cons_f3 mi_cons_f4 mi_cons_nf0 mi_cons_nf1 mi_cons_nf2 mi_cons_nf3 mi_cons_nf4) 
 gen pre_tc_summ=tot_tc_summ / deflator + mi_cons_d
 replace tc_summ=pre_tc_summ if tc_summ>=.
-drop deflator pre_tc_core tot_tc_summ pre_tc_summ
+drop pre_tc_core tot_tc_summ pre_tc_summ
 svyset ea [pweight=hhweight], strata(strata)
 mean poorPPP_prob [pweight=hhweight]
-mean poorPPP_vulnerable_10_prob [pweight=hhweight]
-mean poorPPP_vulnerable_20_prob [pweight=hhweight]
-gen poorPPP = poorPPP_prob > .55
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", assert(match) keepusing(ind_profile) nogen
+*Poverty status of households (1.9 poverty line)
+gen poorPPP = poorPPP_prob > .56 if ind_profile==1
+replace poorPPP =1 if  poorPPP_prob > .57 & ind_profile==2
+replace poorPPP =1 if  poorPPP_prob > .50 & ind_profile==3
+replace poorPPP =1 if  poorPPP_prob > .62 & ind_profile==4
+replace poorPPP =1 if  poorPPP_prob > .44 & ind_profile==5
+replace poorPPP =1 if  poorPPP_prob > .64 & ind_profile==6
+replace poorPPP =1 if  poorPPP_prob > .50 & ind_profile==7
+replace poorPPP =1 if  poorPPP_prob > .71 & ind_profile==8
+replace poorPPP =1 if  poorPPP_prob > .63 & ind_profile==9
+replace poorPPP =1 if  poorPPP_prob > .38 & ind_profile==11
+replace poorPPP =1 if  poorPPP_prob > .55 & ind_profile==12
+replace poorPPP =1 if  poorPPP_prob > .57 & ind_profile==13
+replace poorPPP =0 if poorPPP>=.
+*Poverty status of households (Food poverty line)
+gen poorPPPFood = poorPPPFood_prob > .52 if ind_profile==1
+replace poorPPPFood =1 if  poorPPPFood_prob > .56 & ind_profile==2
+replace poorPPPFood =1 if  poorPPPFood_prob > .48 & ind_profile==3
+replace poorPPPFood =1 if  poorPPPFood_prob > .57 & ind_profile==4
+replace poorPPPFood =1 if  poorPPPFood_prob > .44 & ind_profile==5
+replace poorPPPFood =1 if  poorPPPFood_prob > .56 & ind_profile==6
+replace poorPPPFood =1 if  poorPPPFood_prob > .47 & ind_profile==7
+replace poorPPPFood =1 if  poorPPPFood_prob > .58 & ind_profile==8
+replace poorPPPFood =1 if  poorPPPFood_prob > .56 & ind_profile==9
+replace poorPPPFood =1 if  poorPPPFood_prob > .45 & ind_profile==11
+replace poorPPPFood =1 if  poorPPPFood_prob > .64 & ind_profile==12
+replace poorPPPFood =1 if  poorPPPFood_prob > .56 & ind_profile==13
+replace poorPPPFood =0 if poorPPPFood>=.
 mean poorPPP [pweight=hhweight]
+mean poorPPPFood [pweight=hhweight]
 label var tc_core "Total real Dec 2017 consumption based on core pc pd curr USD"
 label var tc_summ "Total real Dec 2017 consumption based on summing pc pd curr USD"
 label var tc_imp "Total real Dec 2017 consumption based on imputation pc pd curr USD"
-label var poorPPP_prob "Probability being below 2011 PPP poverty line"
+label var poorPPP_prob "Probability being below 2011 PPP Poverty Line"
 label var poorPPP125_prob "Probability being below 2011 PPP extreme poverty line"
 label var poorPPP "Being below 2011 PPP poverty line"
-label var poorPPP_vulnerable_10_prob "Probability of being below 2011 PPP poverty line increased by 10%, equivalent to 9.1% shock to consumption"
-label var poorPPP_vulnerable_20_prob "Probability of being below 2011 PPP poverty line increased by 20%, equivalent to 16.7% shock to consumption"
+label var poorPPP_vulnerable_10_prob "Probability of being below 2011 PPP Poverty Line increased by 10%, equivalent to 9.1% shock to consumption"
+label var poorPPP_vulnerable_20_prob "Probability of being below 2011 PPP Poverty Line increased by 20%, equivalent to 16.7% shock to consumption"
+label var poorPPPFood "Being below 2011 PPP Food Poverty Line"
+label var poorPPPFood_prob "Probability of being below 2011 PPP Food Poverty Line"
 forvalues i = 0/4 {
 	label var mi_cons_f`i' "Food module `i' consumption pc pd curr USD"
 	label var mi_cons_nf`i' "Non-Food module `i' consumption pc pd curr USD"
 }
 label var mi_cons_d "Durable consumption pc pd curr USD"
+order ind_profile
+*Check and derive share of food consumption for food poverty line 
+egen food=rowtotal(mi_cons_f0 mi_cons_f1 mi_cons_f2 mi_cons_f3 mi_cons_f4)
+egen total_cons=rowtotal(mi_cons_f0 mi_cons_f1 mi_cons_f2 mi_cons_f3 mi_cons_f4 mi_cons_nf0 mi_cons_nf1 mi_cons_nf2 mi_cons_nf3 mi_cons_nf4 mi_cons_d)
+gen share_food=food/total_cons
+preserve
+gen n=1
+collapse (mean) share_food [aw=hhweight], by(n)
+tab share_food
+restore
+drop share_food food total_cons
 save "${gsdData}/1-CleanTemp/hhq-poverty.dta", replace
-
