@@ -825,18 +825,18 @@ export excel using "${gsdOutput}/PA_Poverty_Profile_1_v1.xls", sheetreplace shee
 erase "${gsdOutput}/PA_Poverty_Profile_1.xls"
 foreach i of numlist 2/14 {
 	insheet using "${gsdOutput}/PA_Poverty_Profile_`i'.xls", clear nonames tab
-	export excel using "${gsdOutput}/PA_Poverty_Profile_1_v1.xls", sheetreplace sheet("Raw_Data_`i'") 
+	export excel using "${gsdOutput}/PA_Poverty_Profile_1_v1.xlsx", sheetreplace sheet("Raw_Data_`i'") 
 	erase "${gsdOutput}/PA_Poverty_Profile_`i'.xls"
 }
 *Poverty and indicators
 foreach i of numlist 15/21 {
 	insheet using "${gsdOutput}/PA_Poverty_Profile_`i'.xls", clear nonames tab
-	export excel using "${gsdOutput}/PA_Poverty_Profile_2_v1.xls", sheetreplace sheet("Raw_Data_`i'") 
+	export excel using "${gsdOutput}/PA_Poverty_Profile_2_v1.xlsx", sheetreplace sheet("Raw_Data_`i'") 
 	erase "${gsdOutput}/PA_Poverty_Profile_`i'.xls"
 }
 *Multidimensional poverty 
 foreach i of numlist 22/29 {
 	insheet using "${gsdOutput}/PA_Poverty_Profile_`i'.xls", clear nonames tab
-	export excel using "${gsdOutput}/PA_Poverty_Profile_3_v1.xls", sheetreplace sheet("Raw_Data_`i'") 
+	export excel using "${gsdOutput}/PA_Poverty_Profile_3_v1.xlsx", sheetreplace sheet("Raw_Data_`i'") 
 	erase "${gsdOutput}/PA_Poverty_Profile_`i'.xls"
 }
