@@ -9,8 +9,9 @@ set sortseed 11041925
 * Clean access to and quality of services and amenities
 *********************************************************
 use "${gsdData}/1-CleanTemp/hh.dta", clear
+
 *House type
-recode tenure (1=1 "Apartment") (2 4 = 2 "Shared house/apartment") (3=3 "House") (5/7 1000 = 4 "Hut and other"), gen(house_type_cat)
+recode tenure (1=1 "Apartment") (2 4 = 2 "Shared house/apartment") (3=3 "House") (5/8 1000 = 4 "Hut and other"), gen(house_type_cat)
 la var house_type_cat "House categories"
 
 *Drinking water
