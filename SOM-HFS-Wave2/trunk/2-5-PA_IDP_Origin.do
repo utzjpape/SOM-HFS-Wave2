@@ -33,56 +33,6 @@ ta disp_arrive_reason, nolab
 
 recode disp_arrive_reason (6 7 = 6) (1000=.)
 ta disp_arrive_reason
-*Number of times displaced
-recode disp_site (1=1 "Once") (2=2 "Twice") (3=3 "Thrice") (4/10 = 4 "4 or more times"), gen(disp_times) lab(ldisp_times)
-
-*Clean date of first displacement
-gen year = substr(disp_date,1,4) if !strpos(disp_date, ".z")
-gen month = substr(disp_date,6,2) if !strpos(disp_date, ".z")
-gen day = substr(disp_date,9,2)
-egen displacementdate = concat (year month) if !strpos(disp_date, ".z") & !missing(month) & !missing(year), p(-) 
-label var displacementdate "Date of displacement (month wise)"
-*Duration of displacement
-*Survey date - use Jan 2018 as approx survey date (Survey ran Nov - Dec 2017,with last few obs in Jan 2018.)
-gen month2 = "01"
-gen year2 = 2018
-egen surveydate = concat(year2 month2), p(-)
-*HRF to SIF
-gen sdate = monthly(surveydate, "YM")
-gen ddate = monthly(displacementdate, "YM")
-*Duration
-gen dduration = sdate - ddate
-*remove outliers
-*hist dduration
-replace dduration =. if dduration > 120
-*put in year format
-gen durationyear = dduration/12
-*drop unnecessary variables
-drop year month day
-
-*Do the same for date when you arrived at the current location
-gen year = substr(disp_arrive_date,1,4) if !strpos(disp_arrive_date, ".z")
-gen month = substr(disp_arrive_date,6,2) if !strpos(disp_arrive_date, ".z")
-gen day = substr(disp_arrive_date,9,2)
-egen displacement_arrive_date = concat (year month) if !strpos(disp_arrive_date, ".z") & !missing(month) & !missing(year), p(-)
-ta displacement_arrive_date
-label var displacement_arrive_date "Date of arriving at current location (month wise)"
-*Duration of displacement
-*HRF to SIF
-gen s_arrive_date = monthly(surveydate, "YM")
-gen d_arrive_date = monthly(displacement_arrive_date, "YM")
-*Duration
-gen d_arrive_duration = s_arrive_date - d_arrive_date
-*remove outliers
-replace d_arrive_duration =. if d_arrive_duration > 60
-*one observation gives a negative duration since survey and displacement happened in 2017-07 but we approximate survey date as 2017-06.
-replace d_arrive_duration = . if d_arrive_duration <0
-*put in year format
-gen duration_arrive_year = d_arrive_duration/12
-*Check that durations are not negative (some are since date of displ is in Dec. 2017 or Jan.2018.)
-assert duration_arrive_year >= 0 if inlist(comparisonidp, 1, 2, 3)
-assert durationyear >= 0 if inlist(comparisonidp, 1, 2, 3)
-*br ind_profile disp_date if durationyear <=0
 
 *SIGNIFICANCE TESTS
 *Reason for displacement-concise
