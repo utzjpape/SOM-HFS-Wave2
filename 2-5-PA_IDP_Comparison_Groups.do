@@ -77,24 +77,78 @@ la def lreasonidp 1 "Conflict or violence" 2 "Drought, famine or flood"
 la val reasonidp lreasonidp
 la var reasonidp "Reasons for displacement: W2 camp IDPs"
 
-/*
-*Fixing single-strata EAs to allow for standard error calculation
-*Removing strata with single EAs from all the relevant comparison groups
-replace comparisonidp = . if inlist(strata, 42, 48, 54)
-replace urbanrural = . if inlist(strata, 42, 48, 54)
-replace national = . if inlist(strata, 42, 48, 54)
-*Fixing the single-EA strata in the comparisonidp variable.
-*1
-replace comparisonidp =. if inlist(strata, 40, 43, 46, 57)
-*4
-replace comparisonidp =. if inlist(strata, 31, 39, 43, 57)
-*5
-replace comparisonidp =. if inlist(strata, 47)
-*Fixing the single-EA strata in the reasonidp variable.
-replace reasonidp = . if inlist(strata, 6)
-*/
+*5. IDPs displaced once and many times.
+*Clean variable of times displaced
+recode disp_site (1=1 "Once") (2=2 "Twice") (3=3 "Thrice") (4/10 = 4 "4 or more times"), gen(disp_times) lab(ldisp_times)
+gen timesidp = disp_times
+replace timesidp = 2 if inlist(disp_times, 2, 3, 4) 
+*Remove nomads
+replace timesidp =. if inlist(ind_profile, 13)
+lab def ltimesidp 1 "Once" 2 "Multiple"
+lab val timesidp ltimesidp
 
-*Comparison groups for sig tests
+*6. IDPs displaced for less than 5 years or more.
+*Clean date of first displacement
+gen year = substr(disp_date,1,4) if !strpos(disp_date, ".z")
+gen month = substr(disp_date,6,2) if !strpos(disp_date, ".z")
+gen day = substr(disp_date,9,2)
+egen displacementdate = concat (year month) if !strpos(disp_date, ".z") & !missing(month) & !missing(year), p(-) 
+label var displacementdate "Date of displacement (month wise)"
+*Duration of displacement
+*Survey date - use Jan 2018 as approx survey date (Survey ran Nov - Dec 2017,with last few obs in Jan 2018.)
+gen month2 = "01"
+gen year2 = 2018
+egen surveydate = concat(year2 month2), p(-)
+*HRF to SIF
+gen sdate = monthly(surveydate, "YM")
+gen ddate = monthly(displacementdate, "YM")
+*Duration
+gen dduration = sdate - ddate
+*remove outliers
+*hist dduration
+replace dduration =. if dduration > 120
+*put in year format
+gen durationyear = dduration/12
+*drop unnecessary variables
+drop year month day
+
+*Do the same for date when you arrived at the current location
+gen year = substr(disp_arrive_date,1,4) if !strpos(disp_arrive_date, ".z")
+gen month = substr(disp_arrive_date,6,2) if !strpos(disp_arrive_date, ".z")
+gen day = substr(disp_arrive_date,9,2)
+egen displacement_arrive_date = concat (year month) if !strpos(disp_arrive_date, ".z") & !missing(month) & !missing(year), p(-)
+ta displacement_arrive_date
+label var displacement_arrive_date "Date of arriving at current location (month wise)"
+*Duration of displacement
+*HRF to SIF
+gen s_arrive_date = monthly(surveydate, "YM")
+gen d_arrive_date = monthly(displacement_arrive_date, "YM")
+*Duration
+gen d_arrive_duration = s_arrive_date - d_arrive_date
+*remove outliers
+replace d_arrive_duration =. if d_arrive_duration > 60
+*one observation gives a negative duration since survey and displacement happened in 2017-07 but we approximate survey date as 2017-06.
+replace d_arrive_duration = . if d_arrive_duration <0
+*put in year format
+gen duration_arrive_year = d_arrive_duration/12
+*Check that durations are not negative (some are since date of displ is in Dec. 2017 or Jan.2018.)
+assert duration_arrive_year >= 0 if inlist(comparisonidp, 1, 2, 3)
+assert durationyear >= 0 if inlist(comparisonidp, 1, 2, 3)
+
+*Get the comparison group for protracted
+gen durationidp = 1 if durationyear <5
+replace durationidp =2 if durationyear >= 5
+replace durationidp =. if missing(durationyear)
+lab def ldurationidp 1 "Not protracted" 2 "Protracted"
+lab val durationidp ldurationidp
+*Check that nomads are not included
+count if !(missing(disp_date) | disp_date == ".z") & inlist(comparisonidp, 1, 3)
+ta ind_profile if !(missing(disp_date) | disp_date == ".z")
+
+*6.1 Check: Could protracted IDPs be the same as the multiple displaced ones?
+ta durationidp timesidp
+
+*7. Comparison groups for significance testings
 *Get a comparison group for Camp, Noncamp, National for sig tests
 gen sigdt = comparisonidp if inlist(comparisonidp , 1, 3)
 replace sigdt = 4 if (national==1 & comparisonidp != 1 & comparisonidp !=3)
