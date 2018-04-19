@@ -6,6 +6,42 @@
 use "${gsdData}/1-CleanTemp/hhm_all_idpanalysis.dta", clear 
 svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
 
+*SIGNIFICANCE TESTS
+/*
+Think about this later, but I think these sig tests are right..
+svy: prop gender if age_g_idp ==1 & sigdt ==1
+lincom [Male]_subpop_1 - [Female]_subpop_1
+
+svy: prop gender if age_g_idp ==1 & sigdt ==3
+svy: prop gender if age_g_idp ==1 & sigdt ==4
+----------------------------------------trying to check if there are fewer girls than boys
+*/
+
+*Noncamp IDPs have fewer men than women: 4 age groups: significant
+svy: prop gender if sigdt ==1,  over(age_g_idp)
+lincom [Male]_subpop_1 - [Female]_subpop_1
+lincom [Male]_subpop_2 - [Female]_subpop_2
+*P<0.05
+lincom [Male]_subpop_3 - [Female]_subpop_3
+lincom [Male]_subpop_4 - [Female]_subpop_4
+
+*Camp IDPs have fewer men than women: 4 age groups: significant
+svy: prop gender if sigdt ==3,  over(age_g_idp)
+lincom [Male]_subpop_1 - [Female]_subpop_1
+*P<0.05
+lincom [Male]_subpop_2 - [Female]_subpop_2
+lincom [Male]_subpop_3 - [Female]_subpop_3
+lincom [Male]_subpop_4 - [Female]_subpop_4
+
+*National have fewer men than women: 4 age groups: significant
+svy: prop gender if sigdt ==4,  over(age_g_idp)
+lincom [Male]_subpop_1 - [Female]_subpop_1
+*P<0.05
+lincom [Male]_subpop_2 - [Female]_subpop_2
+lincom [Male]_subpop_3 - [Female]_subpop_3
+*p<0.1
+lincom [Male]_subpop_4 - [Female]_subpop_4
+
 *1. Population pyramids 
 
 *Urbanoverall (excluding IDPs)
@@ -44,6 +80,64 @@ qui tabout gender using "${gsdOutput}/Raw_Fig1.xls" if inlist(comparisonidp , 1,
 use "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", clear 
 svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
 
+*Significance tests
+*Perc of female headed hhs
+svy: mean hhh_gender, over(sigdt)
+*P<0.05
+lincom [hhh_gender]noncamp - [hhh_gender]camp
+*p<0.05
+lincom [hhh_gender]noncamp - [hhh_gender]national
+*no sig
+lincom [hhh_gender]camp - [hhh_gender]national
+
+
+*Dependency ratio-- overall
+svy: mean age_dependency_ratio, over(sigdt)
+*no sig
+lincom [age_dependency_ratio]noncamp - [age_dependency_ratio]camp
+*no sig
+lincom [age_dependency_ratio]noncamp - [age_dependency_ratio]national
+*no sig
+lincom [age_dependency_ratio]camp - [age_dependency_ratio]national
+
+*Dependency ratio-- hhh_gender, non camp
+svy: mean age_dependency_ratio if sigdt ==1, over(sighh) 
+*P<0.05
+lincom [age_dependency_ratio]Female - [age_dependency_ratio]Male
+
+*Dependency ratio-- hhh_gender, camp
+svy: mean age_dependency_ratio if sigdt ==3, over(sighh) 
+*no sig
+lincom [age_dependency_ratio]Female - [age_dependency_ratio]Male
+
+*Dependency ratio-- hhh_gender, non national
+svy: mean age_dependency_ratio if sigdt ==4, over(sighh) 
+*no sig
+lincom [age_dependency_ratio]Female - [age_dependency_ratio]Male
+
+*Household size -- overall
+svy: mean hhsize, over(sigdt)
+*no sig
+lincom [hhsize]noncamp - [hhsize]camp
+*p<0.05
+lincom [hhsize]noncamp - [hhsize]national
+*no sig
+lincom [hhsize]camp - [hhsize]national
+
+*HHsize- hhh_gender, non camp
+svy: mean hhsize if sigdt ==1, over(sighh) 
+*no sig
+lincom [hhsize]Female - [hhsize]Male
+
+*hhsize-- hhh_gender, camp
+svy: mean hhsize if sigdt ==3, over(sighh) 
+*p<0.1
+lincom [hhsize]Female - [hhsize]Male
+
+*hhsize-- hhh_gender, non national
+svy: mean hhsize if sigdt ==4, over(sighh) 
+*no sig
+lincom [hhsize]Female - [hhsize]Male
 
 *% of female headed households 
 qui tabout hhh_gender comparisonidp using "${gsdOutput}/Raw_Fig2.xls"  , replace svy percent c(col lb ub) f(6) npos(col) sebnone h1("hhh_gender_composition")

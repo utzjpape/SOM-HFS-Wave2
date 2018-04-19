@@ -126,8 +126,6 @@ run "${gsdDo}/1-9-clean_hh.do"
 *Produce a combined dataset for Wave 1 and 2
 run "${gsdDo}/1-10-Combine_w1_w2.do" 
 
-/*
-
 *Poverty Assessment: Chapter 1 (Poverty Profile & Trends)
 run "${gsdDo}/2-1-PA_Cross-Country_Indicators.do"   
 run "${gsdDo}/2-1-PA_Poverty_Profile.do"   
@@ -145,3 +143,5 @@ run "${gsdDo}/2-5-PA_IDP_Origin.do"
 run "${gsdDo}/2-5-PA_IDP_Push_Pull_Factors.do" 
 run "${gsdDo}/2-5-PA_IDP_Documents.do" 
 run "${gsdDo}/2-5-PA_IDP_Separation.do"
+run "${gsdDo}/2-5-PA_IDP_ConflictDrought.do"
+
