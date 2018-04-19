@@ -94,6 +94,21 @@ replace comparisonidp =. if inlist(strata, 47)
 replace reasonidp = . if inlist(strata, 6)
 */
 
+*Comparison groups for sig tests
+*Get a comparison group for Camp, Noncamp, National for sig tests
+gen sigdt = comparisonidp if inlist(comparisonidp , 1, 3)
+replace sigdt = 4 if (national==1 & comparisonidp != 1 & comparisonidp !=3)
+tab sigdt ind_profile, miss
+lab def sigdt 1 "noncamp" 3 "camp" 4 "national"
+lab val sigdt sigdt
+
+gen sighh = hhh_gender
+lab val sighh hhm_gender
+
+gen sigidp = comparisonidp
+lab def sigidp 1 "noncamp" 2 "camp2016" 3 "camp" 4 "host" 5 "nonhost"
+lab val sigidp sigidp
+
 *5. Merge in essential variables from hhm. 
 cap drop age_dependency_ratio
 *No longer assert(match), since 3 single-EA strata were dropped.
@@ -106,7 +121,7 @@ save "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", replace
 use "${gsdData}/1-CleanOutput/hhm_w1_w2.dta", clear 
 svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
 *Removing assert(match), since 3 single-EA strata were dropped.
-merge m:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", nogen keepusing( comparisonidp urbanrural genidp quintileidp migr_idp reasonidp national)
+merge m:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", nogen keepusing(sigidp sighh sigdt comparisonidp urbanrural genidp quintileidp migr_idp reasonidp national)
 
 *Prepare variables
 recode age (0/14 = 1 "Under 15 years") ( 15/24 = 2 "15-24 years") (25/64 = 3 "25-64 years") (65/120 =4 "Above 64 years"), gen(age_g_idp) label(lage_g_idp)

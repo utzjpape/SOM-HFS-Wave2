@@ -25,8 +25,12 @@ ta tempreturn
 
 *Reason for arriving at location
 *arrive reason
-label define disp_arrive_reason 2 "Water access for livestock" 3 "Home / land access" 4 "Education / health access" 4 "Employment opportunities" 6 "Join family or known people" 7 "Knew people settled here" 8 "Humanitarian access (food and water)" 1000 "Other" , modify
 ta disp_arrive_reason
+ta disp_arrive_reason, nolab
+label define disp_arrive_reason 2 "Water access for livestock" 3 "Home / land access" 4 "Education / health access" 5 "Employment opportunities" 6 "Join family or known people" 7 "Knew people settled here" 8 "Humanitarian access (food and water)" 1000 "Other" , modify
+ta disp_arrive_reason
+ta disp_arrive_reason, nolab
+
 recode disp_arrive_reason (6 7 = 6) (1000=.)
 ta disp_arrive_reason
 *Number of times displaced
@@ -80,6 +84,265 @@ assert duration_arrive_year >= 0 if inlist(comparisonidp, 1, 2, 3)
 assert durationyear >= 0 if inlist(comparisonidp, 1, 2, 3)
 *br ind_profile disp_date if durationyear <=0
 
+*SIGNIFICANCE TESTS
+*Reason for displacement-concise
+recode disp_reason_concise (2=1), gen(disp_reason_sig)
+la val disp_reason_sig disp_reason_concise
+*Camp-noncamp
+svy: prop disp_reason_sig, over(sigidp)
+*Armed conflict -- not sig (combined or disagg)
+lincom [_prop_1]noncamp - [_prop_1]camp
+*Drought famine flood -- not sig
+lincom [_prop_4]noncamp - [_prop_4]camp
+*Discrimination -- p<0.1
+lincom [Discrimination]noncamp - [Discrimination]camp
+*Male-female head
+svy: prop disp_reason_sig, over(genidp)
+*Armed conflict -- not sig (combined or disagg)
+lincom [_prop_1]_subpop_1 - [_prop_1]_subpop_2
+*Drought famine flood -- not sig
+lincom [_prop_4]_subpop_1 - [_prop_4]_subpop_2
+*Discrimination -- p<0.05
+lincom [Discrimination]_subpop_1 - [Discrimination]_subpop_2
+*Quintiles -- richest different from the other four
+svy: prop disp_reason_sig, over(quintileidp)
+*Armed conflict -- not sig (combined or disagg)
+*p<0.1
+lincom [_prop_1]_subpop_5 - [_prop_1]_subpop_1
+*Rest are not sig
+lincom [_prop_1]_subpop_5 - [_prop_1]Q2
+lincom [_prop_1]_subpop_5 - [_prop_1]Q3
+lincom [_prop_1]_subpop_5 - [_prop_1]Q4
+*Drought --p<0.05 for all!
+lincom [_prop_4]_subpop_5 - [_prop_4]_subpop_1
+lincom [_prop_4]_subpop_5 - [_prop_4]Q2
+lincom [_prop_4]_subpop_5 - [_prop_4]Q3
+lincom [_prop_4]_subpop_5 - [_prop_4]Q4
+
+*Reason for coming here
+*Camp-noncamp
+svy: prop disp_arrive_reason, over(sigidp)
+lincom [_prop_1]noncamp - [_prop_1]camp
+lincom [_prop_4]noncamp - [_prop_4]camp
+lincom [_prop_5]noncamp - [_prop_5]camp
+*p<0.05
+lincom [_prop_6]noncamp - [_prop_6]camp
+lincom [_prop_7]noncamp - [_prop_7]camp
+*Conflict-drought
+svy: prop disp_arrive_reason, over(reasonidp)
+*p<0.05
+lincom [_prop_1]_subpop_1 - [_prop_1]_subpop_2
+lincom [_prop_4]_subpop_1 - [_prop_4]_subpop_2
+lincom [_prop_5]_subpop_1 - [_prop_5]_subpop_2
+lincom [_prop_6]_subpop_1 - [_prop_6]_subpop_2
+*p<0.05
+lincom [_prop_7]_subpop_1 - [_prop_7]_subpop_2
+*Male-female head
+svy: prop disp_arrive_reason, over(genidp)
+lincom [_prop_1]_subpop_1 - [_prop_1]_subpop_2
+lincom [_prop_4]_subpop_1 - [_prop_4]_subpop_2
+lincom [_prop_5]_subpop_1 - [_prop_5]_subpop_2
+lincom [_prop_6]_subpop_1 - [_prop_6]_subpop_2
+lincom [_prop_7]_subpop_1 - [_prop_7]_subpop_2
+*Quintiles
+*Q5 and Q4 vs Q1 and Q2
+svy: prop disp_arrive_reason, over(quintileidp)
+*Conflict
+lincom [_prop_1]_subpop_1 - [_prop_1]_subpop_5
+lincom [_prop_1]_subpop_1 - [_prop_1]Q4
+lincom [_prop_1]Q2 - [_prop_1]_subpop_5
+lincom [_prop_1]Q2 - [_prop_1]Q4
+lincom [_prop_1]_subpop_5 - [_prop_1]Q3
+lincom [_prop_1]Q4 - [_prop_1]Q3
+lincom [_prop_1]Q2 - [_prop_1]Q3
+lincom [_prop_1]_subpop_1 - [_prop_1]Q3
+*Join family
+*p<0.01
+lincom [_prop_6]_subpop_1 - [_prop_6]_subpop_5
+*p<0.05
+lincom [_prop_6]_subpop_1 - [_prop_6]Q4
+lincom [_prop_6]Q2 - [_prop_6]_subpop_5
+lincom [_prop_6]Q2 - [_prop_6]Q4
+lincom [_prop_6]_subpop_5 - [_prop_6]Q3
+lincom [_prop_6]Q4 - [_prop_6]Q3
+lincom [_prop_6]Q2 - [_prop_6]Q3
+*P<0.01
+lincom [_prop_6]_subpop_1 - [_prop_6]Q3
+*Humanitarian access
+lincom [_prop_7]_subpop_1 - [_prop_7]_subpop_5
+lincom [_prop_7]_subpop_1 - [_prop_7]Q4
+lincom [_prop_7]Q2 - [_prop_7]_subpop_5
+lincom [_prop_7]Q2 - [_prop_7]Q4
+lincom [_prop_7]_subpop_5 - [_prop_7]Q3
+lincom [_prop_7]Q4 - [_prop_7]Q3
+lincom [_prop_7]Q2 - [_prop_7]Q3
+lincom [_prop_7]_subpop_1 - [_prop_7]Q3
+
+*Location relative to origin
+*Camp-noncamp
+svy: prop disp_from_new, over(sigidp)
+lincom [_prop_1]noncamp - [_prop_1]camp
+*Conflict-drought
+svy: prop disp_from_new, over(reasonidp)
+lincom [_prop_1]_subpop_1 - [_prop_1]_subpop_2
+*Man-woman head
+svy: prop disp_from_new, over(genidp)
+*p<0.01
+lincom [_prop_1]_subpop_1 - [_prop_1]_subpop_2
+*Quintiles
+svy: prop disp_from_new, over(quintileidp)
+lincom [_prop_1]_subpop_1 - [_prop_1]_subpop_5
+lincom [_prop_1]_subpop_1 - [_prop_1]Q4
+lincom [_prop_1]_subpop_1 - [_prop_1]Q3
+lincom [_prop_1]_subpop_1 - [_prop_1]Q2
+
+*Duration of displacement
+*Camp-noncamp
+svy: mean durationyear, over(sigidp)
+*p<0.01
+lincom [durationyear]camp - [durationyear]noncamp
+*Drought-conflict
+svy: mean durationyear, over(reasonidp)
+lincom [durationyear]_subpop_1 - [durationyear]_subpop_2
+*Man-woman head
+svy: mean durationyear, over(genidp)
+lincom [durationyear]_subpop_1 - [durationyear]_subpop_2
+*Quintiles
+svy: mean durationyear, over(quintileidp)
+*p<0.05
+lincom [durationyear]_subpop_5 - [durationyear]Q4
+*p<0.05
+lincom [durationyear]_subpop_5 - [durationyear]Q3
+lincom [durationyear]_subpop_5 - [durationyear]Q2
+lincom [durationyear]_subpop_5 - [durationyear]_subpop_1
+
+*Duration of arrival
+*Camp-noncamp
+*No sig diff between arrival durations of these two! But camp have been displaced longer.
+svy: mean duration_arrive_year, over(sigidp)
+lincom [duration_arrive_year]camp - [duration_arrive_year]noncamp
+*Drought-conflict
+svy: mean duration_arrive_year, over(reasonidp)
+lincom [duration_arrive_year]_subpop_1 - [duration_arrive_year]_subpop_2
+*Man-woman head
+svy: mean duration_arrive_year, over(genidp)
+lincom [duration_arrive_year]_subpop_1 - [duration_arrive_year]_subpop_2
+*Quintiles
+svy: mean duration_arrive_year, over(quintileidp)
+lincom [duration_arrive_year]_subpop_1 - [duration_arrive_year]Q2
+lincom [duration_arrive_year]_subpop_1 - [duration_arrive_year]Q3
+lincom [duration_arrive_year]_subpop_1 - [duration_arrive_year]Q4
+*P<0.1
+lincom [duration_arrive_year]_subpop_1 - [duration_arrive_year]_subpop_5
+
+*Has displacement been longer than arrival?
+*Camp-noncamp
+svy: mean duration_arrive_year durationyear, over(sigidp)
+*p<0.01
+lincom [duration_arrive_year]camp - [durationyear]camp
+*p<0.01
+lincom [duration_arrive_year]noncamp - [durationyear]noncamp
+*Conflict-drought
+svy: mean duration_arrive_year durationyear, over(reasonidp)
+*p<0.01
+lincom [duration_arrive_year]_subpop_1 - [durationyear]_subpop_1
+*p<0.01
+lincom [duration_arrive_year]_subpop_2 - [durationyear]_subpop_2
+*HHH gender
+svy: mean duration_arrive_year durationyear, over(genidp)
+*p<0.01
+lincom [duration_arrive_year]_subpop_1 - [durationyear]_subpop_1
+*p<0.01
+lincom [duration_arrive_year]_subpop_2 - [durationyear]_subpop_2
+
+*Number of times displaced
+*Camp-noncamp
+svy: prop disp_times, over(sigidp)
+lincom [Once]camp - [Once]noncamp
+*Quintiles--no sig
+svy: prop disp_times, over(quintileidp)
+lincom [Once]Q2 - [Once]_subpop_1
+lincom [Once]Q2 - [Once]Q3
+lincom [Once]Q2 - [Once]Q4
+lincom [Once]Q2 - [Once]_subpop_5
+
+*Whom did you arrive with
+*Camp-noncamp -- no sig.
+svy: prop disp_arrive_with, over(sigidp)
+lincom [Alone]camp - [Alone]noncamp
+lincom [_prop_3]camp - [_prop_3]noncamp
+*Conflict-drought
+svy: prop disp_arrive_with, over(reasonidp)
+*P<0.1
+lincom [Alone]_subpop_1 - [Alone]_subpop_2
+lincom [_prop_3]_subpop_1 - [_prop_3]_subpop_2
+*Man-woman head -- no sig
+svy: prop disp_arrive_with, over(genidp)
+lincom [Alone]_subpop_1 - [Alone]_subpop_2
+lincom [_prop_3]_subpop_1 - [_prop_3]_subpop_2
+*Quintiles
+svy: prop disp_arrive_with, over(quintileidp)
+*Alone
+lincom [Alone]_subpop_1 - [Alone]Q3
+*p<0.1
+lincom [Alone]_subpop_1 - [Alone]Q4
+*p<0.05
+lincom [Alone]_subpop_1 - [Alone]_subpop_5
+*In a larger group
+*p<0.05
+lincom [_prop_3]_subpop_1 - [_prop_3]Q3
+lincom [_prop_3]_subpop_1 - [_prop_3]Q4
+*p<0.05
+lincom [_prop_3]_subpop_1 - [_prop_3]_subpop_5
+
+*Do you want to return
+*camp-noncamp -- no sig
+svy: prop newmove_want, over(sigidp)
+lincom [_prop_1]camp - [_prop_1]noncamp
+lincom [_prop_2]camp - [_prop_2]noncamp
+lincom [_prop_3]camp - [_prop_3]noncamp
+*Conflict-drought-- no sig
+svy: prop newmove_want, over(reasonidp)
+lincom [_prop_1]_subpop_1 - [_prop_1]_subpop_2
+lincom [_prop_2]_subpop_1 - [_prop_2]_subpop_2
+lincom [_prop_3]_subpop_1 - [_prop_3]_subpop_2
+*Man-woman head
+svy: prop newmove_want, over(genidp)
+lincom [_prop_1]_subpop_1 - [_prop_1]_subpop_2
+lincom [_prop_2]_subpop_1 - [_prop_2]_subpop_2
+*p<0.05
+lincom [_prop_3]_subpop_1 - [_prop_3]_subpop_2
+
+*Time return
+*Camp-NonCamp
+svy: prop newmove_want_time, over(sigidp)
+lincom [_prop_1]camp - [_prop_1]noncamp
+lincom [_prop_2]camp - [_prop_2]noncamp
+lincom [_prop_3]camp - [_prop_3]noncamp
+lincom [_prop_4]camp - [_prop_4]noncamp
+*COnflict-drought
+svy: prop newmove_want_time, over(reasonidp)
+*p<0.1
+lincom [_prop_1]_subpop_1 - [_prop_1]_subpop_2
+lincom [_prop_2]_subpop_1 - [_prop_2]_subpop_2
+lincom [_prop_3]_subpop_1 - [_prop_3]_subpop_2
+*p<0.05
+lincom [_prop_4]_subpop_1 - [_prop_4]_subpop_2
+*Quintiles
+svy: prop newmove_want_time, over(quintileidp)
+lincom [_prop_1]_subpop_1 - [_prop_1]Q2
+lincom [_prop_1]_subpop_1 - [_prop_1]Q3
+lincom [_prop_1]_subpop_1 - [_prop_1]Q4
+lincom [_prop_1]_subpop_1 - [_prop_1]_subpop_5
+
+lincom [_prop_2]_subpop_1 - [_prop_2]Q2
+lincom [_prop_2]_subpop_1 - [_prop_2]Q3
+lincom [_prop_2]_subpop_1 - [_prop_2]Q4
+lincom [_prop_2]_subpop_1 - [_prop_2]_subpop_5
+
+*Have you gone back--nobody has gone back.
+
+*TABOUTS
 *Reason for displacement-concise (including reasonidp for sake of excel table constuction ease; no need to graph it)
 qui tabout disp_reason_concise comparisonidp using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) replace h1("ReasonShort") f(4) 
 *qui tabout disp_reason_concise urbanrural using "${gsdOutput}/Raw_Fig3.xls", svy percent c(col lb ub) npos(col) append h1("ReasonShort") f(4) 
