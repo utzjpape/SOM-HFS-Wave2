@@ -36,31 +36,45 @@ gen urbanrural = type
 replace urbanrural = . if migr_idp ==1
 replace urbanrural = . if t ==0
 replace urbanrural =. if !inlist(type, 1,2)
-la val urbanrural ltype
+lab def lurbanrural 1 "Urban resident" 2 "Rural resident"
+la val urbanrural lurbanrural
 la var urbanrural "Urban or rural (excludes IDPs and Nomads)"
+ta urbanrural
 
 gen national = t
 *Remove IDPs and nomads
 replace national = . if migr_idp ==1 | ind_profile ==13
-lab def lnational 0 "Wave 1" 1 "National" 
+*Remove wave 1 
+replace national =. if t==0
+*Generate IDP variable
+replace national = 0 if migr_idp ==1 & t ==1
+lab def lnational 0 "Overall IDP" 1 "National resident" 
 la val national lnational
 la var national "National W2, excluding nomads and IDPs"
 ta national
+
 *This adds up. The variable has about 1500 obs missing, which are IDPs, and another 500, which are nomads.
 
-*3. W2 Camp IDP disaggregations
+*3. IDP disaggregations, from a pool of Camp and Non-Camp IDPs of Wave 2.
 *HHH gender
 gen genidp = hhh_gender
-*Set to missing for anyone not a camp IDP of w2.
-replace genidp =. if !(migr_idp ==1 & t ==1 & ind_profile == 6)
-la var genidp "HHH Gender of W2 Camp IDP"
+*Set to missing for non-IDPs or IDPs of Wave 1
+replace genidp =. if !((migr_idp ==1 & t ==1 & ind_profile != 6) | (migr_idp ==1 & t ==1 & ind_profile == 6))
+la var genidp "HHH Gender of IDPs (camp and noncamp, W2)"
 la def lgenidp 0 "Woman headed" 1 "Man headed"
 la val genidp lgenidp
 *Consumption quintiles
-xtile quintileidp = tc_imp [pweight=weight_cons*hhsize] if (migr_idp ==1 & t ==1 & ind_profile == 6), nquantiles(5)
-la var quintileidp "Quintiles for imputed consumption of W2 Camp IDP"
+xtile quintileidp = tc_imp [pweight=weight_cons*hhsize] if (migr_idp ==1 & t ==1 & ind_profile != 6) | (migr_idp ==1 & t ==1 & ind_profile == 6), nquantiles(5)
+la var quintileidp "Quintiles for imputed consumption (camp and noncamp, W2)"
 la val quintileidp lquintiles_tc
 la def lquintiles_tc 1 "Poorest quintile" 5 "Richest quintile", modify
+*40-60 quintiles
+gen topbottomidp = quintileidp >= 3
+replace topbottomidp = . if missing(quintileidp)
+lab def ltopbottomidp 0 "Bottom 40" 1 "Top 60"
+lab val topbottomidp ltopbottomidp
+lab var topbottomidp "Poorest 40 percent and richest 60 percent of IDPs(camp and noncamp, W2)"
+ta topbottomidp quintileidp, miss
 
 *4. Drought and conflict IDPs (for now, this has only camp idps of 2017)
 recode disp_from (11 21 = 1 "Same district") (12 22 = 2 "Same region different district") (13 14 23 =3 "Different region/federated member state") (15 24 = 4 "Outside country") (nonmiss =.), gen(disp_from_new) la(ldisp_from_new)
@@ -71,11 +85,11 @@ tab disp_reason
 recode disp_reason (1=1 "Armed conflict in village") (2=2 "Armed conflict in other village") (3=3 "Increased violence but not conflict") (4=4 "Discrimination") (5=5 "Drought / famine / flood") (6/1000 = 6 "Other"), gen(disp_reason_concise) label(disp_reason_concise)
 tab disp_reason_concise
 *Conflict and drought idps comparison groups
-gen reasonidp = 1 if inlist(disp_reason_concise, 1, 2, 3) & comparisonidp==3
-replace reasonidp = 2 if inlist(disp_reason_concise, 5) & comparisonidp==3
-la def lreasonidp 1 "Conflict or violence" 2 "Drought, famine or flood" 
+gen reasonidp = 1 if inlist(disp_reason_concise, 1, 2, 3) & inlist(comparisonidp, 1, 3)
+replace reasonidp = 2 if inlist(disp_reason_concise, 5) & inlist(comparisonidp, 1, 3)
+la def lreasonidp 1 "Conflict or violence" 2 "Climate event" 
 la val reasonidp lreasonidp
-la var reasonidp "Reasons for displacement: W2 camp IDPs"
+la var reasonidp "Reasons for displacement(camp and noncamp, W2)"
 
 *5. IDPs displaced once and many times.
 *Clean variable of times displaced
@@ -84,8 +98,11 @@ gen timesidp = disp_times
 replace timesidp = 2 if inlist(disp_times, 2, 3, 4) 
 *Remove nomads
 replace timesidp =. if inlist(ind_profile, 13)
-lab def ltimesidp 1 "Once" 2 "Multiple"
+lab def ltimesidp 1 "Displaced once" 2 "Displaced multiple"
 lab val timesidp ltimesidp
+*confirm both camp IDPs and noncamp IDPs are in 
+*
+*
 
 *6. IDPs displaced for less than 5 years or more.
 *Clean date of first displacement
@@ -144,6 +161,9 @@ lab val durationidp ldurationidp
 *Check that nomads are not included
 count if !(missing(disp_date) | disp_date == ".z") & inlist(comparisonidp, 1, 3)
 ta ind_profile if !(missing(disp_date) | disp_date == ".z")
+*confirm both camp IDPs and noncamp IDPs are in 
+*
+*
 
 *6.1 Check: Could protracted IDPs be the same as the multiple displaced ones?
 ta durationidp timesidp
