@@ -544,7 +544,7 @@ qui foreach i of local region {
 }
 levelsof type, local(population) 
 qui foreach i of local population {
-	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_15.xls" if type==`i', svy sum c(mean hhsize) sebnone f(3) npos(col) h2(HH size for ind_profile `i' ) append
+	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_15.xls" if type==`i', svy sum c(mean hhsize) sebnone f(3) npos(col) h2(HH size for type `i' ) append
 }
 levelsof hhh_gender, local(gender) 
 qui foreach i of local gender {
@@ -564,31 +564,39 @@ qui foreach i of local drought {
 }
 
 *Male headed households 
-qui tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_16.xls", svy sum c(mean hhh_gender) sebnone f(3) npos(col) h2(Share of male headed HHs - overall ) replace
+qui tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_16.xls", svy sum c(mean hhh_gender lb ub) sebnone f(3) npos(col) h2(Share of male headed HHs - overall ) replace
 levelsof ind_profile, local(region) 
 qui foreach i of local region {
-	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_16.xls" if ind_profile==`i', svy sum c(mean hhh_gender) sebnone f(3) npos(col) h2(Share of male headed HHs for ind_profile `i' ) append
+	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_16.xls" if ind_profile==`i', svy sum c(mean hhh_gender lb ub) sebnone f(3) npos(col) h2(Share of male headed HHs for ind_profile `i' ) append
 }
 levelsof type, local(population) 
 qui foreach i of local population {
-	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_16.xls" if type==`i', svy sum c(mean hhh_gender) sebnone f(3) npos(col) h2(Share of male headed HHs for ind_profile `i' ) append
+	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_16.xls" if type==`i', svy sum c(mean hhh_gender lb ub) sebnone f(3) npos(col) h2(Share of male headed HHs for type `i' ) append
 }
 levelsof hhh_gender, local(gender) 
 qui foreach i of local gender {
-	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_16.xls" if hhh_gender==`i', svy sum c(mean hhh_gender) sebnone f(3) npos(col) h2(Share of male headed HHs for hhh_gender `i' ) append
+	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_16.xls" if hhh_gender==`i', svy sum c(mean hhh_gender lb ub) sebnone f(3) npos(col) h2(Share of male headed HHs for hhh_gender `i' ) append
 }
 levelsof remit12m, local(remittances) 
 qui foreach i of local remittances {
-	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_16.xls" if remit12m==`i', svy sum c(mean hhh_gender) sebnone f(3) npos(col) h2(Share of male headed HHs for remit12m `i' ) append
+	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_16.xls" if remit12m==`i', svy sum c(mean hhh_gender lb ub) sebnone f(3) npos(col) h2(Share of male headed HHs for remit12m `i' ) append
 }
 levelsof migr_idp, local(displacement) 
 qui foreach i of local displacement {
-	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_16.xls" if migr_idp==`i', svy sum c(mean hhh_gender) sebnone f(3) npos(col) h2(Share of male headed HHs for migr_idp `i' ) append
+	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_16.xls" if migr_idp==`i', svy sum c(mean hhh_gender lb ub) sebnone f(3) npos(col) h2(Share of male headed HHs for migr_idp `i' ) append
 }
 levelsof drought_affected, local(drought) 
 qui foreach i of local drought {
-	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_16.xls" if drought_affected==`i', svy sum c(mean hhh_gender) sebnone f(3) npos(col) h2(Share of male headed HHs for drought_affected `i' ) append
+	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_16.xls" if drought_affected==`i', svy sum c(mean hhh_gender lb ub) sebnone f(3) npos(col) h2(Share of male headed HHs for drought_affected `i' ) append
 }
+
+svy: mean hhh_gender, over(remit12m)
+test [hhh_gender]Yes = [hhh_gender]No
+svy: mean hhh_gender, over(migr_idp)
+test [hhh_gender]Yes = [hhh_gender]No
+svy: mean hhh_gender, over(drought_affected)
+test [hhh_gender]Yes = [hhh_gender]No
+
 
 *Dependency ratio
 qui tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_17.xls", svy sum c(mean age_dependency_ratio) sebnone f(3) npos(col) h2(Age dependency ratio - overall ) replace
@@ -598,7 +606,7 @@ qui foreach i of local region {
 }
 levelsof type, local(population) 
 qui foreach i of local population {
-	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_17.xls" if type==`i', svy sum c(mean age_dependency_ratio) sebnone f(3) npos(col) h2(Age dependency ratio for ind_profile `i' ) append
+	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_17.xls" if type==`i', svy sum c(mean age_dependency_ratio) sebnone f(3) npos(col) h2(Age dependency ratio for type `i' ) append
 }
 levelsof hhh_gender, local(gender) 
 qui foreach i of local gender {
@@ -625,7 +633,7 @@ qui foreach i of local region {
 }
 levelsof type, local(population) 
 qui foreach i of local population {
-	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_18.xls" if type==`i', svy sum c(mean no_children) sebnone f(3) npos(col) h2(Number of children for ind_profile `i' ) append
+	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_18.xls" if type==`i', svy sum c(mean no_children) sebnone f(3) npos(col) h2(Number of children for type `i' ) append
 }
 levelsof hhh_gender, local(gender) 
 qui foreach i of local gender {
@@ -652,7 +660,7 @@ qui foreach i of local region {
 }
 levelsof type, local(population) 
 qui foreach i of local population {
-	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_19.xls" if type==`i', svy sum c(mean no_adults) sebnone f(3) npos(col) h2(Number of adults for ind_profile `i' ) append
+	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_19.xls" if type==`i', svy sum c(mean no_adults) sebnone f(3) npos(col) h2(Number of adults for type `i' ) append
 }
 levelsof hhh_gender, local(gender) 
 qui foreach i of local gender {
@@ -679,7 +687,7 @@ qui foreach i of local region {
 }
 levelsof type, local(population) 
 qui foreach i of local population {
-	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_20.xls" if type==`i', svy sum c(mean no_old_age) sebnone f(3) npos(col) h2(Number of elderly for ind_profile `i' ) append
+	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_20.xls" if type==`i', svy sum c(mean no_old_age) sebnone f(3) npos(col) h2(Number of elderly for type `i' ) append
 }
 levelsof hhh_gender, local(gender) 
 qui foreach i of local gender {
@@ -702,9 +710,9 @@ qui foreach i of local drought {
 *Poverty and education
 use "${gsdTemp}/hh_PA_Poverty_Profile.dta", clear
 svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
-qui tabout ind_profile hhh_edu_dum using "${gsdOutput}/PA_Poverty_Profile_21.xls", svy sum c(mean poorPPP_prob) sebnone f(3) npos(col) h1(Poverty incidence by HH head edu level) replace
+qui tabout ind_profile hhh_edu_dum using "${gsdOutput}/PA_Poverty_Profile_21.xls", svy sum c(mean poorPPP_prob lb ub) sebnone f(3) npos(col) h1(Poverty incidence by HH head edu level) replace
 qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
-	tabout `var' hhh_edu_dum using "${gsdOutput}/PA_Poverty_Profile_21.xls", svy sum c(mean poorPPP_prob) sebnone f(3) npos(col) h1(Poverty incidence & HH head edu level by `var') append
+	tabout `var' hhh_edu_dum using "${gsdOutput}/PA_Poverty_Profile_21.xls", svy sum c(mean poorPPP_prob lb ub) sebnone f(3) npos(col) h1(Poverty incidence & HH head edu level by `var') append
 }
 levelsof ind_profile, local(region) 
 foreach i of local region {
