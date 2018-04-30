@@ -475,42 +475,42 @@ qui tabout top_bottom using "${gsdOutput}/PA_Poverty_Profile_13.xls", svy sum c(
 levelsof ind_profile, local(region) 
 qui foreach i of local region {
 	xtile quintiles_tc_`i' = tc_imp [pweight=hhweight] if ind_profile==`i', n(5) 
-	gen top_bottom_`i'=(quintiles_tc_`i'>=1 & quintiles_tc_`i'<=2)
+	gen top_bottom_`i'=(quintiles_tc_`i'>=1 & quintiles_tc_`i'<=2) if ind_profile==`i'
 	qui tabout top_bottom_`i' using "${gsdOutput}/PA_Poverty_Profile_13.xls", svy sum c(mean tc_imp se ub lb) sebnone f(3) npos(col) h2(Avg. consumption by bottom 40/top 60 - region `i' ) append
 	drop quintiles_tc_`i' top_bottom_`i'
 }
 levelsof type, local(population) 
 qui foreach i of local population {
 	xtile quintiles_tc_`i' = tc_imp [pweight=hhweight] if type==`i', n(5) 
-	gen top_bottom_`i'=(quintiles_tc_`i'>=1 & quintiles_tc_`i'<=2)
+	gen top_bottom_`i'=(quintiles_tc_`i'>=1 & quintiles_tc_`i'<=2) if type==`i'
 	qui tabout top_bottom_`i' using "${gsdOutput}/PA_Poverty_Profile_13.xls", svy sum c(mean tc_imp se ub lb) sebnone f(3) npos(col) h2(Avg. consumption by bottom 40/top 60 - type `i' ) append
 	drop quintiles_tc_`i' top_bottom_`i'
 }
 levelsof hhh_gender, local(gender) 
 qui foreach i of local gender {
 	xtile quintiles_tc_`i' = tc_imp [pweight=hhweight] if hhh_gender==`i', n(5) 
-	gen top_bottom_`i'=(quintiles_tc_`i'>=1 & quintiles_tc_`i'<=2)
+	gen top_bottom_`i'=(quintiles_tc_`i'>=1 & quintiles_tc_`i'<=2) if hhh_gender==`i'
 	qui tabout top_bottom_`i' using "${gsdOutput}/PA_Poverty_Profile_13.xls", svy sum c(mean tc_imp se ub lb) sebnone f(3) npos(col) h2(Avg. consumption by bottom 40/top 60 - hhh_gender `i' ) append
 	drop quintiles_tc_`i' top_bottom_`i'
 }
 levelsof remit12m, local(remittances) 
 qui foreach i of local remittances {
 	xtile quintiles_tc_`i' = tc_imp [pweight=hhweight] if remit12m==`i', n(5) 
-	gen top_bottom_`i'=(quintiles_tc_`i'>=1 & quintiles_tc_`i'<=2)
+	gen top_bottom_`i'=(quintiles_tc_`i'>=1 & quintiles_tc_`i'<=2) if remit12m==`i'
 	qui tabout top_bottom_`i' using "${gsdOutput}/PA_Poverty_Profile_13.xls", svy sum c(mean tc_imp se ub lb) sebnone f(3) npos(col) h2(Avg. consumption by bottom 40/top 60 - remit12m `i' ) append
 	drop quintiles_tc_`i' top_bottom_`i'
 }
 levelsof migr_idp, local(displacement) 
 qui foreach i of local displacement {
 	xtile quintiles_tc_`i' = tc_imp [pweight=hhweight] if migr_idp==`i', n(5) 
-	gen top_bottom_`i'=(quintiles_tc_`i'>=1 & quintiles_tc_`i'<=2)
+	gen top_bottom_`i'=(quintiles_tc_`i'>=1 & quintiles_tc_`i'<=2) if migr_idp==`i'
 	qui tabout top_bottom_`i' using "${gsdOutput}/PA_Poverty_Profile_13.xls", svy sum c(mean tc_imp se ub lb) sebnone f(3) npos(col) h2(Avg. consumption by bottom 40/top 60 - migr_idp `i' ) append
 	drop quintiles_tc_`i' top_bottom_`i'
 }
 levelsof drought_affected, local(drought) 
 qui foreach i of local drought {
 	xtile quintiles_tc_`i' = tc_imp [pweight=hhweight] if drought_affected==`i', n(5) 
-	gen top_bottom_`i'=(quintiles_tc_`i'>=1 & quintiles_tc_`i'<=2)
+	gen top_bottom_`i'=(quintiles_tc_`i'>=1 & quintiles_tc_`i'<=2) if drought_affected==`i'
 	qui tabout top_bottom_`i' using "${gsdOutput}/PA_Poverty_Profile_13.xls", svy sum c(mean tc_imp se ub lb) sebnone f(3) npos(col) h2(Avg. consumption by bottom 40/top 60 - drought_affected `i' ) append
 	drop quintiles_tc_`i' top_bottom_`i'
 }
@@ -562,6 +562,37 @@ levelsof drought_affected, local(drought)
 qui foreach i of local drought {
 	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_15.xls" if drought_affected==`i', svy sum c(mean hhsize) sebnone f(3) npos(col) h2(HH size for drought_affected `i' ) append
 }
+levelsof ind_profile, local(region) 
+foreach i of local region {
+	svy: mean hhsize if ind_profile==`i', over(poorPPP) 
+	test [hhsize]_subpop_1 = [hhsize]Poor
+}
+levelsof type, local(population) 
+foreach i of local population {
+	svy: mean hhsize if type==`i', over(poorPPP)
+	test [hhsize]_subpop_1 = [hhsize]Poor
+}
+levelsof hhh_gender, local(gender) 
+foreach i of local gender {
+	svy: mean hhsize if hhh_gender==`i', over(poorPPP)
+	test [hhsize]_subpop_1 = [hhsize]Poor
+}
+levelsof remit12m, local(remittances) 
+foreach i of local remittances {
+	svy: mean hhsize if remit12m==`i', over(poorPPP)
+	test [hhsize]_subpop_1 = [hhsize]Poor
+}
+levelsof migr_idp, local(displacement) 
+foreach i of local displacement {
+	svy: mean hhsize if migr_idp==`i', over(poorPPP)
+	test [hhsize]_subpop_1 = [hhsize]Poor
+}
+levelsof drought_affected, local(drought) 
+foreach i of local drought {
+	svy: mean hhsize if drought_affected==`i', over(poorPPP)
+	test [hhsize]_subpop_1 = [hhsize]Poor
+}
+
 
 *Male headed households 
 qui tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_16.xls", svy sum c(mean hhh_gender lb ub) sebnone f(3) npos(col) h2(Share of male headed HHs - overall ) replace
@@ -828,6 +859,30 @@ qui tabout hunger ind_profile  using "${gsdOutput}/PA_Poverty_Profile_25.xls", s
 qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
 	tabout hunger `var' using "${gsdOutput}/PA_Poverty_Profile_25.xls" if poorPPP==1, svy c(col) perc sebnone f(3) npos(col) h1(Hunger (poor) by `var') append
 	tabout hunger `var' using "${gsdOutput}/PA_Poverty_Profile_25.xls" if poorPPP==0, svy c(col) perc sebnone f(3) npos(col) h1(Hunger (non-poor) by `var') append
+}
+gen hunger_dum=(hunger>1) if !missing(hunger)
+label values hunger_dum lyesno
+svy: mean hunger_dum, over(poorPPP)
+test [hunger_dum]Poor = [hunger_dum]_subpop_1
+levelsof hhh_gender, local(gender) 
+foreach i of local gender {
+	svy: mean hunger_dum if hhh_gender==`i', over(poorPPP)
+	test [hunger_dum]Poor = [hunger_dum]_subpop_1
+}
+levelsof remit12m, local(remittances) 
+foreach i of local remittances {
+	svy: mean hunger_dum if remit12m==`i', over(poorPPP)
+	test [hunger_dum]Poor = [hunger_dum]_subpop_1
+}
+levelsof migr_idp, local(displacement) 
+foreach i of local displacement {
+	svy: mean hunger_dum if migr_idp==`i', over(poorPPP)
+	test [hunger_dum]Poor = [hunger_dum]_subpop_1
+}
+levelsof drought_affected, local(drought) 
+foreach i of local drought {
+	svy: mean hunger_dum if drought_affected==`i', over(poorPPP)
+	test [hunger_dum]Poor = [hunger_dum]_subpop_1
 }
 
 
