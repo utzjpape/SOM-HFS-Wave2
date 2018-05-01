@@ -562,6 +562,8 @@ levelsof drought_affected, local(drought)
 qui foreach i of local drought {
 	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_15.xls" if drought_affected==`i', svy sum c(mean hhsize) sebnone f(3) npos(col) h2(HH size for drought_affected `i' ) append
 }
+svy: mean hhsize, over(poorPPP) 
+test [hhsize]_subpop_1 = [hhsize]Poor
 levelsof ind_profile, local(region) 
 foreach i of local region {
 	svy: mean hhsize if ind_profile==`i', over(poorPPP) 
@@ -655,6 +657,39 @@ levelsof drought_affected, local(drought)
 qui foreach i of local drought {
 	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_17.xls" if drought_affected==`i', svy sum c(mean age_dependency_ratio) sebnone f(3) npos(col) h2(Age dependency ratio for drought_affected `i' ) append
 }
+svy: mean age_dependency_ratio, over(poorPPP) 
+test [age_dependency_ratio]_subpop_1 = [age_dependency_ratio]Poor
+levelsof ind_profile, local(region) 
+foreach i of local region {
+	svy: mean age_dependency_ratio if ind_profile==`i', over(poorPPP) 
+	test [age_dependency_ratio]_subpop_1 = [age_dependency_ratio]Poor
+}
+levelsof type, local(population) 
+foreach i of local population {
+	svy: mean age_dependency_ratio if type==`i', over(poorPPP)
+	test [age_dependency_ratio]_subpop_1 = [age_dependency_ratio]Poor
+}
+levelsof hhh_gender, local(gender) 
+foreach i of local gender {
+	svy: mean age_dependency_ratio if hhh_gender==`i', over(poorPPP)
+	test [age_dependency_ratio]_subpop_1 = [age_dependency_ratio]Poor
+}
+levelsof remit12m, local(remittances) 
+foreach i of local remittances {
+	svy: mean age_dependency_ratio if remit12m==`i', over(poorPPP)
+	test [age_dependency_ratio]_subpop_1 = [age_dependency_ratio]Poor
+}
+levelsof migr_idp, local(displacement) 
+foreach i of local displacement {
+	svy: mean age_dependency_ratio if migr_idp==`i', over(poorPPP)
+	test [age_dependency_ratio]_subpop_1 = [age_dependency_ratio]Poor
+}
+levelsof drought_affected, local(drought) 
+foreach i of local drought {
+	svy: mean age_dependency_ratio if drought_affected==`i', over(poorPPP)
+	test [age_dependency_ratio]_subpop_1 = [age_dependency_ratio]Poor
+}
+
 
 *Number of children
 qui tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_18.xls", svy sum c(mean no_children) sebnone f(3) npos(col) h2(Number of children - overall ) replace
@@ -888,6 +923,7 @@ foreach i of local drought {
 
 *Education and literacy 
 use "${gsdTemp}/hhm_PA_Poverty_Profile.dta", clear
+merge m:1 strata ea block hh using "${gsdTemp}/hh_PA_Poverty_Profile.dta", assert(match) nogen keepusing(hhh_edu_dum)
 svyset ea [pweight=weight], strata(strata) singleunit(centered)
 qui tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy sum c(mean enrolled se) sebnone f(3) npos(col) h2(Enrolled by ind_profile) replace
 qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
@@ -904,6 +940,12 @@ qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
 	tabout edu_level_broad `var' using "${gsdOutput}/PA_Poverty_Profile_26.xls" if poorPPP==1, svy c(col) perc sebnone f(3) npos(col) h1(Educational level (poor) by `var') append
 	tabout edu_level_broad `var' using "${gsdOutput}/PA_Poverty_Profile_26.xls" if poorPPP==0, svy c(col) perc sebnone f(3) npos(col) h1(Educational level (non-poor) by `var') append
 }
+svy: mean enrolled, over(hhh_edu_dum)
+test [enrolled]Yes = [enrolled]No
+svy: mean enrolled if hhh_gender==0, over(hhh_edu_dum)
+test [enrolled]Yes = [enrolled]No
+svy: mean enrolled if hhh_gender==1, over(hhh_edu_dum)
+test [enrolled]Yes = [enrolled]No
 
 
 *Labor and employment 
@@ -945,6 +987,16 @@ qui foreach var of varlist ind_profile type hhh_gender remit12m migr_idp drought
 qui foreach var of varlist ind_profile type hhh_gender remit12m migr_idp drought_affected poorPPP  {
 	tabout `var' using "${gsdOutput}/PA_Poverty_Profile_28.xls", svy sum c(mean assets se) sebnone f(3) npos(col) h2(Deprivation assets by `var') append
 } 
+foreach x in "living_standards" "education" "wash" "assets" {
+	svy: mean `x', over(poorPPP)
+	test [`x']_subpop_1 = [`x']Poor
+	svy: mean `x', over(hhh_gender)
+	test [`x']Female = [`x']Male
+	foreach var of varlist remit12m migr_idp drought_affected {
+		svy: mean `x', over(`var')
+		test [`x']Yes = [`x']No
+}
+}
 
  
 *Multidimensional deprivation index
