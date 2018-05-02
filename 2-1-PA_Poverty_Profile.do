@@ -137,7 +137,7 @@ gen education=(child_noed==1 | adult_noed==1)
 label var education "Household deprived in dimension: education"
 gen wash=(improved_sanitation==0 | improved_water==0)
 label var wash "Household deprived in dimension: WASH"
-egen deprivations=rowtotal(assets living_standards education wash poorPPP)
+egen deprivations=rowtotal(living_standards education wash poorPPP)
 label var deprivations "Total number of dimensions household is deprived in"
 egen deprivations2=rowtotal(assets living_standards education wash )
 label var deprivations2 "Total number of dimensions household is deprived in, no poverty"
