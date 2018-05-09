@@ -67,6 +67,9 @@ use "${gsdData}/1-CleanInput/SHFS2016/hhm.dta", clear
 ren weight weight_unadjusted
 gen enrolled=edu_status==1 if inrange(age, 6, 17)
 la var enrolled "Enrolled at school age (6-17)"
+*drop labor variable from Wave 1 to retain the proper coding of Wave 2 variable
+drop emp_7d_prim 
+label drop emp_7d_prim
 append using "${gsdData}/1-CleanOutput/hhm.dta", gen(t)
 order t
 drop reg_pess
@@ -96,7 +99,7 @@ replace comparable_w1_w2=0 if ind_profile==6 & t==1 & !inlist(strata,4,5,6)
 label values comparable_w1_w2 lyesno
 save "${gsdData}/1-CleanOutput/hhm_w1_w2.dta", replace
 
-
+-
 
 *=====================================================================
 * HH level dataset 
