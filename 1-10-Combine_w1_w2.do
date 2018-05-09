@@ -17,6 +17,12 @@ ren weight_adj weight
 ren reg_pess region
 *Rename tenure to make sure
 ren house_ownership tenure
+*Drop livelihood variables and labels to get proper labels from wave 2
+cap drop lhood
+cap label drop lhood
+cap drop lhood_prev
+cap label drop lhood_prev
+
 *Append wave 2 data
 append using "${gsdData}/1-CleanOutput/hh.dta", gen(t)
 la def lt 0 "Wave1" 1 "Wave2", replace
@@ -70,6 +76,11 @@ la var enrolled "Enrolled at school age (6-17)"
 *drop labor variable from Wave 1 to retain the proper coding of Wave 2 variable
 drop emp_7d_prim 
 label drop emp_7d_prim
+cap drop emp_prev
+cap label drop emp_prev
+cap drop emp_prev_d
+cap label drop emp_prev_d
+
 append using "${gsdData}/1-CleanOutput/hhm.dta", gen(t)
 order t
 drop reg_pess
@@ -99,7 +110,7 @@ replace comparable_w1_w2=0 if ind_profile==6 & t==1 & !inlist(strata,4,5,6)
 label values comparable_w1_w2 lyesno
 save "${gsdData}/1-CleanOutput/hhm_w1_w2.dta", replace
 
--
+
 
 *=====================================================================
 * HH level dataset 
