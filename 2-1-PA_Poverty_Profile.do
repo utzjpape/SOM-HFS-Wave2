@@ -83,6 +83,13 @@ replace no_dependent=0 if no_dependent==.
 replace no_working_age=0 if no_working_age==.
 gen age_dependency_ratio=no_dependent/no_working_age
 drop no_dep no_dependent no_w_age no_working_age
+*Include final regional breakdown
+rename ind_profile ind_profile_old
+recode ind_profile_old(4=2) (5=3) (6=4) (7/8=5) (9=6) (11/12=7) (13=8), gen(ind_profile)
+label define lind_profilef 1 "Mogadishu" 2 "North-East" 3 "North-West" 4 "IDP Settlements" 5 "Central Regions" 6 "Jubbaland Urban" 7 "South-West" 8 "Nomadic population"
+label values ind_profile lind_profilef
+label var ind_profile "Indicator of regional breakdown"
+order ind_profile, after(ind_profile_old)
 save "${gsdTemp}/hhm_PA_Poverty_Profile.dta", replace
 
 
@@ -148,6 +155,13 @@ keep strata ea block hh assets living_standards education wash deprivations depr
 save "${gsdTemp}/hh_mutltidimensional.dta", replace
 use "${gsdTemp}/hh_PA_Poverty_Profile.dta", clear
 merge 1:1 strata ea block hh using "${gsdTemp}/hh_mutltidimensional.dta", nogen assert(match) 
+*Include final regional breakdown
+rename ind_profile ind_profile_old
+recode ind_profile_old(4=2) (5=3) (6=4) (7/8=5) (9=6) (11/12=7) (13=8), gen(ind_profile)
+label define lind_profilef 1 "Mogadishu" 2 "North-East" 3 "North-West" 4 "IDP Settlements" 5 "Central Regions" 6 "Jubbaland Urban" 7 "South-West" 8 "Nomadic population"
+label values ind_profile lind_profilef
+label var ind_profile "Indicator of regional breakdown"
+order ind_profile, after(ind_profile_old)
 save "${gsdTemp}/hh_PA_Poverty_Profile.dta", replace
 
 
@@ -197,6 +211,7 @@ qui tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_3.xls", svy sum c(
 qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
 	tabout `var' using "${gsdOutput}/PA_Poverty_Profile_3.xls", svy sum c(mean poorPPP_prob se ub lb) sebnone f(3) npos(col) h2(Poverty incidence by `var') append
 }
+qui tabout ind_profile_old using "${gsdOutput}/PA_Poverty_Profile_3.xls", svy sum c(mean poorPPP_prob se ub lb) sebnone f(3) npos(col) h2(Poverty incidence by ind_profile old) append
 svy: mean poorPPP_prob, over(hhh_gender)
 test [poorPPP_prob]Female = [poorPPP_prob]Male
 svy: mean poorPPP_prob, over(remit12m)
@@ -427,7 +442,14 @@ qui foreach i of local drought {
     qui tabout gini_`i' using "${gsdOutput}/PA_Poverty_Profile_12.xls", svy c(freq) sebnone f(3) npos(col) h2(GINI coefficient for drought_affected `i') append
     drop gini_`i'
 }
-
+levelsof ind_profile_old, local(region) 
+qui foreach i of local region {
+	fastgini tc_imp [pweight=hhweight] if ind_profile_old==`i'
+	return list 
+	gen gini_`i'=r(gini)
+    qui tabout gini_`i' using "${gsdOutput}/PA_Poverty_Profile_12.xls", svy c(freq) sebnone f(3) npos(col) h2(GINI coefficient for ind_profile old `i') append
+    drop gini_`i'
+}
 
 *Average total imputed consumption by quintile 
 qui tabout quintiles_tc using "${gsdOutput}/PA_Poverty_Profile_13.xls", svy sum c(mean tc_imp se ub lb) sebnone f(3) npos(col) h2(Avg. consumption by quintile - overall ) replace
@@ -776,39 +798,39 @@ qui foreach i of local drought {
 *Poverty and education
 use "${gsdTemp}/hh_PA_Poverty_Profile.dta", clear
 svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
-qui tabout ind_profile hhh_edu_dum using "${gsdOutput}/PA_Poverty_Profile_21.xls", svy sum c(mean poorPPP_prob lb ub) sebnone f(3) npos(col) h1(Poverty incidence by HH head edu level) replace
+qui tabout ind_profile poorPPP using "${gsdOutput}/PA_Poverty_Profile_21.xls", svy sum c(mean hhh_edu_dum lb ub) sebnone f(3) npos(col) h1(HH head edu level by poor status and ind_profile) replace
 qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
-	tabout `var' hhh_edu_dum using "${gsdOutput}/PA_Poverty_Profile_21.xls", svy sum c(mean poorPPP_prob lb ub) sebnone f(3) npos(col) h1(Poverty incidence & HH head edu level by `var') append
+	tabout `var' poorPPP using "${gsdOutput}/PA_Poverty_Profile_21.xls", svy sum c(mean hhh_edu_dum lb ub) sebnone f(3) npos(col) h1(HH head edu level by poor status and `var') append
 }
 levelsof ind_profile, local(region) 
 foreach i of local region {
-	svy: mean poorPPP_prob if ind_profile==`i', over(hhh_edu_dum)
-	test [poorPPP_prob]Yes = [poorPPP_prob]No
+	svy: mean hhh_edu_dum if ind_profile==`i', over(poorPPP)
+	test [hhh_edu_dum]_subpop_1 = [hhh_edu_dum]Poor
 }
 levelsof type, local(population) 
 foreach i of local population {
-	svy: mean poorPPP_prob if type==`i', over(hhh_edu_dum)
-	test [poorPPP_prob]Yes = [poorPPP_prob]No
+	svy: mean hhh_edu_dum if type==`i', over(poorPPP)
+	test [hhh_edu_dum]_subpop_1 = [hhh_edu_dum]Poor
 }
 levelsof hhh_gender, local(gender) 
 foreach i of local gender {
-	svy: mean poorPPP_prob if hhh_gender==`i', over(hhh_edu_dum)
-	test [poorPPP_prob]Yes = [poorPPP_prob]No
+	svy: mean hhh_edu_dum if hhh_gender==`i', over(poorPPP)
+	test [hhh_edu_dum]_subpop_1 = [hhh_edu_dum]Poor
 }
 levelsof remit12m, local(remittances) 
 foreach i of local remittances {
-	svy: mean poorPPP_prob if remit12m==`i', over(hhh_edu_dum)
-	test [poorPPP_prob]Yes = [poorPPP_prob]No
+	svy: mean hhh_edu_dum if remit12m==`i', over(poorPPP)
+	test [hhh_edu_dum]_subpop_1 = [hhh_edu_dum]Poor
 }
 levelsof migr_idp, local(displacement) 
 foreach i of local displacement {
-	svy: mean poorPPP_prob if migr_idp==`i', over(hhh_edu_dum)
-	test [poorPPP_prob]Yes = [poorPPP_prob]No
+	svy: mean hhh_edu_dum if migr_idp==`i', over(poorPPP)
+	test [hhh_edu_dum]_subpop_1 = [hhh_edu_dum]Poor
 }
 levelsof drought_affected, local(drought) 
 foreach i of local drought {
-	svy: mean poorPPP_prob if drought_affected==`i', over(hhh_edu_dum)
-	test [poorPPP_prob]Yes = [poorPPP_prob]No
+	svy: mean hhh_edu_dum if drought_affected==`i', over(poorPPP)
+	test [hhh_edu_dum]_subpop_1 = [hhh_edu_dum]Poor
 }
 
 
@@ -869,6 +891,9 @@ qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
 	tabout waste `var' using "${gsdOutput}/PA_Poverty_Profile_23.xls" if poorPPP==1, svy c(col) perc sebnone f(3) npos(col) h1(Waste (poor) by `var') append
 	tabout waste `var' using "${gsdOutput}/PA_Poverty_Profile_23.xls" if poorPPP==0, svy c(col) perc sebnone f(3) npos(col) h1(Waste (non-poor) by `var') append
 }
+qui tabout improved_sanitation type using "${gsdOutput}/PA_Poverty_Profile_23.xls", svy c(col) perc sebnone f(3) npos(col) h1(Improved sanitation by type) append
+qui tabout improved_water type using "${gsdOutput}/PA_Poverty_Profile_23.xls", svy c(col) perc sebnone f(3) npos(col) h1(Improved water by type) append
+qui tabout electricity type using "${gsdOutput}/PA_Poverty_Profile_23.xls", svy c(col) perc sebnone f(3) npos(col) h1(Access to electricity by type) append
 
 
 *Distance to different services
@@ -887,6 +912,9 @@ qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
 	tabout thealth `var' using "${gsdOutput}/PA_Poverty_Profile_24.xls" if poorPPP==1, svy c(col) perc sebnone f(3) npos(col) h1(Time/Distance to health clinic (poor) by `var') append
 	tabout thealth `var' using "${gsdOutput}/PA_Poverty_Profile_24.xls" if poorPPP==0, svy c(col) perc sebnone f(3) npos(col) h1(Time/Distance to health clinic (non-poor) by `var') append
 }
+qui tabout water_time type using "${gsdOutput}/PA_Poverty_Profile_24.xls", svy c(col) perc sebnone f(3) npos(col) h1(Time/Distance to water by type) append
+qui tabout tmarket type using "${gsdOutput}/PA_Poverty_Profile_24.xls", svy c(col) perc sebnone f(3) npos(col) h1(Time/Distance to market by type) append
+qui tabout thealth type using "${gsdOutput}/PA_Poverty_Profile_24.xls", svy c(col) perc sebnone f(3) npos(col) h1(Time/Distance to health clinic by type) append
 
 
 *Hunger
@@ -894,6 +922,9 @@ qui tabout hunger ind_profile  using "${gsdOutput}/PA_Poverty_Profile_25.xls", s
 qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
 	tabout hunger `var' using "${gsdOutput}/PA_Poverty_Profile_25.xls" if poorPPP==1, svy c(col) perc sebnone f(3) npos(col) h1(Hunger (poor) by `var') append
 	tabout hunger `var' using "${gsdOutput}/PA_Poverty_Profile_25.xls" if poorPPP==0, svy c(col) perc sebnone f(3) npos(col) h1(Hunger (non-poor) by `var') append
+}
+qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
+	tabout hunger `var' using "${gsdOutput}/PA_Poverty_Profile_25.xls", svy c(col) perc sebnone f(3) npos(col) h1(Hunger (all) by `var') append
 }
 gen hunger_dum=(hunger>1) if !missing(hunger)
 label values hunger_dum lyesno
@@ -939,6 +970,15 @@ qui tabout edu_level_broad ind_profile using "${gsdOutput}/PA_Poverty_Profile_26
 qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
 	tabout edu_level_broad `var' using "${gsdOutput}/PA_Poverty_Profile_26.xls" if poorPPP==1, svy c(col) perc sebnone f(3) npos(col) h1(Educational level (poor) by `var') append
 	tabout edu_level_broad `var' using "${gsdOutput}/PA_Poverty_Profile_26.xls" if poorPPP==0, svy c(col) perc sebnone f(3) npos(col) h1(Educational level (non-poor) by `var') append
+}
+qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
+	tabout `var' using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy sum c(mean enrolled se) sebnone f(3) npos(col) h2(Enrolled (all) by `var') append
+}
+qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
+	tabout `var' using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy sum c(mean literacy se) sebnone f(3) npos(col) h2(Literacy (all) by `var') append
+}
+qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
+	tabout edu_level_broad `var' using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy c(col) perc sebnone f(3) npos(col) h1(Educational level (all) by `var') append
 }
 svy: mean enrolled, over(hhh_edu_dum)
 test [enrolled]Yes = [enrolled]No
@@ -987,6 +1027,9 @@ qui foreach var of varlist ind_profile type hhh_gender remit12m migr_idp drought
 qui foreach var of varlist ind_profile type hhh_gender remit12m migr_idp drought_affected poorPPP  {
 	tabout `var' using "${gsdOutput}/PA_Poverty_Profile_28.xls", svy sum c(mean assets se) sebnone f(3) npos(col) h2(Deprivation assets by `var') append
 } 
+qui tabout type using "${gsdOutput}/PA_Poverty_Profile_28.xls", svy sum c(mean living_standards se) sebnone f(3) npos(col) h2(Deprivation living_standards by type) append
+qui tabout type using "${gsdOutput}/PA_Poverty_Profile_28.xls", svy sum c(mean education se) sebnone f(3) npos(col) h2(Deprivation education by type) append
+qui tabout type using "${gsdOutput}/PA_Poverty_Profile_28.xls", svy sum c(mean wash se) sebnone f(3) npos(col) h2(Deprivation wash by type) append
 foreach x in "living_standards" "education" "wash" "assets" {
 	svy: mean `x', over(poorPPP)
 	test [`x']_subpop_1 = [`x']Poor
@@ -997,7 +1040,6 @@ foreach x in "living_standards" "education" "wash" "assets" {
 		test [`x']Yes = [`x']No
 }
 }
-
  
 *Multidimensional deprivation index
 qui tabout deprivations ind_profile using "${gsdOutput}/PA_Poverty_Profile_29.xls", svy c(col) perc sebnone f(3) npos(col) h1(Deprivations by ind_profile) replace
@@ -1016,22 +1058,22 @@ qui foreach var of varlist ind_profile type hhh_gender remit12m migr_idp drought
 
 *Monetary poverty
 import excel "${gsdOutput}/PA_Poverty_Profile_1.xls", sheet("Sheet1") firstrow case(lower) clear
-export excel using "${gsdOutput}/PA_Poverty_Profile_A_v1.xlsx", sheetreplace sheet("Raw_Data_1") firstrow(variables)
+export excel using "${gsdOutput}/PA_Poverty_Profile_A_v2.xlsx", sheetreplace sheet("Raw_Data_1") firstrow(variables)
 erase "${gsdOutput}/PA_Poverty_Profile_1.xls"
 foreach i of numlist 2/14 {
 	insheet using "${gsdOutput}/PA_Poverty_Profile_`i'.xls", clear nonames tab
-	export excel using "${gsdOutput}/PA_Poverty_Profile_A_v1.xlsx", sheetreplace sheet("Raw_Data_`i'") 
+	export excel using "${gsdOutput}/PA_Poverty_Profile_A_v2.xlsx", sheetreplace sheet("Raw_Data_`i'") 
 	erase "${gsdOutput}/PA_Poverty_Profile_`i'.xls"
 }
 *Poverty and indicators
 foreach i of numlist 15/21 {
 	insheet using "${gsdOutput}/PA_Poverty_Profile_`i'.xls", clear nonames tab
-	export excel using "${gsdOutput}/PA_Poverty_Profile_B_v1.xlsx", sheetreplace sheet("Raw_Data_`i'") 
+	export excel using "${gsdOutput}/PA_Poverty_Profile_B_v2.xlsx", sheetreplace sheet("Raw_Data_`i'") 
 	erase "${gsdOutput}/PA_Poverty_Profile_`i'.xls"
 }
 *Multidimensional poverty 
 foreach i of numlist 22/29 {
 	insheet using "${gsdOutput}/PA_Poverty_Profile_`i'.xls", clear nonames tab
-	export excel using "${gsdOutput}/PA_Poverty_Profile_C_v1.xlsx", sheetreplace sheet("Raw_Data_`i'") 
+	export excel using "${gsdOutput}/PA_Poverty_Profile_C_v2.xlsx", sheetreplace sheet("Raw_Data_`i'") 
 	erase "${gsdOutput}/PA_Poverty_Profile_`i'.xls"
 }
