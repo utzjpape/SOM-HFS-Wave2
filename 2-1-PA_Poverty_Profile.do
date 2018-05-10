@@ -23,6 +23,7 @@ gen gini=r(gini)
 label var gini "GINI Coefficient from tc_imp"
 *WASH indicators
 gen improved_sanitation=(inlist(toilet,1,2,3,6,7,9)) 
+replace improved_sanitation=0 if share_facility==1
 replace improved_sanitation=. if toilet>=.
 label values improved_sanitation lyesno
 label var improved_sanitation "HH has improved sanitation"
@@ -31,7 +32,7 @@ replace improved_water=. if water>=.
 label values improved_water lyesno
 label var improved_water "HH has improved source of drinking water"
 *Drought affected households
-gen drought_affected=(shock_1==1 | shock_2==1)
+gen drought_affected=(shock_1==1 | shock_1==3 | shock_1==4 | shock_1==5 | shock_1==8 | shock_1==9 | shock_2==1 | shock_2==3 | shock_2==4 | shock_2==5 | shock_2==8 | shock_2==9)
 label values drought_affected lyesno
 la var drought_affected "HH reported to be affected by the drought"
 *Education of HH head
@@ -857,7 +858,12 @@ qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected  {
 	tabout roof_material `var' using "${gsdOutput}/PA_Poverty_Profile_22.xls" if poorPPP==1, svy c(col) perc sebnone f(3) npos(col) h1(Roof material (poor) by `var') append
 	tabout roof_material `var' using "${gsdOutput}/PA_Poverty_Profile_22.xls" if poorPPP==0, svy c(col) perc sebnone f(3) npos(col) h1(Roof material (non-poor) by `var') append
 }
-
+qui tabout house_type_cat type using "${gsdOutput}/PA_Poverty_Profile_22.xls", svy c(col) perc sebnone f(3) npos(col) h1(House type by type) append
+qui tabout house_type_cat poorPPP using "${gsdOutput}/PA_Poverty_Profile_22.xls", svy c(col) perc sebnone f(3) npos(col) h1(House type by poverty status) append
+qui tabout floor_material type using "${gsdOutput}/PA_Poverty_Profile_22.xls", svy c(col) perc sebnone f(3) npos(col) h1(House type by type) append
+qui tabout floor_material poorPPP using "${gsdOutput}/PA_Poverty_Profile_22.xls", svy c(col) perc sebnone f(3) npos(col) h1(House type by poverty status) append
+qui tabout roof_material type using "${gsdOutput}/PA_Poverty_Profile_22.xls", svy c(col) perc sebnone f(3) npos(col) h1(House type by type) append
+qui tabout roof_material poorPPP using "${gsdOutput}/PA_Poverty_Profile_22.xls", svy c(col) perc sebnone f(3) npos(col) h1(House type by poverty status) append
 
 
 *Access to services 
@@ -894,6 +900,8 @@ qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
 qui tabout improved_sanitation type using "${gsdOutput}/PA_Poverty_Profile_23.xls", svy c(col) perc sebnone f(3) npos(col) h1(Improved sanitation by type) append
 qui tabout improved_water type using "${gsdOutput}/PA_Poverty_Profile_23.xls", svy c(col) perc sebnone f(3) npos(col) h1(Improved water by type) append
 qui tabout electricity type using "${gsdOutput}/PA_Poverty_Profile_23.xls", svy c(col) perc sebnone f(3) npos(col) h1(Access to electricity by type) append
+qui tabout cook type using "${gsdOutput}/PA_Poverty_Profile_23.xls", svy c(col) perc sebnone f(3) npos(col) h1(Cooking source by type) append
+qui tabout cook poorPPP using "${gsdOutput}/PA_Poverty_Profile_23.xls", svy c(col) perc sebnone f(3) npos(col) h1(Cooking source by poverty) append
 
 
 *Distance to different services
