@@ -154,7 +154,7 @@ label var deprivations3 "Total number of dimensions household is deprived in, no
 *Label and save in hh file
 local labelling = "improved_sanitation improved_water electricity housing cook mobile_phone tvsat radio computer adult_noed child_noed information transportation assets education living_standards wash"
 label val `labelling' lyn
-keep strata ea block hh assets living_standards education wash deprivations deprivations2
+keep strata ea block hh assets living_standards education wash deprivations deprivations2 deprivations3
 save "${gsdTemp}/hh_mutltidimensional.dta", replace
 use "${gsdTemp}/hh_PA_Poverty_Profile.dta", clear
 merge 1:1 strata ea block hh using "${gsdTemp}/hh_mutltidimensional.dta", nogen assert(match) 
