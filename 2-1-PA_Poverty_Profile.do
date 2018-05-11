@@ -148,7 +148,9 @@ label var wash "Household deprived in dimension: WASH"
 egen deprivations=rowtotal(living_standards education wash poorPPP)
 label var deprivations "Total number of dimensions household is deprived in"
 egen deprivations2=rowtotal(assets living_standards education wash )
-label var deprivations2 "Total number of dimensions household is deprived in, no poverty"
+label var deprivations2 "Total number of dimensions household is deprived (w/ assets, no poverty)"
+egen deprivations3=rowtotal(living_standards education wash )
+label var deprivations3 "Total number of dimensions household is deprived in, no poverty"
 *Label and save in hh file
 local labelling = "improved_sanitation improved_water electricity housing cook mobile_phone tvsat radio computer adult_noed child_noed information transportation assets education living_standards wash"
 label val `labelling' lyn
@@ -156,6 +158,27 @@ keep strata ea block hh assets living_standards education wash deprivations depr
 save "${gsdTemp}/hh_mutltidimensional.dta", replace
 use "${gsdTemp}/hh_PA_Poverty_Profile.dta", clear
 merge 1:1 strata ea block hh using "${gsdTemp}/hh_mutltidimensional.dta", nogen assert(match) 
+gen dep_p_living=(poorPPP==1 & living_standards==1)
+label var dep_p_living "HH deprived in poverty and living standards"
+label values dep_p_living lyesno
+gen dep_p_edu=(poorPPP==1 & education==1)
+label var dep_p_edu "HH deprived in poverty and education"
+label values dep_p_edu lyesno
+gen dep_p_wash=(poorPPP==1 & wash==1)
+label var dep_p_wash "HH deprived in poverty and WASH"
+label values dep_p_wash lyesno
+gen dep_p_living_edu=(poorPPP==1 & living_standards==1 & education==1)
+label var dep_p_living_edu "HH deprived in poverty, living standards and education"
+label values dep_p_living_edu lyesno
+gen dep_p_living_wash=(poorPPP==1 & living_standards==1 & wash==1)
+label var dep_p_living_wash "HH deprived in poverty, living standards and WASH" 
+label values dep_p_living_wash lyesno
+gen dep_p_edu_wash=(poorPPP==1 & education==1 & wash==1)
+label var dep_p_edu_wash "HH deprived in poverty, education and WASH"
+label values dep_p_edu_wash lyesno
+gen dep_p_all=(poorPPP==1 & education==1 & wash==1 & living_standards==1)
+label var dep_p_all "HH deprived in poverty and all other dimensions"
+label values dep_p_all lyesno
 *Include final regional breakdown
 rename ind_profile ind_profile_old
 recode ind_profile_old(4=2) (5=3) (6=4) (7/8=5) (9=6) (11/12=7) (13=8), gen(ind_profile)
@@ -798,7 +821,7 @@ qui foreach i of local drought {
 
 *Poverty and education
 use "${gsdTemp}/hh_PA_Poverty_Profile.dta", clear
-svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
+svyset ea [pweight=weight], strata(strata) singleunit(centered)
 qui tabout ind_profile poorPPP using "${gsdOutput}/PA_Poverty_Profile_21.xls", svy sum c(mean hhh_edu_dum lb ub) sebnone f(3) npos(col) h1(HH head edu level by poor status and ind_profile) replace
 qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
 	tabout `var' poorPPP using "${gsdOutput}/PA_Poverty_Profile_21.xls", svy sum c(mean hhh_edu_dum lb ub) sebnone f(3) npos(col) h1(HH head edu level by poor status and `var') append
@@ -938,6 +961,14 @@ gen hunger_dum=(hunger>1) if !missing(hunger)
 label values hunger_dum lyesno
 svy: mean hunger_dum, over(poorPPP)
 test [hunger_dum]Poor = [hunger_dum]_subpop_1
+svy: mean hunger_dum, over(hhh_gender)
+test [hunger_dum]Female = [hunger_dum]Male
+svy: mean hunger_dum, over(remit12m)
+test [hunger_dum]No = [hunger_dum]Yes
+svy: mean hunger_dum, over(migr_idp)
+test [hunger_dum]No = [hunger_dum]Yes
+svy: mean hunger_dum, over(drought_affected)
+test [hunger_dum]No = [hunger_dum]Yes
 levelsof hhh_gender, local(gender) 
 foreach i of local gender {
 	svy: mean hunger_dum if hhh_gender==`i', over(poorPPP)
@@ -1057,11 +1088,24 @@ qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected po
 qui foreach var of varlist ind_profile type hhh_gender remit12m migr_idp drought_affected poorPPP {
 	tabout deprivations2 `var' using "${gsdOutput}/PA_Poverty_Profile_29.xls", svy c(col) perc sebnone f(3) npos(col) h1(Deprivations (w/o Poverty) by `var') append
 }
+qui forval i=1/4 {
+	gen depr_al`i' = deprivations>=`i' 
+	tabout depr_al`i' type using "${gsdOutput}/PA_Poverty_Profile_29.xls", svy percent c(col) sebnone f(3) h1(Deprivation in `i' dimension) append
+	tabout depr_al`i' poorPPP using "${gsdOutput}/PA_Poverty_Profile_29.xls", svy percent c(col) sebnone f(3) h1(Deprivation in `i' dimension) append
+}
+qui foreach var of varlist dep_p_living dep_p_edu dep_p_wash dep_p_living_edu dep_p_living_wash dep_p_edu_wash dep_p_all {
+	tabout `var' type using "${gsdOutput}/PA_Poverty_Profile_29.xls", svy c(col) perc sebnone f(3) npos(col) h1(Deprivations in poverty and other dimension `var') append
+}
+qui foreach var of varlist ind_profile type  {
+	tabout deprivations3 `var' using "${gsdOutput}/PA_Poverty_Profile_29.xls", svy c(col) perc sebnone f(3) npos(col) h1(Deprivations (w/o Poverty w/o assets) by `var') append
+}
+
+
 
 
 
 **************************************************
-*   INTEGRATE ALL SHEETS INTO THE FINAL FILES
+*   INTEGRATE ALL SHEETS INTO THE FINAL FILE
 **************************************************
 
 *Monetary poverty
