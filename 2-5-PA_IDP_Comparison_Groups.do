@@ -14,7 +14,6 @@ svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
 ********************************************************
 *Make comparison groups in HHQ.
 ********************************************************
-
 *1. IDPs and host communities.
 gen comparisonidp = . 
 la def lcomparisonidp 1 "Non-Camp IDP" 2 "Camp IDP 2016" 3 "Camp IDP" 4 "Host" 5 "Non-host Urban" 
@@ -30,6 +29,21 @@ replace comparisonidp = 4 if type_idp_host == 2 & t==1 & migr_idp !=1
 replace comparisonidp = 5 if type ==1 & type_idp_host !=2 & t==1 & migr_idp !=1
 la val comparisonidp lcomparisonidp
 la var comparisonidp "IDPs and Host Community types"
+
+*1a. Break these up into groups of 2, for ease. Add Camp 2016 at the end, perhaps, for the relevant indicators.
+gen comparisoncamp = 1 if comparisonidp ==3
+replace comparisoncamp = 2 if comparisonidp ==1
+lab def lcomparisoncamp 1 "Camp IDP" 2 "Non-camp IDP"
+lab val comparisoncamp lcomparisoncamp
+
+gen comparisonhost = 1 if comparisonidp == 4
+replace comparisonhost = 2 if comparisonidp ==5
+lab def lcomparisonhost 1 "Urban host" 2 "Urban non-host"
+lab val comparisonhost lcomparisonhost
+
+gen comparisonw1 = 1 if comparisonidp ==2
+lab def lcomparisonw1 1 "Camp IDP 2016"
+lab val comparisonw1 lcomparisonw1
 
 *2. Urban, Rural, National (to get national, tabout over t.), excluding noncamp IDPs
 gen urbanrural = type
@@ -75,6 +89,15 @@ lab def ltopbottomidp 0 "Bottom 40" 1 "Top 60"
 lab val topbottomidp ltopbottomidp
 lab var topbottomidp "Poorest 40 percent and richest 60 percent of IDPs(camp and noncamp, W2)"
 ta topbottomidp quintileidp, miss
+
+*Poor non-poor
+ta poorPPP 
+ta poorPPP, nolab
+gen poor = 1 if poorPPP==1
+replace poor = 2 if poorPPP == 0
+replace poor = .  if !((migr_idp ==1 & t ==1 & ind_profile != 6) | (migr_idp ==1 & t ==1 & ind_profile == 6))
+lab def pooridp 1 "Poor" 2 "Non-poor"
+lab val poor pooridp
 
 *4. Drought and conflict IDPs (for now, this has only camp idps of 2017)
 recode disp_from (11 21 = 1 "Same district") (12 22 = 2 "Same region different district") (13 14 23 =3 "Different region/federated member state") (15 24 = 4 "Outside country") (nonmiss =.), gen(disp_from_new) la(ldisp_from_new)
@@ -159,11 +182,10 @@ replace durationidp =. if missing(durationyear)
 lab def ldurationidp 1 "Not protracted" 2 "Protracted"
 lab val durationidp ldurationidp
 *Check that nomads are not included
-count if !(missing(disp_date) | disp_date == ".z") & inlist(comparisonidp, 1, 3)
-ta ind_profile if !(missing(disp_date) | disp_date == ".z")
+replace durationidp = . if ind_profile ==13
+ta ind_profile if !missing(durationidp)
 *confirm both camp IDPs and noncamp IDPs are in 
-*
-*
+count if !(missing(disp_date) | disp_date == ".z") & inlist(comparisonidp, 1, 3)
 
 *6.1 Check: Could protracted IDPs be the same as the multiple displaced ones?
 ta durationidp timesidp
@@ -173,17 +195,62 @@ ta durationidp timesidp
 gen sigdt = comparisonidp if inlist(comparisonidp , 1, 3)
 replace sigdt = 4 if (national==1 & comparisonidp != 1 & comparisonidp !=3)
 tab sigdt ind_profile, miss
-lab def sigdt 1 "noncamp" 3 "camp" 4 "national"
+replace sigdt = 1 if sigdt ==3
+lab def sigdt 1 "idp"  4 "national"
 lab val sigdt sigdt
-
 gen sighh = hhh_gender
 lab val sighh hhm_gender
-
 gen sigidp = comparisonidp
 lab def sigidp 1 "noncamp" 2 "camp2016" 3 "camp" 4 "host" 5 "nonhost"
 lab val sigidp sigidp
+gen sigrural = urbanrural
+replace sigrural = 3 if !missing(genidp)
+la def sigrural 1 "urban" 2 "rural" 3 "idp" 
+la val sigrural sigrural
+gen sighost = comparisonidp 
+replace sighost = 1 if sighost ==3
+la def sighost 1 "idp" 2 "idp2016" 4 "host" 5 "nonhost" 
+la val sighost sighost
+gen sigcamp = comparisonidp
+replace sigcamp = . if inlist(sigcamp, 2, 4, 5)
+ta sigcamp
+la def sigcamp 1 "noncamp" 3 "camp"
+la val sigcamp sigcamp
+ta sigcamp
+gen sigreason = reasonidp
+la list lreasonidp
+la def sigreason 1 "conflict" 2 "climate"
+la val sigreason sigreason
+ta sigreason
+gen sigdur = durationidp
+la list ldurationidp
+la def sigdur 1 "unprot" 2 "prot"
+la val sigdur sigdur
+ta sigdur
+gen sigtime = timesidp
+la list ltimesidp
+la def sigtime 1 "once" 2 "multiple"
+la val sigtime sigtime
+ta sigtime
+gen siggen = genidp
+la list lgenidp
+la def siggen 0 "woman" 1 "man"
+la val siggen siggen
+gen sigtb = topbottomidp
+la list ltopbottomidp
+la def sigtb 0 "bottom" 1 "top"
+la val sigtb sigtb
+ta sigtb 
 
-*5. Merge in essential variables from hhm. 
+*8. Rural and urban break down of IDPs
+gen urbanruraltype = type
+*IDPs are also urban
+replace urbanruraltype = 1 if type ==3
+ta national urbanruraltype
+la val urbanruraltype ltype
+ta urbanruraltype national
+
+*9. Merge in essential variables from hhm. 
 cap drop age_dependency_ratio
 *No longer assert(match), since 3 single-EA strata were dropped.
 merge 1:1 strata ea block hh using "${gsdTemp}/collapsedhhmdepratio.dta", nogen keepusing(age_dependency_ratio)
@@ -195,7 +262,7 @@ save "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", replace
 use "${gsdData}/1-CleanOutput/hhm_w1_w2.dta", clear 
 svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
 *Removing assert(match), since 3 single-EA strata were dropped.
-merge m:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", nogen keepusing(sigidp sighh sigdt comparisonidp urbanrural genidp quintileidp migr_idp reasonidp national)
+merge m:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", nogen keepusing(urbanruraltype durationidp comparisoncamp comparisonhost comparisonw1 poor sigrural sighost siggen sigcamp sigdur sigreason sigtb sigtime sigidp sighh sigdt comparisonidp urbanrural genidp quintileidp migr_idp reasonidp timesidp topbottomidp national)
 
 *Prepare variables
 recode age (0/14 = 1 "Under 15 years") ( 15/24 = 2 "15-24 years") (25/64 = 3 "25-64 years") (65/120 =4 "Above 64 years"), gen(age_g_idp) label(lage_g_idp)
