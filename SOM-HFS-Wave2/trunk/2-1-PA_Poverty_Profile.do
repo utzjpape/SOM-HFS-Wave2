@@ -993,7 +993,7 @@ foreach i of local drought {
 
 *Education and literacy 
 use "${gsdTemp}/hhm_PA_Poverty_Profile.dta", clear
-merge m:1 strata ea block hh using "${gsdTemp}/hh_PA_Poverty_Profile.dta", assert(match) nogen keepusing(hhh_edu_dum)
+merge m:1 strata ea block hh using "${gsdTemp}/hh_PA_Poverty_Profile.dta", assert(match) nogen keepusing(hhh_edu_dum pliteracy hhsize)
 svyset ea [pweight=weight], strata(strata) singleunit(centered)
 qui tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy sum c(mean enrolled se) sebnone f(3) npos(col) h2(Enrolled by ind_profile) replace
 qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
