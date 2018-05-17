@@ -154,27 +154,24 @@ forval x = 1/4 {
 
 *SIGNIFICANCE TESTS
 *Stay-Push
-svy: mean dmove_no_push__1, over(sigidp)
+svy: mean dmove_no_push__1, over(comparisoncamp)
 *p<0.01
-lincom [dmove_no_push__1]camp- [dmove_no_push__1]noncamp
-
+lincom [dmove_no_push__1]_subpop_1- [dmove_no_push__1]_subpop_2
 svy: mean dmove_no_push__1, over(genidp)
 *no sig
 lincom [dmove_no_push__1]_subpop_1- [dmove_no_push__1]_subpop_2
 
+/*
 *Stay-Pull
 svy: mean dmove_no_pull__1, over(sigidp)
 *P<0.05
 lincom [dmove_no_pull__1]camp- [dmove_no_pull__1]noncamp
-
 svy: mean dmove_no_pull__1, over(genidp)
 *no sig
 lincom [dmove_no_pull__1]_subpop_1- [dmove_no_pull__1]_subpop_2
-
 svy: mean dmove_no_pull__1, over(reasonidp)
 *p<0.01
 lincom [dmove_no_pull__1]_subpop_1- [dmove_no_pull__1]_subpop_2
-
 svy: mean dmove_no_pull__3, over(reasonidp)
 *p<0.05
 lincom [dmove_no_pull__3]_subpop_1- [dmove_no_pull__3]_subpop_2
@@ -184,24 +181,35 @@ svy: mean dmove_yes_push__1, over(genidp)
 lincom [dmove_yes_push__1]_subpop_1- [dmove_yes_push__1]_subpop_2
 svy: mean dmove_yes_push__5, over(genidp)
 lincom [dmove_yes_push__5]_subpop_1- [dmove_yes_push__5]_subpop_2
+*/
 
 *TABOUTS
 keep if t ==1
 *Stayers- Push Factors
-qui tabout dmove_no_push__1 comparisonidp using "${gsdOutput}/Raw_Fig7.xls", svy percent c(col lb ub) npos(col) replace h1("Security") f(4) 
+qui tabout dmove_no_push__1 national using "${gsdOutput}/Raw_Fig7.xls", svy percent c(col lb ub) npos(col) replace h1("Security") f(4) 
+qui tabout dmove_no_push__1 comparisoncamp using "${gsdOutput}/Raw_Fig7.xls", svy percent c(col lb ub) npos(col) append h1("Security") f(4) 
 qui tabout dmove_no_push__1 reasonidp using "${gsdOutput}/Raw_Fig7.xls", svy percent c(col lb ub) npos(col) append h1("Security") f(4) 
 qui tabout dmove_no_push__1 genidp using "${gsdOutput}/Raw_Fig7.xls", svy percent c(col lb ub) npos(col) append h1("Security") f(4) 
-qui tabout dmove_no_push__1 quintileidp using "${gsdOutput}/Raw_Fig7.xls", svy percent c(col lb ub) npos(col) append h1("Security") f(4) 
+qui tabout dmove_no_push__1 durationidp using "${gsdOutput}/Raw_Fig7.xls", svy percent c(col lb ub) npos(col) append h1("Security") f(4) 
+qui tabout dmove_no_push__1 timesidp using "${gsdOutput}/Raw_Fig7.xls", svy percent c(col lb ub) npos(col) append h1("Security") f(4) 
+qui tabout dmove_no_push__1 topbottomidp using "${gsdOutput}/Raw_Fig7.xls", svy percent c(col lb ub) npos(col) append h1("Security") f(4) 
+qui tabout dmove_no_push__1 poor using "${gsdOutput}/Raw_Fig7.xls", svy percent c(col lb ub) npos(col) append h1("Security") f(4) 
+
 foreach x of num 2 3 4 {
 	local label : variable label newmove_no_push__`x'
 	local start = strpos("`label'",":")
 	local h3 = substr("`label'",`start'+1, . )
-	qui tabout dmove_no_push__`x' comparisonidp using "${gsdOutput}/Raw_Fig7.xls", svy percent c(col lb ub) npos(col) append h1("`h3'") f(4) 
+	qui tabout dmove_no_push__`x' national using "${gsdOutput}/Raw_Fig7.xls", svy percent c(col lb ub) npos(col) append h1("`h3'") f(4) 
+	qui tabout dmove_no_push__`x' comparisoncamp using "${gsdOutput}/Raw_Fig7.xls", svy percent c(col lb ub) npos(col) append h1("`h3'") f(4) 
 	qui tabout dmove_no_push__`x' reasonidp using "${gsdOutput}/Raw_Fig7.xls", svy percent c(col lb ub) npos(col) append h1("`h3'") f(4) 
 	qui tabout dmove_no_push__`x' genidp using "${gsdOutput}/Raw_Fig7.xls", svy percent c(col lb ub) npos(col) append h1("`h3'") f(4) 
-	qui tabout dmove_no_push__`x' quintileidp using "${gsdOutput}/Raw_Fig7.xls", svy percent c(col lb ub) npos(col) append h1("`h3'") f(4) 
-}
+	qui tabout dmove_no_push__`x' durationidp using "${gsdOutput}/Raw_Fig7.xls", svy percent c(col lb ub) npos(col) append h1("`h3'") f(4) 
+	qui tabout dmove_no_push__`x' timesidp using "${gsdOutput}/Raw_Fig7.xls", svy percent c(col lb ub) npos(col) append h1("`h3'") f(4) 
+	qui tabout dmove_no_push__`x' topbottomidp using "${gsdOutput}/Raw_Fig7.xls", svy percent c(col lb ub) npos(col) append h1("`h3'") f(4) 
+	qui tabout dmove_no_push__`x' poor using "${gsdOutput}/Raw_Fig7.xls", svy percent c(col lb ub) npos(col) append h1("`h3'") f(4) 
 
+}
+/*
 *Stayers- Pull factors
 qui tabout dmove_no_pull__1 comparisonidp using "${gsdOutput}/Raw_Fig8.xls", svy percent c(col lb ub) npos(col) replace h1("Conflict or insecurity") f(4) 
 qui tabout dmove_no_pull__1 reasonidp using "${gsdOutput}/Raw_Fig8.xls", svy percent c(col lb ub) npos(col) append h1("Conflict or insecurity") f(4) 
@@ -231,24 +239,34 @@ forval x = 2/6 {
 	qui tabout dmove_yes_push__`x' genidp using "${gsdOutput}/Raw_Fig9.xls", svy percent c(col lb ub) npos(col) append h1("`h3'") f(4) 
 	qui tabout dmove_yes_push__`x' quintileidp using "${gsdOutput}/Raw_Fig9.xls", svy percent c(col lb ub) npos(col) append h1("`h3'") f(4) 
 }
-
+*/
 *Movers- Pull factors
-qui tabout dmove_yes_pull__1 comparisonidp using "${gsdOutput}/Raw_Fig10.xls", svy percent c(col lb ub) npos(col) replace h1("Security") f(4) 
+qui tabout dmove_yes_pull__1 national using "${gsdOutput}/Raw_Fig10.xls", svy percent c(col lb ub) npos(col) replace h1("Security") f(4) 
+qui tabout dmove_yes_pull__1 comparisoncamp using "${gsdOutput}/Raw_Fig10.xls", svy percent c(col lb ub) npos(col) append h1("Security") f(4) 
 qui tabout dmove_yes_pull__1 reasonidp using "${gsdOutput}/Raw_Fig10.xls", svy percent c(col lb ub) npos(col) append h1("Security") f(4) 
 qui tabout dmove_yes_pull__1 genidp using "${gsdOutput}/Raw_Fig10.xls", svy percent c(col lb ub) npos(col) append h1("Security") f(4) 
-qui tabout dmove_yes_pull__1 quintileidp using "${gsdOutput}/Raw_Fig10.xls", svy percent c(col lb ub) npos(col) append h1("Security") f(4) 
+qui tabout dmove_yes_pull__1 durationidp using "${gsdOutput}/Raw_Fig10.xls", svy percent c(col lb ub) npos(col) append h1("Security") f(4) 
+qui tabout dmove_yes_pull__1 timesidp using "${gsdOutput}/Raw_Fig10.xls", svy percent c(col lb ub) npos(col) append h1("Security") f(4) 
+qui tabout dmove_yes_pull__1 topbottomidp using "${gsdOutput}/Raw_Fig10.xls", svy percent c(col lb ub) npos(col) append h1("Security") f(4) 
+qui tabout dmove_yes_pull__1 poor using "${gsdOutput}/Raw_Fig10.xls", svy percent c(col lb ub) npos(col) append h1("Security") f(4) 
+
 forval x = 2/4 {
 	local label : variable label newmove_yes_pull__`x'
 	local start = strpos("`label'",":")
 	local h3 = substr("`label'",`start'+1, . )
-	qui tabout dmove_yes_pull__`x' comparisonidp using "${gsdOutput}/Raw_Fig10.xls", svy percent c(col lb ub) npos(col) append h1("`h3'") f(4) 
+	qui tabout dmove_yes_pull__`x' national using "${gsdOutput}/Raw_Fig10.xls", svy percent c(col lb ub) npos(col) append h1("`h3'") f(4) 
+	qui tabout dmove_yes_pull__`x' comparisoncamp using "${gsdOutput}/Raw_Fig10.xls", svy percent c(col lb ub) npos(col) append h1("`h3'") f(4) 
 	qui tabout dmove_yes_pull__`x' reasonidp using "${gsdOutput}/Raw_Fig10.xls", svy percent c(col lb ub) npos(col) append h1("`h3'") f(4) 
 	qui tabout dmove_yes_pull__`x' genidp using "${gsdOutput}/Raw_Fig10.xls", svy percent c(col lb ub) npos(col) append h1("`h3'") f(4) 
-	qui tabout dmove_yes_pull__`x' quintileidp using "${gsdOutput}/Raw_Fig10.xls", svy percent c(col lb ub) npos(col) append h1("`h3'") f(4) 
+	qui tabout dmove_yes_pull__`x' durationidp using "${gsdOutput}/Raw_Fig10.xls", svy percent c(col lb ub) npos(col) append h1("`h3'") f(4) 
+	qui tabout dmove_yes_pull__`x' timesidp using "${gsdOutput}/Raw_Fig10.xls", svy percent c(col lb ub) npos(col) append h1("`h3'") f(4) 
+	qui tabout dmove_yes_pull__`x' topbottomidp using "${gsdOutput}/Raw_Fig10.xls", svy percent c(col lb ub) npos(col) append h1("`h3'") f(4) 
+	qui tabout dmove_yes_pull__`x' poor using "${gsdOutput}/Raw_Fig10.xls", svy percent c(col lb ub) npos(col) append h1("`h3'") f(4) 
+
 }
 
 *Place raw data into the excel figures file
-foreach i of num 7/10 {
+foreach i of num 7 10 {
 	insheet using "${gsdOutput}/Raw_Fig`i'.xls", clear nonames
 	export excel using "${gsdOutput}/Figures_SOM.xlsx", sheetreplace sheet("Raw_Fig`i'") 
 	rm "${gsdOutput}/Raw_Fig`i'.xls"

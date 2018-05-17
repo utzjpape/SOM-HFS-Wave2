@@ -27,6 +27,8 @@ gen csi_invert = `r(max)' - csi
 lab var csi_invert "Inverted CSI score"
 *Reverse the scale of the CSI categories too
 recode csi_cat (1=3 "No/low food insecurity") (2=2 "Medium food insecurity") (3=1 "High food insecurity"), gen(csi_cat_new)
+gen hunger_dum=(hunger>1) if !missing(hunger)
+label values hunger_dum lyesno
 
 *Recode for improved housing
 gen housingimproved=inlist(housingtype,1,2,3,4) 
@@ -59,9 +61,18 @@ la val sanimproved_shared lwatersourcecat
 ta sanimproved_shared	
 
 *Distance to facilities.
-recode water_time thealth tedu tmarket t_water_disp thealth_disp t_edu_disp t_market_disp (1 2 =1 "Up to ten minutes") (3=3 "10 to 30 minutes") (4=4 "30 minutes to 1 hour") (5 6 7 8 9 = 4 "1 hour or more"), pre(new) lab(timelab)
+recode water_time thealth tedu tmarket t_water_disp thealth_disp t_edu_disp t_market_disp (1 2 =1 "Up to ten minutes") (3=2 "10 to 30 minutes") (4=3 "30 minutes to 1 hour") (5 6 7 8 9 = 4 "1 hour or more"), pre(new) lab(timelab)
+*Dummy distance to facilities.
+recode water_time thealth tedu tmarket t_water_disp thealth_disp t_edu_disp t_market_disp (1 2 3 =0 "Up to 30 minutes") (4 5 6 7 8 9 =1 "30 minutes or more"), pre(dum) lab(dumtimelab)
+replace hunger_dum = hunger_dum*100
+lab def lynp 0 "No" 100 "Yes"
+lab val hunger_dum lynp
 
-*crowding of toilets.
+foreach var of varlist water_time thealth tedu tmarket t_water_disp thealth_disp t_edu_disp t_market_disp {
+	replace dum`var' = 100*dum`var'
+}
+
+*Crowding of toilets.
 gen toiletshare = share_num
 replace toiletshare = 0 if share_facility ==2
 ta toiletshare
@@ -69,6 +80,102 @@ ta toiletshare
 ************************
 *Significance tests
 ************************
+gen siglabor = national
+replace siglabor = urbanrural if national ==1
+lab def siglabor 0 "idp" 1 "urban" 2 "rural"
+lab val siglabor siglabor
+ta siglabor 
+ta urbanrural, miss
+ta national, miss
+gen sighostidp = 1 if national ==0
+replace sighostidp = 2 if comparisonhost ==1
+lab def sighostidp 1 "idp overall" 2 "host urban"
+lab val sighostidp sighostidp
+
+gen sigservice = 1 if comparisonhost == 1
+replace sigservice = 2 if comparisoncamp == 1
+replace sigservice = 3 if comparisoncamp ==2
+lab def sigservice 1 "host" 2 "camp" 3 "noncamp"
+lab val sigservice sigservice
+
+*Far from facilities (yes == far).
+svy: mean dumwater_time, over(sigservice)
+lincom [dumwater_time]host - [dumwater_time]camp
+lincom [dumwater_time]noncamp - [dumwater_time]camp
+
+svy: mean dumthealth, over(sigservice)
+*p<0.05
+lincom [dumthealth]host - [dumthealth]camp
+lincom [dumthealth]noncamp - [dumthealth]camp
+
+svy: mean dumtedu, over(sigservice)
+*p<0.1
+lincom [dumtedu]host - [dumtedu]camp
+lincom [dumtedu]noncamp - [dumtedu]camp
+
+svy: mean dumtmarket, over(sigservice)
+*p<0.05
+lincom [dumtmarket]host - [dumtmarket]camp
+lincom [dumtmarket]noncamp - [dumtmarket]camp
+
+*Significance tests, poor-nonpoor
+*Housing now
+svy: mean  housingimproved, over(poor)
+lincom [housingimproved]Poor - [housingimproved]_subpop_2
+*Housing previous
+svy: mean  housingimproveddisp, over(poor)
+*p<0.01
+lincom [housingimproveddisp]Poor - [housingimproveddisp]_subpop_2
+*Water
+svy: mean waterimproved, over(poor)
+lincom [waterimproved]Poor - [waterimproved]_subpop_2
+*Sanitation
+svy: mean sanitationimproved, over(poor)
+lincom [sanitationimproved]Poor - [sanitationimproved]_subpop_2
+svy: mean sanimproved_shared, over(poor)
+lincom [sanimproved_shared]Poor - [sanimproved_shared]_subpop_2
+*Toilet crowding
+svy: mean toiletshare, over(poor)
+*p<0.05
+lincom [toiletshare]Poor - [toiletshare]_subpop_2
+
+*Hunger dummy
+*IDPs and urbanrural
+svy: prop hunger_dum, over(siglabor)
+*p<0.01
+lincom [Yes]idp - [Yes]urban
+*p=0.107
+lincom [Yes]idp - [Yes]rural
+*IDPs and hosts
+svy: prop hunger_dum, over(sighostidp)
+*p<0.01
+lincom [Yes]_subpop_1 - [Yes]_subpop_2
+*Camp and Non-camp
+svy: prop hunger_dum, over(comparisoncamp)
+lincom [Yes]_subpop_1 - [Yes]_subpop_2
+*Conflict and climates
+svy: prop hunger_dum, over(reasonidp)
+*p<0.05
+lincom [Yes]_subpop_1 - [Yes]_subpop_2
+*Man and woman head
+svy: prop hunger_dum, over(genidp)
+lincom [Yes]_subpop_1 - [Yes]_subpop_2
+*Protracted and not
+svy: prop hunger_dum, over(durationidp)
+*p<0.01
+lincom [Yes]_subpop_1 - [Yes]Protracted
+*Times disp
+svy: prop hunger_dum, over(timesidp)
+*p<0.01
+lincom [Yes]_subpop_1 - [Yes]_subpop_2 
+*40 60
+svy: prop hunger_dum, over(topbottomidp)
+lincom [Yes]_subpop_1 - [Yes]_subpop_2
+*Poor
+svy: prop hunger_dum, over(poor)
+*p<0.1
+lincom [Yes]Poor - [Yes]_subpop_2
+
 *Food security.
 svy: prop csi_cat_new, over(sighost)
 *p<0.01
@@ -441,6 +548,18 @@ qui tabout csi_cat_new timesidp using "${gsdOutput}/Raw_Fig15.xls", svy percent 
 qui tabout csi_cat_new genidp using "${gsdOutput}/Raw_Fig15.xls", svy percent c(col lb ub) npos(col) append h1("CSI") f(4) 
 qui tabout csi_cat_new topbottomidp using "${gsdOutput}/Raw_Fig15.xls", svy percent c(col lb ub) npos(col) append h1("CSI") f(4) 
 
+*Hunger Dum
+qui tabout national using "${gsdOutput}/Raw_Fig15.xls", svy sum c(mean hunger_dum lb ub) npos(col) append h2("HungerDum") f(4)
+qui tabout comparisonhost using "${gsdOutput}/Raw_Fig15.xls", svy sum c(mean hunger_dum lb ub) npos(col) append h2("HungerDum") f(4)
+qui tabout urbanrural using "${gsdOutput}/Raw_Fig15.xls", svy sum c(mean hunger_dum lb ub) npos(col) append h2("HungerDum") f(4)
+qui tabout comparisoncamp using "${gsdOutput}/Raw_Fig15.xls", svy sum c(mean hunger_dum lb ub) npos(col) append h2("HungerDum") f(4)
+qui tabout reasonidp using "${gsdOutput}/Raw_Fig15.xls", svy sum c(mean hunger_dum lb ub) npos(col) append h2("HungerDum") f(4)
+qui tabout genidp using "${gsdOutput}/Raw_Fig15.xls", svy sum c(mean hunger_dum lb ub) npos(col) append h2("HungerDum") f(4)
+qui tabout durationidp using "${gsdOutput}/Raw_Fig15.xls", svy sum c(mean hunger_dum lb ub) npos(col) append h2("HungerDum") f(4)
+qui tabout timesidp using "${gsdOutput}/Raw_Fig15.xls", svy sum c(mean hunger_dum lb ub) npos(col) append h2("HungerDum") f(4)
+qui tabout topbottomidp using "${gsdOutput}/Raw_Fig15.xls", svy sum c(mean hunger_dum lb ub) npos(col) append h2("HungerDum") f(4)
+qui tabout poor using "${gsdOutput}/Raw_Fig15.xls", svy sum c(mean hunger_dum lb ub) npos(col) append h2("HungerDum") f(4)
+
 *2. Housing
 *Housing
 qui tabout housingimproved comparisonidp using "${gsdOutput}/Raw_Fig16.xls", svy percent c(col lb ub) npos(col) replace h1("HouseImproved") f(4) 
@@ -587,11 +706,40 @@ qui tabout newt_market_disp timesidp using "${gsdOutput}/Raw_Fig19.xls", svy per
 qui tabout newt_market_disp genidp using "${gsdOutput}/Raw_Fig19.xls", svy percent c(col lb ub) npos(col) append h1("Pre_Market") f(4) 
 qui tabout newt_market_disp topbottomidp using "${gsdOutput}/Raw_Fig19.xls", svy percent c(col lb ub) npos(col) append h1("Pre_Market") f(4) 
 
-*4. Education**
-*6. Food aid
+*New Distance Graphs
+
+
+*Water
+qui tabout comparisonhost using "${gsdOutput}/Raw_Fig50.xls", svy sum c(mean dumwater_time lb ub) npos(col) replace h2("WaterNow") f(4)
+qui tabout comparisoncamp using "${gsdOutput}/Raw_Fig50.xls", svy sum c(mean dumwater_time lb ub) npos(col) append h2("WaterNow") f(4)
+*qui tabout comparisoncamp using "${gsdOutput}/Raw_Fig50.xls", svy sum c(mean dumt_water_disp lb ub) npos(col) append h2("WaterPrevious") f(4)
+*Health
+qui tabout comparisonhost using "${gsdOutput}/Raw_Fig50.xls", svy sum c(mean dumthealth lb ub) npos(col) append h2("Health") f(4)
+qui tabout comparisoncamp using "${gsdOutput}/Raw_Fig50.xls", svy sum c(mean dumthealth lb ub) npos(col) append h2("Health") f(4)
+*qui tabout comparisoncamp using "${gsdOutput}/Raw_Fig50.xls", svy sum c(mean dumthealth_disp lb ub) npos(col) append h2("PrevHealth") f(4)
+*School
+qui tabout comparisonhost using "${gsdOutput}/Raw_Fig50.xls", svy sum c(mean dumtedu lb ub) npos(col) append h2("School") f(4)
+qui tabout comparisoncamp using "${gsdOutput}/Raw_Fig50.xls", svy sum c(mean dumtedu lb ub) npos(col) append h2("School") f(4)
+*qui tabout comparisoncamp using "${gsdOutput}/Raw_Fig50.xls", svy sum c(mean dumt_edu_disp lb ub) npos(col) append h2("PrevSchool") f(4)
+*Market
+qui tabout comparisonhost using "${gsdOutput}/Raw_Fig50.xls", svy sum c(mean dumtmarket lb ub) npos(col) append h2("Market") f(4)
+qui tabout comparisoncamp using "${gsdOutput}/Raw_Fig50.xls", svy sum c(mean dumtmarket lb ub) npos(col) append h2("Market") f(4)
+*qui tabout comparisoncamp using "${gsdOutput}/Raw_Fig50.xls", svy sum c(mean dumt_market_disp lb ub) npos(col) append h2("PrevMarket") f(4)
+
+*Poor- non-poor graphs for 4-8 indicators
+*Housing
+qui tabout housingimproved poor using "${gsdOutput}/Raw_Fig51.xls", svy percent c(col lb ub) npos(col) replace h1("HouseImproved") f(4) 
+qui tabout housingimproveddisp poor using "${gsdOutput}/Raw_Fig51.xls", svy percent c(col lb ub) npos(col) append h1("Pre_HouseImproved") f(4) 
+*Water
+qui tabout waterimproved poor using "${gsdOutput}/Raw_Fig51.xls", svy percent c(col lb ub) npos(col) append h1("WaterImproved") f(4) 
+*Sanitation
+qui tabout sanitationimproved poor using "${gsdOutput}/Raw_Fig51.xls", svy percent c(col lb ub) npos(col) append h1("ToiletImproved") f(4) 
+qui tabout sanimproved_shared poor using "${gsdOutput}/Raw_Fig51.xls", svy percent c(col lb ub) npos(col) append h1("sanimproved_shared") f(4) 
+*Toilet crowding
+qui tabout poor using "${gsdOutput}/Raw_Fig51.xls" , svy sum c(mean toiletshare lb ub se) npos(col) append h2("ToiletShare") f(4) 
 
 *Place raw data into the excel figures file
-foreach i of num 15 16 17 18 19 {
+foreach i of num 15 16 17 18 19 50 51{
 	insheet using "${gsdOutput}/Raw_Fig`i'.xls", clear nonames
 	export excel using "${gsdOutput}/Figures_SOM.xlsx", sheetreplace sheet("Raw_Fig`i'") 	
 	rm "${gsdOutput}/Raw_Fig`i'.xls"
