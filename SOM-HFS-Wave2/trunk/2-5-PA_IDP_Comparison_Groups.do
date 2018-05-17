@@ -16,7 +16,7 @@ svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
 ********************************************************
 *1. IDPs and host communities.
 gen comparisonidp = . 
-la def lcomparisonidp 1 "Non-Camp IDP" 2 "Camp IDP 2016" 3 "Camp IDP" 4 "Host" 5 "Non-host Urban" 
+la def lcomparisonidp 1 "Non-Settlement IDP" 2 "Settlement IDP 2016" 3 "Settlement IDP" 4 "Host" 5 "Non-host Urban" 
 *Non-camp IDPs of W2
 replace comparisonidp = 1 if  migr_idp ==1 & t ==1 & ind_profile != 6
 *Camp IDPs W1
@@ -33,7 +33,7 @@ la var comparisonidp "IDPs and Host Community types"
 *1a. Break these up into groups of 2, for ease. Add Camp 2016 at the end, perhaps, for the relevant indicators.
 gen comparisoncamp = 1 if comparisonidp ==3
 replace comparisoncamp = 2 if comparisonidp ==1
-lab def lcomparisoncamp 1 "Camp IDP" 2 "Non-camp IDP"
+lab def lcomparisoncamp 1 "Settlement IDP" 2 "Non-settlement IDP"
 lab val comparisoncamp lcomparisoncamp
 
 gen comparisonhost = 1 if comparisonidp == 4
@@ -42,7 +42,7 @@ lab def lcomparisonhost 1 "Urban host" 2 "Urban non-host"
 lab val comparisonhost lcomparisonhost
 
 gen comparisonw1 = 1 if comparisonidp ==2
-lab def lcomparisonw1 1 "Camp IDP 2016"
+lab def lcomparisonw1 1 "Settlement IDP 2016"
 lab val comparisonw1 lcomparisonw1
 
 *2. Urban, Rural, National (to get national, tabout over t.), excluding noncamp IDPs

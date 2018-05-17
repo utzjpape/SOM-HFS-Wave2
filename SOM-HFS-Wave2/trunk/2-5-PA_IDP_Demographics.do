@@ -6,19 +6,81 @@
 use "${gsdData}/1-CleanTemp/hhm_all_idpanalysis.dta", clear 
 svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
 
+************************
 *SIGNIFICANCE TESTS
-/*
-Think about this later, but I think these sig tests are right..
-svy: prop gender if age_g_idp ==1 & sigdt ==1
-lincom [Male]_subpop_1 - [Female]_subpop_1
+************************
+gen siglabor = national
+replace siglabor = urbanrural if national ==1
+lab def siglabor 0 "idp" 1 "urban" 2 "rural"
+lab val siglabor siglabor
+ta siglabor 
+ta urbanrural, miss
+ta national, miss
+gen sighostidp = 1 if national ==0
+replace sighostidp = 2 if comparisonhost ==1
+lab def sighostidp 1 "idp overall" 2 "host urban"
+lab val sighostidp sighostidp
 
-svy: prop gender if age_g_idp ==1 & sigdt ==3
-svy: prop gender if age_g_idp ==1 & sigdt ==4
-----------------------------------------trying to check if there are fewer girls than boys
-*/
+gen poptest = comparisoncamp
+replace poptest = 3 if national ==1
+lab def poptest 1 "camp" 2 "noncamp" 3 "national"
+lab val poptest poptest
 
-*Noncamp IDPs have fewer men than women: 4 age groups: significant
-svy: prop gender if sigdt ==1,  over(age_g_idp)
+*Overall, are the ages different for the three groups
+svy: prop age_g_idp, over(poptest)
+lincom [_prop_1]camp - [_prop_1]national
+lincom [_prop_2]camp - [_prop_2]national
+lincom [_prop_3]camp - [_prop_3]national
+*p<0.05
+lincom [_prop_4]camp - [_prop_4]national
+
+lincom [_prop_1]noncamp - [_prop_1]national
+lincom [_prop_2]noncamp - [_prop_2]national
+lincom [_prop_3]noncamp - [_prop_3]national
+lincom [_prop_4]noncamp - [_prop_4]national
+
+lincom [_prop_1]noncamp - [_prop_1]camp
+lincom [_prop_2]noncamp - [_prop_2]camp
+lincom [_prop_3]noncamp - [_prop_3]camp
+*p<0.1
+lincom [_prop_4]noncamp - [_prop_4]camp
+
+*For women, are the ages different for the three groups
+svy: prop age_g_idp if gender ==0, over(poptest)
+lincom [_prop_1]camp - [_prop_1]national
+lincom [_prop_2]camp - [_prop_2]national
+lincom [_prop_3]camp - [_prop_3]national
+lincom [_prop_4]camp - [_prop_4]national
+
+lincom [_prop_1]noncamp - [_prop_1]national
+lincom [_prop_2]noncamp - [_prop_2]national
+lincom [_prop_3]noncamp - [_prop_3]national
+lincom [_prop_4]noncamp - [_prop_4]national
+
+lincom [_prop_1]noncamp - [_prop_1]camp
+lincom [_prop_2]noncamp - [_prop_2]camp
+lincom [_prop_3]noncamp - [_prop_3]camp
+lincom [_prop_4]noncamp - [_prop_4]camp
+
+*For men, are the ages different for the three groups
+svy: prop age_g_idp if gender ==1, over(poptest)
+lincom [_prop_1]camp - [_prop_1]national
+lincom [_prop_2]camp - [_prop_2]national
+lincom [_prop_3]camp - [_prop_3]national
+*p<0.01
+lincom [_prop_4]camp - [_prop_4]national
+
+lincom [_prop_1]noncamp - [_prop_1]national
+lincom [_prop_2]noncamp - [_prop_2]national
+lincom [_prop_3]noncamp - [_prop_3]national
+lincom [_prop_4]noncamp - [_prop_4]national
+
+lincom [_prop_1]noncamp - [_prop_1]camp
+lincom [_prop_2]noncamp - [_prop_2]camp
+lincom [_prop_3]noncamp - [_prop_3]camp
+lincom [_prop_4]noncamp - [_prop_4]camp
+
+svy: prop gender if comparisoncamp ==2,  over(age_g_idp)
 lincom [Male]_subpop_1 - [Female]_subpop_1
 lincom [Male]_subpop_2 - [Female]_subpop_2
 *P<0.05
@@ -26,7 +88,7 @@ lincom [Male]_subpop_3 - [Female]_subpop_3
 lincom [Male]_subpop_4 - [Female]_subpop_4
 
 *Camp IDPs have fewer men than women: 4 age groups: significant
-svy: prop gender if sigdt ==3,  over(age_g_idp)
+svy: prop gender if comparisoncamp ==1,  over(age_g_idp)
 lincom [Male]_subpop_1 - [Female]_subpop_1
 *P<0.05
 lincom [Male]_subpop_2 - [Female]_subpop_2
@@ -34,9 +96,9 @@ lincom [Male]_subpop_3 - [Female]_subpop_3
 lincom [Male]_subpop_4 - [Female]_subpop_4
 
 *National have fewer men than women: 4 age groups: significant
-svy: prop gender if sigdt ==4,  over(age_g_idp)
+svy: prop gender if national==1,  over(age_g_idp)
 lincom [Male]_subpop_1 - [Female]_subpop_1
-*P<0.05
+*P<0.01
 lincom [Male]_subpop_2 - [Female]_subpop_2
 lincom [Male]_subpop_3 - [Female]_subpop_3
 *p<0.1
@@ -81,9 +143,15 @@ use "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", clear
 svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
 
 *Significance tests
+
+gen poptest = comparisoncamp
+replace poptest = 3 if national ==1
+lab def poptest 1 "camp" 2 "noncamp" 3 "national"
+lab val poptest poptest
+
 *Perc of female headed hhs
-svy: mean hhh_gender, over(sigdt)
-*P<0.05
+svy: mean hhh_gender, over(poptest)
+*P<0.01
 lincom [hhh_gender]noncamp - [hhh_gender]camp
 *p<0.05
 lincom [hhh_gender]noncamp - [hhh_gender]national
@@ -92,7 +160,7 @@ lincom [hhh_gender]camp - [hhh_gender]national
 
 
 *Dependency ratio-- overall
-svy: mean age_dependency_ratio, over(sigdt)
+svy: mean age_dependency_ratio, over(poptest)
 *no sig
 lincom [age_dependency_ratio]noncamp - [age_dependency_ratio]camp
 *no sig
@@ -101,22 +169,22 @@ lincom [age_dependency_ratio]noncamp - [age_dependency_ratio]national
 lincom [age_dependency_ratio]camp - [age_dependency_ratio]national
 
 *Dependency ratio-- hhh_gender, non camp
-svy: mean age_dependency_ratio if sigdt ==1, over(sighh) 
+svy: mean age_dependency_ratio if poptest ==2, over(sighh) 
 *P<0.05
 lincom [age_dependency_ratio]Female - [age_dependency_ratio]Male
 
 *Dependency ratio-- hhh_gender, camp
-svy: mean age_dependency_ratio if sigdt ==3, over(sighh) 
+svy: mean age_dependency_ratio if poptest ==1, over(sighh) 
 *no sig
 lincom [age_dependency_ratio]Female - [age_dependency_ratio]Male
 
 *Dependency ratio-- hhh_gender, non national
-svy: mean age_dependency_ratio if sigdt ==4, over(sighh) 
+svy: mean age_dependency_ratio if poptest ==3, over(sighh) 
 *no sig
 lincom [age_dependency_ratio]Female - [age_dependency_ratio]Male
 
 *Household size -- overall
-svy: mean hhsize, over(sigdt)
+svy: mean hhsize, over(poptest)
 *no sig
 lincom [hhsize]noncamp - [hhsize]camp
 *p<0.05
@@ -125,17 +193,17 @@ lincom [hhsize]noncamp - [hhsize]national
 lincom [hhsize]camp - [hhsize]national
 
 *HHsize- hhh_gender, non camp
-svy: mean hhsize if sigdt ==1, over(sighh) 
+svy: mean hhsize if poptest ==2, over(sighh) 
 *no sig
 lincom [hhsize]Female - [hhsize]Male
 
 *hhsize-- hhh_gender, camp
-svy: mean hhsize if sigdt ==3, over(sighh) 
+svy: mean hhsize if poptest ==1, over(sighh) 
 *p<0.1
 lincom [hhsize]Female - [hhsize]Male
 
 *hhsize-- hhh_gender, non national
-svy: mean hhsize if sigdt ==4, over(sighh) 
+svy: mean hhsize if poptest ==3, over(sighh) 
 *no sig
 lincom [hhsize]Female - [hhsize]Male
 

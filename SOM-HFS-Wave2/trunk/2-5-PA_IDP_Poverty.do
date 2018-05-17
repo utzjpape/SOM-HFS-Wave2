@@ -8,6 +8,8 @@ gen hhweight=weight_adj*hhsize
 svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
 svy: mean poorPPP_prob if t==1, over(ind_profile)
 svy: mean poorPPP_prob, over(comparisonidp)
+svy: ta poor 
+svy: mean poorPPP_prob if national ==0
 
 *CREATE AND PREPARE VARIABLES
 gen gap = (plinePPP - tc_imp)/plinePPP if (!missing(tc_imp)) 
@@ -16,6 +18,7 @@ gen severity = (gap)^2
 
 *Get poverty figures in percentage
 replace poorPPP_prob = 100*poorPPP_prob
+replace gap = gap*100
 
 *SIGNIFICANCE TESTS
 *Poverty.
