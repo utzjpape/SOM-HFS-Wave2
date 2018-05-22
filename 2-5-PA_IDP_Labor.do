@@ -1,5 +1,5 @@
 *Wave 2 IDP analysis -- Labor
-
+/*
 ************************
 *HHQ indicators
 ************************
@@ -244,7 +244,7 @@ qui tabout livelihood_prev durationidp using "${gsdOutput}/Raw_Fig24.xls", svy p
 qui tabout livelihood_prev timesidp using "${gsdOutput}/Raw_Fig24.xls", svy percent c(col lb ub) npos(col) append h1("PrevLivelihood") f(4) 
 qui tabout livelihood_prev topbottomidp using "${gsdOutput}/Raw_Fig24.xls", svy percent c(col lb ub) npos(col) append h1("PrevLivelihood") f(4) 
 qui tabout livelihood_prev poor using "${gsdOutput}/Raw_Fig24.xls", svy percent c(col lb ub) npos(col) append h1("PrevLivelihood") f(4)
-
+*/
 ************************
 *HHM indicators
 ************************
@@ -262,9 +262,17 @@ replace empstatus = . if working_age != 1
 la val empstatus lempstatus
 ta empstatus if t==1
 
+*Reason for being outside the labor force.
+ta hhm_job_search_no
+la list hhm_job_search_no
+recode hhm_job_search_no (1 2 =5 "Ill / Disabled") (3=2 "In school") (4 5 = 3 "Too young / old") (6 = 1 "Family and household care") (7 8 9 10 11 12 14 = 4 "Waiting for busy season / on leave") (nonmiss =.), gen(reason_inactive)
+ta reason_inactive
+replace reason_inactive = . if empstatus != 4
+ta reason_inactive
+
 *Employment structure
 recode emp_7d_prim (1=1 "Salaried labor") (2=2 "Own business") (3=3 "Help in business") (4=4 "Own account agriculture") (5=5 "Apprenticeship"), gen(empactivity)
-*Employment structure before displacement
+*Employment structure before displacementta
 recode emp_prev (1=1 "Salaried labor") (2=2 "Own business") (3=3 "Help in business") (4=4 "Own account agriculture") (5=5 "Apprenticeship"), gen(empactivity_prev)
 *Employment strucure before displacement, aggregating those who changed and who didn't. 
 gen emp_prev_all = empactivity
@@ -307,6 +315,71 @@ lab val siglabor siglabor
 ta siglabor 
 ta urbanrural, miss
 ta national, miss
+***********************
+*Reasons for not participating in labor force
+***********************
+svy: prop reason_inactive, over(siglabor)
+*Diffs between IDP and urban
+*p<0.05
+lincom [_prop_1]idp - [_prop_1]urban
+*p<0.05
+lincom [_prop_5]idp - [_prop_5]urban
+*Diffs between IDP and rural
+lincom [_prop_1]idp - [_prop_1]rural
+lincom [_prop_5]idp - [_prop_5]rural
+
+*Men reason inactive
+svy: prop reason_inactive if gender ==1, over(siglabor)
+*Diffs between IDP and urban
+*p=0.108
+lincom [_prop_1]idp - [_prop_1]urban
+*p<0.1
+lincom [_prop_5]idp - [_prop_5]urban
+*Diffs between IDP and rural
+lincom [_prop_1]idp - [_prop_1]rural
+lincom [_prop_5]idp - [_prop_5]rural
+
+*Woman reason inactive
+svy: prop reason_inactive if gender ==0, over(siglabor)
+*Diffs between IDP and urban
+lincom [_prop_1]idp - [_prop_1]urban
+lincom [_prop_5]idp - [_prop_5]urban
+*Diffs between IDP and rural
+lincom [_prop_1]idp - [_prop_1]rural
+lincom [_prop_5]idp - [_prop_5]rural
+
+*Woman and men, among IDP
+svy: prop reason_inactive if siglabor ==0, over(gender)
+*p<0.01
+lincom [_prop_1]Female - [_prop_1]Male
+lincom [_prop_2]Female - [_prop_2]Male
+*p<0.05
+lincom [_prop_3]Female - [_prop_3]Male
+lincom [_prop_4]Female - [_prop_4]Male
+*p<0.01
+lincom [_prop_5]Female - [_prop_5]Male
+
+*Woman and men, among urban
+svy: prop reason_inactive if siglabor ==1, over(gender)
+*p<0.01
+lincom [_prop_1]Female - [_prop_1]Male
+lincom [_prop_2]Female - [_prop_2]Male
+lincom [_prop_3]Female - [_prop_3]Male
+*p<0.01
+lincom [_prop_4]Female - [_prop_4]Male
+*p<0.01
+lincom [_prop_5]Female - [_prop_5]Male
+
+*Woman and men, among rural
+svy: prop reason_inactive if siglabor ==2, over(gender)
+*p<0.01
+lincom [_prop_1]Female - [_prop_1]Male
+lincom [_prop_2]Female - [_prop_2]Male
+lincom [_prop_3]Female - [_prop_3]Male
+lincom [_prop_4]Female - [_prop_4]Male
+*p<0.1
+lincom [_prop_5]Female - [_prop_5]Male
+
 ***********************
 *Overall labor status
 ***********************
@@ -546,6 +619,13 @@ qui tabout emp_prev_d durationidp using "${gsdOutput}/Raw_Fig22.xls", svy percen
 qui tabout emp_prev_d timesidp using "${gsdOutput}/Raw_Fig22.xls", svy percent c(col lb ub) npos(col) append h1("EmpAct") f(4) 
 qui tabout emp_prev_d topbottomidp using "${gsdOutput}/Raw_Fig22.xls", svy percent c(col lb ub) npos(col) append h1("EmpAct") f(4) 
 qui tabout emp_prev_d poor using "${gsdOutput}/Raw_Fig22.xls", svy percent c(col lb ub) npos(col) append h1("EmpAct") f(4)
+
+*Reasons for being inactive, overall
+reason_inactive
+*Reasons for being inactive, men
+
+*Reasons for being inactive, women
+
 
 *Place raw data into the excel figures file
 foreach i of num 20 21 22 23 24 25 {
