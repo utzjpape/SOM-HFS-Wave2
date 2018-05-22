@@ -37,66 +37,41 @@ replace sighostidp = 2 if comparisonhost ==1
 lab def sighostidp 1 "idp overall" 2 "host urban"
 lab val sighostidp sighostidp
 
-*****************
-*Adult literacy
-*****************
-*Adult literacy rates, overall, by comparisongroup. 
-*IDPs and urbanrural
-svy: prop adult_literacy_rate, over(siglabor)
-**0.01
-lincom [Literate]idp - [Literate]urban
-**no sig.
-lincom [Literate]idp - [Literate]rural
-*IDPs and hosts
-svy: prop adult_literacy_rate, over(sighostidp)
-**0.01
-lincom [Literate]_subpop_1 - [Literate]_subpop_2
-*Camp and Non-camp
-svy: prop adult_literacy_rate, over(comparisoncamp)
-**marginal, p=0.103
-lincom [Literate]_subpop_1 - [Literate]_subpop_2
-*Conflict and climates
-svy: prop adult_literacy_rate, over(reasonidp)
-**no sig.
-lincom [Literate]_subpop_1 - [Literate]_subpop_2
-*Man and woman head
-svy: prop adult_literacy_rate, over(genidp)
-lincom [Literate]_subpop_1 - [Literate]_subpop_2
-*Protracted and not
-svy: prop adult_literacy_rate, over(durationidp)
-lincom [Literate]_subpop_1 - [Literate]Protracted
-*Times disp
-svy: prop adult_literacy_rate, over(timesidp)
-lincom [Literate]_subpop_1 - [Literate]_subpop_2
-*40 60 
-svy: prop adult_literacy_rate, over(topbottomidp)
-lincom [Literate]_subpop_1 - [Literate]_subpop_2
-*Poor
-svy: prop adult_literacy_rate, over(poor)
-lincom [Literate]Poor - [Literate]_subpop_2
-
-*Adult literacy rates, among genders, within certain groups.
+*Enrolment
+gen enrolment_pr = enrolled
+replace enrolment_pr = . if age > 13
+*Enrolment, among genders, within certain groups.
 *Overall IDPs
-svy: prop adult_literacy_rate if siglabor ==0, over(gender) 
-*p<0.01
-lincom [Literate]Female - [Literate]Male
+svy: prop enrolment_pr if siglabor ==0, over(gender) 
+*no sig
+lincom [_prop_2]Female - [_prop_2]Male
 *Urban
-svy: prop adult_literacy_rate if siglabor ==1, over(gender) 
-*p<0.01
-lincom [Literate]Female - [Literate]Male
+svy: prop enrolment_pr if siglabor ==1, over(gender) 
+lincom [_prop_2]Female - [_prop_2]Male
 *Rural
-svy: prop adult_literacy_rate if siglabor ==2, over(gender) 
-*p<0.01
-lincom [Literate]Female - [Literate]Male
-*Result below: in all the households, men are generally more literate. Not got much to do with the household head's gender.
+svy: prop enrolment_pr if siglabor ==2, over(gender) 
+lincom [_prop_2]Female - [_prop_2]Male
 *IDP Man Head
-svy: prop adult_literacy_rate if genidp ==1, over(gender) 
-*p<0.01
-lincom [Literate]Female - [Literate]Male
+svy: prop enrolment_pr if genidp ==1, over(gender) 
+lincom [_prop_2]Female - [_prop_2]Male
 *IDP Woman Head
-svy: prop adult_literacy_rate if genidp ==0, over(gender) 
-*p<0.01
-lincom [Literate]Female - [Literate]Male
+svy: prop enrolment_pr if genidp ==0, over(gender) 
+lincom [_prop_2]Female - [_prop_2]Male
+*IDP Conflict
+svy: prop enrolment_pr if reasonidp ==1, over(gender) 
+lincom [_prop_2]Female - [_prop_2]Male
+*IDP Climate
+svy: prop enrolment_pr if reasonidp ==2, over(gender) 
+lincom [_prop_2]Female - [_prop_2]Male
+*IDP Poor
+svy: prop enrolment_pr if poor ==1, over(gender) 
+lincom [_prop_2]Female - [_prop_2]Male
+*IDP Bottom 40
+svy: prop enrolment_pr if topbottomidp ==1, over(gender) 
+lincom [_prop_2]Female - [_prop_2]Male
+
+gen enrolment_se = enrolled
+replace enrolment_se = . if age < 14
 
 *****************
 *Enrolment
@@ -166,6 +141,69 @@ lincom [_prop_2]Female - [_prop_2]Male
 *IDP Bottom 40
 svy: prop enrolled if topbottomidp ==1, over(gender) 
 lincom [_prop_2]Female - [_prop_2]Male
+----
+*****************
+*Adult literacy
+*****************
+*Adult literacy rates, overall, by comparisongroup. 
+*IDPs and urbanrural
+svy: prop adult_literacy_rate, over(siglabor)
+**0.01
+lincom [Literate]idp - [Literate]urban
+**no sig.
+lincom [Literate]idp - [Literate]rural
+*IDPs and hosts
+svy: prop adult_literacy_rate, over(sighostidp)
+**0.01
+lincom [Literate]_subpop_1 - [Literate]_subpop_2
+*Camp and Non-camp
+svy: prop adult_literacy_rate, over(comparisoncamp)
+**marginal, p=0.103
+lincom [Literate]_subpop_1 - [Literate]_subpop_2
+*Conflict and climates
+svy: prop adult_literacy_rate, over(reasonidp)
+**no sig.
+lincom [Literate]_subpop_1 - [Literate]_subpop_2
+*Man and woman head
+svy: prop adult_literacy_rate, over(genidp)
+lincom [Literate]_subpop_1 - [Literate]_subpop_2
+*Protracted and not
+svy: prop adult_literacy_rate, over(durationidp)
+lincom [Literate]_subpop_1 - [Literate]Protracted
+*Times disp
+svy: prop adult_literacy_rate, over(timesidp)
+lincom [Literate]_subpop_1 - [Literate]_subpop_2
+*40 60 
+svy: prop adult_literacy_rate, over(topbottomidp)
+lincom [Literate]_subpop_1 - [Literate]_subpop_2
+*Poor
+svy: prop adult_literacy_rate, over(poor)
+lincom [Literate]Poor - [Literate]_subpop_2
+
+*Adult literacy rates, among genders, within certain groups.
+*Overall IDPs
+svy: prop adult_literacy_rate if siglabor ==0, over(gender) 
+*p<0.01
+lincom [Literate]Female - [Literate]Male
+*Urban
+svy: prop adult_literacy_rate if siglabor ==1, over(gender) 
+*p<0.01
+lincom [Literate]Female - [Literate]Male
+*Rural
+svy: prop adult_literacy_rate if siglabor ==2, over(gender) 
+*p<0.01
+lincom [Literate]Female - [Literate]Male
+*Result below: in all the households, men are generally more literate. Not got much to do with the household head's gender.
+*IDP Man Head
+svy: prop adult_literacy_rate if genidp ==1, over(gender) 
+*p<0.01
+lincom [Literate]Female - [Literate]Male
+*IDP Woman Head
+svy: prop adult_literacy_rate if genidp ==0, over(gender) 
+*p<0.01
+lincom [Literate]Female - [Literate]Male
+
+
 
 ************************
 *TABOUTS

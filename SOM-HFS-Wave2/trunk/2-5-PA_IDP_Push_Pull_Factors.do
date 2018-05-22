@@ -160,6 +160,8 @@ lincom [dmove_no_push__1]_subpop_1- [dmove_no_push__1]_subpop_2
 svy: mean dmove_no_push__1, over(genidp)
 *no sig
 lincom [dmove_no_push__1]_subpop_1- [dmove_no_push__1]_subpop_2
+svy: mean dmove_no_push__1, over(reasonidp)
+lincom [dmove_no_push__1]_subpop_1- [dmove_no_push__1]_subpop_2
 
 /*
 *Stay-Pull
