@@ -255,7 +255,7 @@ spmap poorPPP_prob using "${gsdData}/1-CleanInput/SOM_coord.dta", id(id_map) fco
 clmethod(custom) clnumber(5) clbreaks(20 40 60 80 100) ndlabel(Not covered by the SHFS 2017) legstyle(2) legend(position(4)) ///
 ndfcolor(gs9) title("Poverty Incidence") subtitle("% of population below US$ 1.9 (PPP) per day")  
 spmap poorPPP_prob using "${gsdData}/1-CleanInput/SOM_coord.dta", id(id_map) fcolor(Reds) ///
-clmethod(custom) clnumber(5) clbreaks(20 40 60 80 100) ndlabel(Not covered by the SHFS 2017) legstyle(2) legend(position(4)) ndfcolor(gs9)  
+clmethod(custom) clnumber(5) clbreaks(20 40 60 80 100) ndlabel(Not covered by the SHFS 2017) legstyle(2) legend(position(4)) ndfcolor(gs9)  subtitle("% of population")   
 graph save Graph "${gsdOutput}/Map_Poverty.gph", replace
 restore
 
