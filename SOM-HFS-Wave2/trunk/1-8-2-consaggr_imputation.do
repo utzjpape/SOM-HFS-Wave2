@@ -48,7 +48,7 @@ recode hunger (1=0 "Never") (2=1 "Rarely") (3/max=2 "Often") (missing=2), gen(hh
 recode remit12m (missing=0)
 *Prepare smaller dataset
 rename (mod_opt type) (opt_mod hh_ptype)
-keep ind_profile region astrata strata ea block hh hhsize weight opt_mod pchild psenior hhempl hhsex hhedu hh_type hh_drinkwater hh_floor hh_ownership hh_hunger remit12m cons_f? cons_nf? cons_d hh_ptype cons_all_*
+keep ind_profile region astrata strata ea block hh hhsize weight opt_mod pchild psenior hhempl hhsex hhedu hh_type hh_drinkwater hh_floor hh_ownership hh_hunger remit12m cons_f? cons_nf? cons_d hh_ptype migr_disp cons_all_*
 drop if weight>=.
 *Prepare consumption variables
 *Make sure missing modules have missing consumption
@@ -174,12 +174,32 @@ label var plinePPP_vulnerable_20 "Poverty Line corresponding to shock to consump
 *Derive proxy of food poverty line with the share of food consumption: share of food consumption .7268462
 gen plinePPPFood=plinePPP*.7268462
 la var plinePPPFood "2011 PPP Food Poverty line in 2017 USD Somalia"
+*Derive poverty line for drought shock simulation
+xtile quantile_core = tc_core if hh_ptype==2 & migr_disp==0, nq(10)
+gen tc_core_shock = tc_core
+replace tc_core_shock = tc_core_shock*(1-0.049) if quantile_core==1 
+replace tc_core_shock = tc_core_shock*(1-0.126) if quantile_core==2
+replace tc_core_shock = tc_core_shock*(1-0.201) if quantile_core==3 
+replace tc_core_shock = tc_core_shock*(1-0.232) if quantile_core==4 
+replace tc_core_shock = tc_core_shock*(1-0.187) if quantile_core==5 
+replace tc_core_shock = tc_core_shock*(1-0.208) if quantile_core==6 
+replace tc_core_shock = tc_core_shock*(1-0.218) if quantile_core==7 
+replace tc_core_shock = tc_core_shock*(1-0.196) if quantile_core==8 
+replace tc_core_shock = tc_core_shock*(1-0.227) if quantile_core==9 
+replace tc_core_shock = tc_core_shock*(1-0.234) if quantile_core==10
+
+gen plinePPPcore = plinePPP*.655536 if hh_ptype==2 & migr_disp==0
+drop quantile_core
+
 *Calculate poverty
 mi passive: gen poorPPP = tc_imp < plinePPP if !missing(tc_imp)
 mi passive: gen poorPPP125 = tc_imp < plinePPP125 if !missing(tc_imp)
 mi passive: gen poorPPP_vulnerable_10 = tc_imp < plinePPP_vulnerable_10 if !missing(tc_imp)
 mi passive: gen poorPPP_vulnerable_20 = tc_imp < plinePPP_vulnerable_20 if !missing(tc_imp)
 mi passive: gen poorPPPFood = tc_imp < plinePPPFood if !missing(tc_imp)
+mi passive: gen poorPPP_shock = tc_core_shock < plinePPPcore if !missing(tc_core) & !missing(plinePPPcore)
+mi passive: gen poorPPP_core = tc_core < plinePPPcore if !missing(tc_core) & !missing(plinePPPcore)
+
 mi svyset ea [pweight=hhweight], strata(strata)
 label var poorPPP "Below 2011 PPP poverty line"
 label define lpoorPPP 0 "Non-poor" 1 "Poor", replace
@@ -202,6 +222,8 @@ mi estimate: mean poorPPP125 [pweight=hhweight]
 mi estimate: mean poorPPP_vulnerable_10 [pweight=hhweight]
 mi estimate: mean poorPPP_vulnerable_20 [pweight=hhweight]
 mi estimate: mean poorPPPFood [pweight=hhweight]
+mi estimate: mean poorPPP_shock [pweight=hhweight]
+mi estimate: mean poorPPP_core [pweight=hhweight]
 save "${gsdData}/1-CleanTemp/mi-analysis.dta", replace
 
 
@@ -225,7 +247,7 @@ save "${gsdTemp}/mi-extract.dta", replace
 *Analysis on extract dataset
 use "${gsdTemp}/mi-extract.dta", clear
 fastgini tc_imp [pweight=hhweight]
-collapse (mean) tc_* mi_cons_f? mi_cons_nf? mi_cons_d (mean) poorPPP_prob = poorPPP poorPPP125_prob = poorPPP125 poorPPP_vulnerable_10_prob = poorPPP_vulnerable_10 poorPPP_vulnerable_20_prob = poorPPP_vulnerable_20 poorPPPFood_prob = poorPPPFood, by(strata ea block hh hhsize weight hhweight opt_mod plinePPP plinePPP125 plinePPPFood deflator)
+collapse (mean) tc_* mi_cons_f? mi_cons_nf? mi_cons_d (mean) poorPPP_prob = poorPPP poorPPP125_prob = poorPPP125 poorPPP_vulnerable_10_prob = poorPPP_vulnerable_10 poorPPP_vulnerable_20_prob = poorPPP_vulnerable_20 poorPPPFood_prob = poorPPPFood poorPPPshock_prob = poorPPP_shock poorPPPcore_prob=poorPPP_core, by(strata ea block hh hhsize weight hhweight opt_mod plinePPP plinePPP125 plinePPPFood deflator plinePPPcore)
 *Replace aggregates for imputed regions
 gen pre_tc_core = (mi_cons_f0 + mi_cons_nf0)/deflator + mi_cons_d
 replace tc_core=pre_tc_core if tc_core>=.
