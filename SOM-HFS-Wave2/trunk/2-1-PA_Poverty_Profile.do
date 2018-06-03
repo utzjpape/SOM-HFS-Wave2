@@ -86,8 +86,8 @@ gen age_dependency_ratio=no_dependent/no_working_age
 drop no_dep no_dependent no_w_age no_working_age
 *Include final regional breakdown
 rename ind_profile ind_profile_old
-recode ind_profile_old(4=2) (5=3) (6=4) (7/8=5) (9=6) (11/12=7) (13=8), gen(ind_profile)
-label define lind_profilef 1 "Mogadishu" 2 "North-East" 3 "North-West" 4 "IDP Settlements" 5 "Central Regions" 6 "Jubbaland Urban" 7 "South-West" 8 "Nomadic population"
+recode ind_profile_old (3=2) (7=2) (9=2) (11=2) (4=3) (5=3) (8=3) (12=3) (6=4) (13=5), gen(ind_profile)
+label define lind_profilef 1 "Mogadishu" 2 "Other Urban" 3 "Rural" 4 "IDP Settlements" 5 "Nomadic population"
 label values ind_profile lind_profilef
 label var ind_profile "Indicator of regional breakdown"
 order ind_profile, after(ind_profile_old)
@@ -181,8 +181,8 @@ label var dep_p_all "HH deprived in poverty and all other dimensions"
 label values dep_p_all lyesno
 *Include final regional breakdown
 rename ind_profile ind_profile_old
-recode ind_profile_old(4=2) (5=3) (6=4) (7/8=5) (9=6) (11/12=7) (13=8), gen(ind_profile)
-label define lind_profilef 1 "Mogadishu" 2 "North-East" 3 "North-West" 4 "IDP Settlements" 5 "Central Regions" 6 "Jubbaland Urban" 7 "South-West" 8 "Nomadic population"
+recode ind_profile_old (3=2) (7=2) (9=2) (11=2) (4=3) (5=3) (8=3) (12=3) (6=4) (13=5), gen(ind_profile)
+label define lind_profilef 1 "Mogadishu" 2 "Other Urban" 3 "Rural" 4 "IDP Settlements" 5 "Nomadic population"
 label values ind_profile lind_profilef
 label var ind_profile "Indicator of regional breakdown"
 order ind_profile, after(ind_profile_old)
@@ -420,11 +420,13 @@ test [pseverity]Yes = [pseverity]No
 qui tabout gini using "${gsdOutput}/PA_Poverty_Profile_12.xls", svy c(freq) sebnone f(3) npos(col) h2(GINI coefficient overall) replace
 levelsof ind_profile, local(region) 
 qui foreach i of local region {
-	fastgini tc_imp [pweight=hhweight] if ind_profile==`i'
+	fastgini tc_imp [pweight=hhweight] if ind_profile==`i', jk
 	return list 
 	gen gini_`i'=r(gini)
+	gen gini_se_`i'=r(se)
     qui tabout gini_`i' using "${gsdOutput}/PA_Poverty_Profile_12.xls", svy c(freq) sebnone f(3) npos(col) h2(GINI coefficient for ind_profile `i') append
-    drop gini_`i'
+    qui tabout gini_se_`i' using "${gsdOutput}/PA_Poverty_Profile_12.xls", svy c(freq) sebnone f(3) npos(col) h2(S.E of GINI coefficient for ind_profile `i') append
+    drop gini_`i' gini_se_`i'
 }
 levelsof type, local(population) 
 qui foreach i of local population {
@@ -818,7 +820,6 @@ qui foreach i of local drought {
 	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_20.xls" if drought_affected==`i', svy sum c(mean no_old_age) sebnone f(3) npos(col) h2(Number of elderly for drought_affected `i' ) append
 }
 
-
 *Poverty and education
 use "${gsdTemp}/hh_PA_Poverty_Profile.dta", clear
 svyset ea [pweight=weight], strata(strata) singleunit(centered)
@@ -925,6 +926,13 @@ qui tabout improved_water type using "${gsdOutput}/PA_Poverty_Profile_23.xls", s
 qui tabout electricity type using "${gsdOutput}/PA_Poverty_Profile_23.xls", svy c(col) perc sebnone f(3) npos(col) h1(Access to electricity by type) append
 qui tabout cook type using "${gsdOutput}/PA_Poverty_Profile_23.xls", svy c(col) perc sebnone f(3) npos(col) h1(Cooking source by type) append
 qui tabout cook poorPPP using "${gsdOutput}/PA_Poverty_Profile_23.xls", svy c(col) perc sebnone f(3) npos(col) h1(Cooking source by poverty) append
+qui tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_23.xls", svy sum c(mean improved_sanitation lb ub) sebnone f(3) npos(col) h1(Ind_profile w/s.e. for improved sanitation) append
+qui tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_23.xls", svy sum c(mean improved_water lb ub) sebnone f(3) npos(col) h1(Ind_profile w/s.e. for improved_water) append
+qui tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_23.xls", svy sum c(mean electricity lb ub) sebnone f(3) npos(col) h1(Ind_profile w/s.e. for electricity) append
+qui tabout ind_profile poorPPP using "${gsdOutput}/PA_Poverty_Profile_23.xls", svy sum c(mean improved_sanitation lb ub) sebnone f(3) npos(col) h1(Ind_profile w/s.e. for improved sanitation) append
+qui tabout ind_profile poorPPP using "${gsdOutput}/PA_Poverty_Profile_23.xls", svy sum c(mean improved_water lb ub) sebnone f(3) npos(col) h1(Ind_profile w/s.e. for improved_water) append
+qui tabout ind_profile poorPPP using "${gsdOutput}/PA_Poverty_Profile_23.xls", svy sum c(mean electricity lb ub) sebnone f(3) npos(col) h1(Ind_profile w/s.e. for electricity) append
+
 
 
 *Distance to different services
@@ -946,6 +954,14 @@ qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
 qui tabout water_time type using "${gsdOutput}/PA_Poverty_Profile_24.xls", svy c(col) perc sebnone f(3) npos(col) h1(Time/Distance to water by type) append
 qui tabout tmarket type using "${gsdOutput}/PA_Poverty_Profile_24.xls", svy c(col) perc sebnone f(3) npos(col) h1(Time/Distance to market by type) append
 qui tabout thealth type using "${gsdOutput}/PA_Poverty_Profile_24.xls", svy c(col) perc sebnone f(3) npos(col) h1(Time/Distance to health clinic by type) append
+gen more_30_water=(water_time>=4) if !missing(water_time)
+gen more_30_market=(tmarket>=4) if !missing(tmarket)
+gen more_30_health=(thealth>=4) if !missing(thealth)
+gen more_30_edu=(tedu>=4) if !missing(tedu) 
+qui tabout ind_profile poorPPP using "${gsdOutput}/PA_Poverty_Profile_24.xls", svy sum c(mean more_30_water lb ub) sebnone f(3) npos(col) h1(Ind_profile and poor w/s.e. for water_time) append
+qui tabout ind_profile poorPPP using "${gsdOutput}/PA_Poverty_Profile_24.xls", svy sum c(mean more_30_market lb ub) sebnone f(3) npos(col) h1(Ind_profile and poor w/s.e. for tmarket) append
+qui tabout ind_profile poorPPP using "${gsdOutput}/PA_Poverty_Profile_24.xls", svy sum c(mean more_30_health lb ub) sebnone f(3) npos(col) h1(Ind_profile and poor w/s.e. for thealth) append
+qui tabout ind_profile poorPPP using "${gsdOutput}/PA_Poverty_Profile_24.xls", svy sum c(mean more_30_edu lb ub) sebnone f(3) npos(col) h1(Ind_profile and poor w/s.e. for school) append
 
 
 *Hunger
@@ -959,6 +975,11 @@ qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
 }
 gen hunger_dum=(hunger>1) if !missing(hunger)
 label values hunger_dum lyesno
+qui tabout ind_profile poorPPP using "${gsdOutput}/PA_Poverty_Profile_25.xls", svy sum c(mean hunger_dum lb ub) sebnone f(3) npos(col) h1(Ind_profile and poor w/s.e. for hunger_dum) append
+qui foreach var of varlist hhh_gender remit12m migr_idp drought_affected {
+	tabout `var' using "${gsdOutput}/PA_Poverty_Profile_25.xls", svy sum c(mean hunger_dum lb ub) sebnone f(3) npos(col) h1(`var' w/s.e. for hunger_dum) append
+}
+
 svy: mean hunger_dum, over(poorPPP)
 test [hunger_dum]Poor = [hunger_dum]_subpop_1
 svy: mean hunger_dum, over(hhh_gender)
@@ -991,10 +1012,14 @@ foreach i of local drought {
 }
 
 
-*Education and literacy 
+
+**************************************************
+*   EDUCATION AND LABOR MARKET
+**************************************************
 use "${gsdTemp}/hhm_PA_Poverty_Profile.dta", clear
 merge m:1 strata ea block hh using "${gsdTemp}/hh_PA_Poverty_Profile.dta", assert(match) nogen keepusing(hhh_edu_dum pliteracy hhsize)
 svyset ea [pweight=weight], strata(strata) singleunit(centered)
+
 qui tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy sum c(mean enrolled se) sebnone f(3) npos(col) h2(Enrolled by ind_profile) replace
 qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
 	tabout `var' using "${gsdOutput}/PA_Poverty_Profile_26.xls" if poorPPP==1, svy sum c(mean enrolled se) sebnone f(3) npos(col) h2(Enrolled (poor) by `var') append
@@ -1019,12 +1044,69 @@ qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
 qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
 	tabout edu_level_broad `var' using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy c(col) perc sebnone f(3) npos(col) h1(Educational level (all) by `var') append
 }
+gen no_educ=(edu_level_broad==0) if !missing(edu_level_broad)
+qui tabout ind_profile poorPPP using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy sum c(mean no_educ lb ub) sebnone f(3) npos(col) h1(Ind_profile and poor w/s.e. for no edu) append
+qui tabout hhh_gender using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy sum c(mean no_educ lb ub) sebnone f(3) npos(col) h1(Ind_profile and poor w/s.e. for no edu) append
+qui tabout remit12m using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy sum c(mean no_educ lb ub) sebnone f(3) npos(col) h1(Ind_profile and poor w/s.e. for no edu) append
+qui tabout migr_idp using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy sum c(mean no_educ lb ub) sebnone f(3) npos(col) h1(Ind_profile and poor w/s.e. for no edu) append
+qui tabout drought_affected using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy sum c(mean no_educ lb ub) sebnone f(3) npos(col) h1(Ind_profile and poor w/s.e. for no edu) append
 svy: mean enrolled, over(hhh_edu_dum)
 test [enrolled]Yes = [enrolled]No
 svy: mean enrolled if hhh_gender==0, over(hhh_edu_dum)
 test [enrolled]Yes = [enrolled]No
 svy: mean enrolled if hhh_gender==1, over(hhh_edu_dum)
 test [enrolled]Yes = [enrolled]No
+
+*Primary & secondary enrolment by gender and region/characteristic
+qui foreach var of varlist ind_profile hhh_gender poorPPP {
+	tabout `var' gender using "${gsdOutput}/PA_Poverty_Profile_26.xls" if pschool_age==1, svy sum c(mean enrolled se) sebnone f(3) npos(col) h1(Primary enrolled by gender and `var') append
+}
+qui foreach var of varlist ind_profile hhh_gender poorPPP {
+	tabout `var' gender using "${gsdOutput}/PA_Poverty_Profile_26.xls" if sschool_age==1, svy sum c(mean enrolled se) sebnone f(3) npos(col) h1(Secondary enrolled by gender and `var') append
+}
+
+*Enrolment by age 
+qui tabout age gender using "${gsdOutput}/PA_Poverty_Profile_26.xls" if (pschool_age==1 | sschool_age==1), svy sum c(mean enrolled se) sebnone f(3) npos(col) h1(Enrolment by age and gender) append
+gen age_edu=age if age>=6 & age<=17
+qui tabout age_edu if hhm_edu_reason==1 using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy percent c(col) sebnone f(3) h1(Age for reason to young for school) append
+
+*Reasons for not attending school 
+recode hhm_edu_reason (1=1) (2=8) (3=3) (4=8) (5=3) (6/8=2) (9=4) (10/11=8) (12/14=5) (15=6) (16/19=7) (1000=8), gen(reason_not_edu)
+label define lreason_not_edu 1 "Too young" 2 "Work/help at home" 3 "Ill, sick or disabled" 4 "Lack of money" 5 "Poor quality of school" 6 "No schools nearby" 7 "Insecurity" 8 "Other"
+label values reason_not_edu lreason_not_edu
+
+qui foreach var of varlist ind_profile hhh_gender poorPPP {
+	tabout reason_not_edu `var' if pschool_age==1 & gender==0 using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy percent c(col) sebnone f(3) h1(Resons for not attending primary school for girls by `var') append
+}
+qui foreach var of varlist ind_profile hhh_gender poorPPP {
+	tabout reason_not_edu `var' if pschool_age==1 & gender==1 using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy percent c(col) sebnone f(3) h1(Resons for not attending primary school for boys by `var') append
+}
+qui foreach var of varlist ind_profile hhh_gender poorPPP {
+	tabout reason_not_edu `var' if sschool_age==1 & gender==0 using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy percent c(col) sebnone f(3) h1(Resons for not attending secondary school for girls by `var') append
+}
+qui foreach var of varlist ind_profile hhh_gender poorPPP {
+	tabout reason_not_edu `var' if sschool_age==1 & gender==1 using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy percent c(col) sebnone f(3) h1(Resons for not attending secondary for boys by `var') append
+}
+
+*Educational expenditures (avg. annual expenditure per enrolled hhm)
+preserve 
+use "${gsdData}/1-CleanOutput/hhm.dta", clear
+collapse (sum) enrolled25, by(strata ea block hh)
+save "${gsdTemp}/hh_enrolled.dta", replace
+use "${gsdData}/1-CleanOutput/nonfood.dta", clear
+keep if itemid==1082 | itemid==1083
+collapse (sum) purc_usd_imp, by(strata ea block hh weight hhsize)
+replace purc_usd_imp=purc_usd_imp*52
+merge 1:1 strata ea hh block using "${gsdTemp}/hh_enrolled.dta", nogen keep(match)
+gen edu_exp_pc=purc_usd_imp/ enrolled25
+merge 1:1 strata ea hh block using "${gsdTemp}/hh_PA_Poverty_Profile.dta", nogen keep(match)
+qui foreach var of varlist ind_profile hhh_gender poorPPP {
+	tabout `var' using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy sum c(mean edu_exp_pc se) sebnone f(3) npos(col) h1(Avg. annual expenditure on education per enrolled hhm by `var') append
+}
+restore
+qui tabout reason_not_edu ind_profile if pschool_age==1 using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy percent c(col) sebnone f(3) h1(Resons for not attending primary school (all) by ind_profile) append
+qui tabout reason_not_edu ind_profile if sschool_age==1 using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy percent c(col) sebnone f(3) h1(Resons for not attending secondary school (all) by ind_profile) append
+
 
 
 *Labor and employment 
@@ -1102,6 +1184,49 @@ qui foreach var of varlist ind_profile type  {
 
 
 
+**************************************************
+*   LIVESTOCK AND FOCUS ON NOMADS
+**************************************************
+use "${gsdData}/1-CleanInput/livestock.dta", clear
+drop if livestockid>=7
+set sortseed 11041965
+qui forval i=1/6 {
+	cumul own_n if livestockid==`i', gen (own_n_distribution_`i') equal
+    replace own_n=. if livestockid==`i' & own_n_distribution_`i'>=0.99 & !missing(own_n_distribution_`i')
+}
+*Obtain a full dataset with all households and livestock
+merge m:1 strata ea block hh using "${gsdTemp}/hh_PA_Poverty_Profile.dta", nogen keep(match using)
+keep strata ea block hh livestockid own own_n
+replace livestockid=1 if livestockid>=.
+reshape wide own own_n, i(strata ea block hh) j( livestockid)
+reshape long
+replace own=0 if own>=.
+replace own_n=0 if own==0
+*Impute missing values and exclude outliers in the top of the distribution
+merge m:1 strata ea block hh using "${gsdTemp}/hh_PA_Poverty_Profile.dta", nogen assert(match) keepusing(weight poorPPP ind_profile type poorPPP_prob)
+levelsof livestockid, local(items)
+qui foreach item of local items {
+	   gen own_mean_`item'=. 
+	   sum own_n [aw= weight] if livestockid==`item', detail
+	   replace own_mean_`item'=r(mean) if livestockid==`item'  
+}
+qui forval i=1/6 {
+	replace own_n=own_mean_`i' if (own_n>=. & livestockid==`i') | (own_n==0 & own==1 & livestockid==`i') 
+}
+drop own_mean_*
+*Extract key data
+svyset ea [pweight=weight], strata(strata) singleunit(centered)
+qui tabout livestockid ind_profile using "${gsdOutput}/PA_Poverty_Profile_30.xls", svy sum c(mean own se) sebnone f(3) npos(col) h1(Ownership of livestock by type) replace
+preserve 
+drop if own==0
+qui tabout livestockid ind_profile using "${gsdOutput}/PA_Poverty_Profile_30.xls", svy sum c(mean own_n se) sebnone f(3) npos(col) h1(No. of livestock owned by type) append
+restore 
+collapse (sum) own, by(strata ea block hh ind_profile weight poorPPP poorPPP_prob type)
+gen d_own=(own>=1)
+svy: mean poorPPP_prob if d_own==1, over(ind_profile) 
+svy: mean poorPPP_prob if d_own==0, over(ind_profile) 
+
+
 
 
 **************************************************
@@ -1110,22 +1235,22 @@ qui foreach var of varlist ind_profile type  {
 
 *Monetary poverty
 import excel "${gsdOutput}/PA_Poverty_Profile_1.xls", sheet("Sheet1") firstrow case(lower) clear
-export excel using "${gsdOutput}/PA_Poverty_Profile_A_v2.xlsx", sheetreplace sheet("Raw_Data_1") firstrow(variables)
+export excel using "${gsdOutput}/PA_Poverty_Profile_A_v3.xlsx", sheetreplace sheet("Raw_Data_1") firstrow(variables)
 erase "${gsdOutput}/PA_Poverty_Profile_1.xls"
 foreach i of numlist 2/14 {
 	insheet using "${gsdOutput}/PA_Poverty_Profile_`i'.xls", clear nonames tab
-	export excel using "${gsdOutput}/PA_Poverty_Profile_A_v2.xlsx", sheetreplace sheet("Raw_Data_`i'") 
+	export excel using "${gsdOutput}/PA_Poverty_Profile_A_v3.xlsx", sheetreplace sheet("Raw_Data_`i'") 
 	erase "${gsdOutput}/PA_Poverty_Profile_`i'.xls"
 }
 *Poverty and indicators
 foreach i of numlist 15/21 {
 	insheet using "${gsdOutput}/PA_Poverty_Profile_`i'.xls", clear nonames tab
-	export excel using "${gsdOutput}/PA_Poverty_Profile_B_v2.xlsx", sheetreplace sheet("Raw_Data_`i'") 
+	export excel using "${gsdOutput}/PA_Poverty_Profile_B_v3.xlsx", sheetreplace sheet("Raw_Data_`i'") 
 	erase "${gsdOutput}/PA_Poverty_Profile_`i'.xls"
 }
 *Multidimensional poverty 
-foreach i of numlist 22/29 {
+foreach i of numlist 22/30 {
 	insheet using "${gsdOutput}/PA_Poverty_Profile_`i'.xls", clear nonames tab
-	export excel using "${gsdOutput}/PA_Poverty_Profile_C_v2.xlsx", sheetreplace sheet("Raw_Data_`i'") 
+	export excel using "${gsdOutput}/PA_Poverty_Profile_C_v3.xlsx", sheetreplace sheet("Raw_Data_`i'") 
 	erase "${gsdOutput}/PA_Poverty_Profile_`i'.xls"
 }
