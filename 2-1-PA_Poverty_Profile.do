@@ -348,7 +348,7 @@ svy: mean poorPPP_prob if child==1 & gender==0, over(drought_affected)
 test [poorPPP_prob]Yes = [poorPPP_prob]No
 
 *Youth poverty 
-qui use "${gsdTemp}/hhm_PA_Poverty_Profile.dta", clear
+use "${gsdTemp}/hhm_PA_Poverty_Profile.dta", clear
 svyset ea [pweight=weight], strata(strata) singleunit(centered)
 tabout ind_profile gender using "${gsdOutput}/PA_Poverty_Profile_9.xls" if youth==1, svy sum c(mean poorPPP_prob se ub lb) sebnone f(3) npos(col) h1(Youth poverty by ind_profile) replace
 qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
@@ -739,7 +739,44 @@ foreach i of local drought {
 }
 
 
+*Regression model for household characteristics using poor from core consumption
+use "${gsdTemp}/hhm_PA_Poverty_Profile.dta", clear
+collapse (max) age_dependency_ratio, by(strata ea block hh)
+save "${gsdTemp}/hh_dependency_ratio.dta", replace
+use "${gsdTemp}/hh_PA_Poverty_Profile.dta", clear
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhq-poverty.dta", nogen assert(match) 
+gen share=tc_core/tc_imp
+svy: mean share
+gen new_pline=plinePPP*.7233382
+gen poorPPP_core=(tc_core<new_pline) if !missing(tc_core)
+label values poorPPP_core lpoorPPP
+svy: mean poorPPP
+svy: mean poorPPP_core
+merge 1:1 strata ea block hh using "${gsdTemp}/hh_dependency_ratio.dta", nogen assert(match) keepusing(age_dependency_ratio)
+svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
+gen hhh_edu_some=(hhh_edu>0) if !missing(hhh_edu)
+*Regression for all regions
+svy: reg hhsize poorPPP_core
+outreg2 using "${gsdOutput}/Regression_HH_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel replace
+qui foreach var of varlist age_dependency_ratio pworking_age no_children no_adults no_old_age pgender pliteracy penrol_p penrol_s hhh_gender hhh_age hhh_edu_some {
+	svy: reg `var' poorPPP_core
+	outreg2 using "${gsdOutput}/Regression_HH_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+}
+*Regression by region
+levelsof ind_profile, local(region) 
+qui foreach i of local region {
+	qui foreach var of varlist hhsize age_dependency_ratio pworking_age no_children no_adults no_old_age pgender pliteracy penrol_p penrol_s hhh_gender hhh_age hhh_edu_some  {
+		svy: reg `var' poorPPP_core if ind_profile==`i'
+		outreg2 using "${gsdOutput}/Regression_HH_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+}
+}
+
+
 *Number of children
+use "${gsdTemp}/hh_PA_Poverty_Profile.dta", clear
+merge 1:m strata ea block hh using "${gsdTemp}/hhm_PA_Poverty_Profile.dta", nogen assert(match) keepusing(age_dependency_ratio)
+svyset ea [pweight=weight], strata(strata) singleunit(centered)
+
 qui tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_18.xls", svy sum c(mean no_children) sebnone f(3) npos(col) h2(Number of children - overall ) replace
 levelsof ind_profile, local(region) 
 qui foreach i of local region {
@@ -1106,6 +1143,7 @@ qui foreach var of varlist ind_profile hhh_gender poorPPP {
 restore
 qui tabout reason_not_edu ind_profile if pschool_age==1 using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy percent c(col) sebnone f(3) h1(Resons for not attending primary school (all) by ind_profile) append
 qui tabout reason_not_edu ind_profile if sschool_age==1 using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy percent c(col) sebnone f(3) h1(Resons for not attending secondary school (all) by ind_profile) append
+qui tabout ind_profile gender using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy sum c(mean literacy se) sebnone f(3) npos(col) h1(Literacy by gender & region) append
 
 
 
@@ -1248,6 +1286,10 @@ foreach i of numlist 15/21 {
 	export excel using "${gsdOutput}/PA_Poverty_Profile_B_v3.xlsx", sheetreplace sheet("Raw_Data_`i'") 
 	erase "${gsdOutput}/PA_Poverty_Profile_`i'.xls"
 }
+import delimited "${gsdOutput}/Regression_HH_Characteristics.txt", clear 
+export excel using "${gsdOutput}/PA_Poverty_Profile_B_v3.xlsx", sheetreplace sheet("Raw_Data_Regression")
+erase "${gsdOutput}/Regression_HH_Characteristics.txt"
+erase "${gsdOutput}/Regression_HH_Characteristics.xls"
 *Multidimensional poverty 
 foreach i of numlist 22/30 {
 	insheet using "${gsdOutput}/PA_Poverty_Profile_`i'.xls", clear nonames tab
