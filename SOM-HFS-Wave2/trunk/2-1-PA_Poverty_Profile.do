@@ -252,10 +252,10 @@ collapse (mean) poorPPP_prob [pw=hhweight], by(id_map)
 replace poorPPP_prob=poorPPP_prob*100
 merge 1:1 id_map using "${gsdData}/1-CleanInput/SOM_db.dta", nogen keepusing(ISO)
 spmap poorPPP_prob using "${gsdData}/1-CleanInput/SOM_coord.dta", id(id_map) fcolor(Reds) ///
-clmethod(custom) clnumber(5) clbreaks(20 40 60 80 100) ndlabel(Not covered by the SHFS 2017) legstyle(2) legend(position(4)) ///
+clmethod(custom) clnumber(5) clbreaks(0 20 40 60 80 100) ndlabel(Not covered by the SHFS 2017) legstyle(2) legend(position(4)) ///
 ndfcolor(gs9) title("Poverty Incidence") subtitle("% of population below US$ 1.9 (PPP) per day")  
 spmap poorPPP_prob using "${gsdData}/1-CleanInput/SOM_coord.dta", id(id_map) fcolor(Reds) ///
-clmethod(custom) clnumber(5) clbreaks(20 40 60 80 100) ndlabel(Not covered by the SHFS 2017) legstyle(2) legend(position(4)) ndfcolor(gs9)  subtitle("% of population")   
+clmethod(custom) clnumber(5) clbreaks(0 20 40 60 80 100) ndlabel(Not covered by the SHFS 2017) legstyle(2) legend(position(4)) ndfcolor(gs9)  subtitle("% of population")   
 graph save Graph "${gsdOutput}/Map_Poverty.gph", replace
 restore
 
@@ -705,6 +705,8 @@ levelsof drought_affected, local(drought)
 qui foreach i of local drought {
 	tabout poorPPP using "${gsdOutput}/PA_Poverty_Profile_17.xls" if drought_affected==`i', svy sum c(mean age_dependency_ratio) sebnone f(3) npos(col) h2(Age dependency ratio for drought_affected `i' ) append
 }
+qui tabout quintiles_tc using "${gsdOutput}/PA_Poverty_Profile_17.xls", svy sum c(mean age_dependency_ratio se) sebnone f(3) npos(col) h2(Age dependency ratio - by quintile) append
+
 svy: mean age_dependency_ratio, over(poorPPP) 
 test [age_dependency_ratio]_subpop_1 = [age_dependency_ratio]Poor
 levelsof ind_profile, local(region) 
@@ -736,39 +738,6 @@ levelsof drought_affected, local(drought)
 foreach i of local drought {
 	svy: mean age_dependency_ratio if drought_affected==`i', over(poorPPP)
 	test [age_dependency_ratio]_subpop_1 = [age_dependency_ratio]Poor
-}
-
-
-*Regression model for household characteristics using poor from core consumption
-use "${gsdTemp}/hhm_PA_Poverty_Profile.dta", clear
-collapse (max) age_dependency_ratio, by(strata ea block hh)
-save "${gsdTemp}/hh_dependency_ratio.dta", replace
-use "${gsdTemp}/hh_PA_Poverty_Profile.dta", clear
-merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhq-poverty.dta", nogen assert(match) 
-gen share=tc_core/tc_imp
-svy: mean share
-gen new_pline=plinePPP*.7233382
-gen poorPPP_core=(tc_core<new_pline) if !missing(tc_core)
-label values poorPPP_core lpoorPPP
-svy: mean poorPPP
-svy: mean poorPPP_core
-merge 1:1 strata ea block hh using "${gsdTemp}/hh_dependency_ratio.dta", nogen assert(match) keepusing(age_dependency_ratio)
-svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
-gen hhh_edu_some=(hhh_edu>0) if !missing(hhh_edu)
-*Regression for all regions
-svy: reg hhsize poorPPP_core
-outreg2 using "${gsdOutput}/Regression_HH_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel replace
-qui foreach var of varlist age_dependency_ratio pworking_age no_children no_adults no_old_age pgender pliteracy penrol_p penrol_s hhh_gender hhh_age hhh_edu_some {
-	svy: reg `var' poorPPP_core
-	outreg2 using "${gsdOutput}/Regression_HH_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-}
-*Regression by region
-levelsof ind_profile, local(region) 
-qui foreach i of local region {
-	qui foreach var of varlist hhsize age_dependency_ratio pworking_age no_children no_adults no_old_age pgender pliteracy penrol_p penrol_s hhh_gender hhh_age hhh_edu_some  {
-		svy: reg `var' poorPPP_core if ind_profile==`i'
-		outreg2 using "${gsdOutput}/Regression_HH_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-}
 }
 
 
@@ -1144,6 +1113,21 @@ restore
 qui tabout reason_not_edu ind_profile if pschool_age==1 using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy percent c(col) sebnone f(3) h1(Resons for not attending primary school (all) by ind_profile) append
 qui tabout reason_not_edu ind_profile if sschool_age==1 using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy percent c(col) sebnone f(3) h1(Resons for not attending secondary school (all) by ind_profile) append
 qui tabout ind_profile gender using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy sum c(mean literacy se) sebnone f(3) npos(col) h1(Literacy by gender & region) append
+qui tabout reason_not_edu poorPPP if pschool_age==1 using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy percent c(col) sebnone f(3) h1(Resons for not attending primary school for poor status) append
+qui tabout reason_not_edu poorPPP if sschool_age==1 using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy percent c(col) sebnone f(3) h1(Resons for not attending secondary school for poor status) append
+qui tabout age gender using "${gsdOutput}/PA_Poverty_Profile_26.xls" if age<26 & age>5, svy sum c(mean enrolled25 se) sebnone f(3) npos(col) h1(Enrolment by age and gender) append
+qui tabout age_cat_narrow gender using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy pop c(per) f(5) sebnone npos(col) ptotal(none) h1(Population and gender groups) append
+recode age_cat_narrow (13/18=12)
+qui tabout age_cat_narrow gender using "${gsdOutput}/PA_Poverty_Profile_26.xls" if age_cat_narrow>=2, svy sum c(mean literacy se) sebnone f(3) npos(col) h1(Literacy by age and gender) append
+qui tabout age_cat_narrow poorPPP using "${gsdOutput}/PA_Poverty_Profile_26.xls" if age_cat_narrow>2, svy sum c(mean no_educ se) sebnone f(3) npos(col) h1(No education by age group and poor status) append
+qui tabout age_cat_narrow gender using "${gsdOutput}/PA_Poverty_Profile_26.xls" if age_cat_narrow>2, svy sum c(mean no_educ se) sebnone f(3) npos(col) h1(No education by age group and gender) append
+*Educational level by age 
+gen edu_level=1 if hhm_edu_level<=8 & !missing(hhm_edu_level)
+replace edu_level=2 if hhm_edu_level>8 & hhm_edu_level<=12 & !missing(hhm_edu_level)
+preserve
+drop if age>25
+qui tabout age edu_level  using "${gsdOutput}/PA_Poverty_Profile_26.xls" if hhm_edu_current==1 & age<=25, svy c(col) perc sebnone f(3) npos(col) h1(Age of attendance for educational levels) append
+restore
 
 
 
@@ -1266,6 +1250,418 @@ svy: mean poorPPP_prob if d_own==0, over(ind_profile)
 
 
 
+**************************************************
+*   ASSETS AND POVERTY
+**************************************************
+use "${gsdData}/1-CleanOutput/assets.dta", clear
+*keep if inlist(itemid,1,2,3,6,10,16,18,24,26,28,30,31,34,35,36,37)
+
+preserve
+keep if itemid==1 | itemid==2
+collapse (max) own, by(strata ea block hh)
+gen asset="Mattress/Bed"
+save "${gsdTemp}/hh_PA_Assets_1.dta", replace
+restore
+
+preserve
+keep if itemid==3 | itemid==6
+collapse (max) own, by(strata ea block hh)
+gen asset="Chair/Table"
+save "${gsdTemp}/hh_PA_Assets_2.dta", replace
+restore
+
+preserve
+keep if itemid==10
+collapse (max) own, by(strata ea block hh)
+gen asset="Mortar/pestle"
+save "${gsdTemp}/hh_PA_Assets_3.dta", replace
+restore
+
+preserve
+keep if itemid==16
+collapse (max) own, by(strata ea block hh)
+gen asset="Refrigerator"
+save "${gsdTemp}/hh_PA_Assets_4.dta", replace
+restore
+
+preserve
+keep if itemid==18
+collapse (max) own, by(strata ea block hh)
+gen asset="Stove for charcol"
+save "${gsdTemp}/hh_PA_Assets_5.dta", replace
+restore
+
+preserve
+keep if itemid==24
+collapse (max) own, by(strata ea block hh)
+gen asset="Cellphone"
+save "${gsdTemp}/hh_PA_Assets_6.dta", replace
+restore
+
+preserve
+keep if itemid==26
+collapse (max) own, by(strata ea block hh)
+gen asset="Radio"
+save "${gsdTemp}/hh_PA_Assets_7.dta", replace
+restore
+
+preserve
+keep if itemid==28 | itemid==31
+collapse (max) own, by(strata ea block hh)
+gen asset="TV/Satellite dish"
+save "${gsdTemp}/hh_PA_Assets_8.dta", replace
+restore
+
+preserve
+keep if itemid==30
+collapse (max) own, by(strata ea block hh)
+gen asset="Computer & equipment"
+save "${gsdTemp}/hh_PA_Assets_9.dta", replace
+restore
+
+preserve
+keep if itemid==34 | itemid==35 | itemid==36 | itemid==37
+collapse (max) own, by(strata ea block hh)
+gen asset="Motorcycle/Car/Bus/Lorry"
+save "${gsdTemp}/hh_PA_Assets_10.dta", replace
+restore
+
+use "${gsdTemp}/hh_PA_Assets_1.dta", clear
+forval i=2/10 {
+	append using "${gsdTemp}/hh_PA_Assets_`i'.dta"
+}
+merge m:1 strata ea block hh using "${gsdTemp}/hh_PA_Poverty_Profile.dta", nogen keep(match)
+svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
+save "${gsdTemp}/hh_PA_Assets_All.dta", replace
+
+
+*Include poor from food and non-food 
+use "${gsdTemp}/hh_PA_Poverty_Profile.dta", clear
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhq-poverty.dta", nogen keep(match) 
+egen cons_f_nf=rowtotal( mi_cons_f0 mi_cons_f1 mi_cons_f2 mi_cons_f3 mi_cons_f4 mi_cons_nf0 mi_cons_nf1 mi_cons_nf2 mi_cons_nf3 mi_cons_nf4)
+replace cons_f_nf=cons_f_nf/deflator
+gen share=cons_f_nf/tc_imp
+svy: mean share, over(ind_profile_old)
+gen new_pline=plinePPP*.9693647 if ind_profile_old==1
+replace new_pline=plinePPP*.9584866 if ind_profile_old==2
+replace new_pline=plinePPP*.9607523 if ind_profile_old==3
+replace new_pline=plinePPP*.6842178 if ind_profile_old==4
+replace new_pline=plinePPP*.9887102 if ind_profile_old==5
+replace new_pline=plinePPP*.9813133 if ind_profile_old==6
+replace new_pline=plinePPP*.9801565 if ind_profile_old==7
+replace new_pline=plinePPP*.9918614 if ind_profile_old==8
+replace new_pline=plinePPP*.9844103 if ind_profile_old==9
+replace new_pline=plinePPP*.9809613 if ind_profile_old==11
+replace new_pline=plinePPP*.9800027 if ind_profile_old==12
+replace new_pline=plinePPP*.9903947 if ind_profile_old==13
+gen poorPPP_f_nf=(cons_f_nf<new_pline) if !missing(cons_f_nf)
+label values poorPPP_f_nf lpoorPPP
+*Check new poverty status 
+svy: mean poorPPP
+svy: mean poorPPP_f_nf
+merge 1:m strata ea block hh using "${gsdTemp}/hh_PA_Assets_All.dta", nogen keep(match)
+*Export relevant information
+qui tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_31.xls" if asset=="Cellphone", svy sum c(mean own se) sebnone f(3) npos(col) h2(Ownership of Cellphone by type) replace
+qui tabout poorPPP_f_nf using "${gsdOutput}/PA_Poverty_Profile_31.xls" if asset=="Cellphone", svy sum c(mean own se) sebnone f(3) npos(col) h2(Ownership of Cellphone by poorPPP_f_nf) append
+qui tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_31.xls" if asset=="Chair/Table", svy sum c(mean own se) sebnone f(3) npos(col) h2(Ownership of Chair/Table by type) append
+qui tabout poorPPP_f_nf using "${gsdOutput}/PA_Poverty_Profile_31.xls" if asset=="Chair/Table", svy sum c(mean own se) sebnone f(3) npos(col) h2(Ownership of Chair/Table by poorPPP_f_nf) append
+qui tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_31.xls" if asset=="Computer & equipment", svy sum c(mean own se) sebnone f(3) npos(col) h2(Ownership of Computer & equipment by type) append
+qui tabout poorPPP_f_nf using "${gsdOutput}/PA_Poverty_Profile_31.xls" if asset=="Computer & equipment", svy sum c(mean own se) sebnone f(3) npos(col) h2(Ownership of Computer & equipment by poorPPP_f_nf) append
+qui tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_31.xls" if asset=="Mattress/Bed", svy sum c(mean own se) sebnone f(3) npos(col) h2(Ownership of Mattress/Bed by type) append
+qui tabout poorPPP_f_nf using "${gsdOutput}/PA_Poverty_Profile_31.xls" if asset=="Mattress/Bed", svy sum c(mean own se) sebnone f(3) npos(col) h2(Ownership of Mattress/Bed by poorPPP_f_nf) append
+qui tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_31.xls" if asset=="Mortar/pestle", svy sum c(mean own se) sebnone f(3) npos(col) h2(Ownership of Mortar/pestle by type) append
+qui tabout poorPPP_f_nf using "${gsdOutput}/PA_Poverty_Profile_31.xls" if asset=="Mortar/pestle", svy sum c(mean own se) sebnone f(3) npos(col) h2(Ownership of Mortar/pestle by poorPPP_f_nf) append
+qui tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_31.xls" if asset=="Motorcycle/Car/Bus/Lorry", svy sum c(mean own se) sebnone f(3) npos(col) h2(Ownership of Motorcycle/Car/Bus/Lorry by type) append
+qui tabout poorPPP_f_nf using "${gsdOutput}/PA_Poverty_Profile_31.xls" if asset=="Motorcycle/Car/Bus/Lorry", svy sum c(mean own se) sebnone f(3) npos(col) h2(Ownership of Motorcycle/Car/Bus/Lorry by poorPPP_f_nf) append
+qui tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_31.xls" if asset=="Radio", svy sum c(mean own se) sebnone f(3) npos(col) h2(Ownership of Radio by type) append
+qui tabout poorPPP_f_nf using "${gsdOutput}/PA_Poverty_Profile_31.xls" if asset=="Radio", svy sum c(mean own se) sebnone f(3) npos(col) h2(Ownership of Radio by poorPPP_f_nf) append
+qui tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_31.xls" if asset=="Refrigerator", svy sum c(mean own se) sebnone f(3) npos(col) h2(Ownership of Refrigerator by type) append
+qui tabout poorPPP_f_nf using "${gsdOutput}/PA_Poverty_Profile_31.xls" if asset=="Refrigerator", svy sum c(mean own se) sebnone f(3) npos(col) h2(Ownership of Refrigerator by poorPPP_f_nf) append
+qui tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_31.xls" if asset=="Stove for charcol", svy sum c(mean own se) sebnone f(3) npos(col) h2(Ownership of Stove for charcol by type) append
+qui tabout poorPPP_f_nf using "${gsdOutput}/PA_Poverty_Profile_31.xls" if asset=="Stove for charcol", svy sum c(mean own se) sebnone f(3) npos(col) h2(Ownership of Stove for charcol by poorPPP_f_nf) append
+qui tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_31.xls" if asset=="TV/Satellite dish", svy sum c(mean own se) sebnone f(3) npos(col) h2(Ownership of TV/Satellite dish by type) append
+qui tabout poorPPP_f_nf using "${gsdOutput}/PA_Poverty_Profile_31.xls" if asset=="TV/Satellite dish", svy sum c(mean own se) sebnone f(3) npos(col) h2(Ownership of TV/Satellite dish by poorPPP_f_nf) append
+
+
+
+**************************************************
+*   PERCEPTIONS AND OTHER
+**************************************************
+use "${gsdTemp}/hh_PA_Poverty_Profile.dta", clear
+svyset ea [pweight=weight], strata(strata) singleunit(centered)
+gen emp_past_better=(employment_opportunities<=2) if !missing(employment_opportunities)
+gen emp_future_better=(standard_living<=2) if !missing(standard_living)
+
+foreach var of varlist ind_profile poorPPP hhh_gender migr_idp drought_affected remit12m {
+	qui tabout `var' using "${gsdOutput}/PA_Poverty_Profile_31.xls", svy sum c(mean emp_future_better se) sebnone f(3) npos(col) h2(Future living conditions by `var') append
+}
+svy: mean emp_future_better, over(poorPPP)
+test [emp_future_better]_subpop_1 = [emp_future_better]Poor
+svy: mean emp_future_better, over(hhh_gender)
+test [emp_future_better]Female = [emp_future_better]Male
+svy: mean emp_future_better, over(remit12m)
+test [emp_future_better]Yes = [emp_future_better]No
+svy: mean emp_future_better, over(migr_idp)
+test [emp_future_better]Yes = [emp_future_better]No
+svy: mean emp_future_better, over(drought_affected)
+test [emp_future_better]Yes = [emp_future_better]No
+
+
+*Access to markets greater in Mogadishu 
+use "${gsdTemp}/hh_PA_Poverty_Profile.dta", clear
+svyset ea [pweight=weight], strata(strata) singleunit(centered)
+gen close_market=(tmarket<=2) if !missing(tmarket) 
+svy: mean water_home if inlist(ind_profile,1,2), over(ind_profile)
+test [water_home]Mogadishu = [water_home]_subpop_2
+svy: mean electricity if inlist(ind_profile,1,2), over(ind_profile)
+test [electricity]Mogadishu = [electricity]_subpop_2
+svy: mean improved_water if inlist(ind_profile,1,4), over(ind_profile)
+test [improved_water]Mogadishu = [improved_water]_subpop_2
+svy: mean acc_bank2 if inlist(ind_profile,1,2), over(ind_profile)
+test [acc_bank2]Mogadishu = [acc_bank2]_subpop_2
+svy: mean acc_bank2 if inlist(ind_profile,1,2), over(ind_profile)
+test [acc_bank2]Mogadishu = [acc_bank2]_subpop_2
+svy: mean close_market if inlist(ind_profile,1,2), over(ind_profile)
+test [close_market]Mogadishu = [close_market]_subpop_2
+
+
+
+
+
+
+**************************************************
+*   REGRESSION ANALYSIS
+**************************************************
+use "${gsdTemp}/hhm_PA_Poverty_Profile.dta", clear
+replace hhm_edu_current=. if age>29
+collapse (max) age_dependency_ratio (sum) hhm_edu_current, by(strata ea block hh)
+rename hhm_edu_current hhm_edu_current_sum
+save "${gsdTemp}/hh_dependency_ratio.dta", replace
+use "${gsdTemp}/hh_PA_Poverty_Profile.dta", clear
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhq-poverty.dta", nogen assert(match) 
+gen share=tc_core/tc_imp
+svy: mean share, over(ind_profile_old)
+gen new_pline=plinePPP*.76949 if ind_profile_old==1
+replace new_pline=plinePPP*.8102825 if ind_profile_old==2
+replace new_pline=plinePPP*.8287334 if ind_profile_old==3
+replace new_pline=plinePPP*.3157929 if ind_profile_old==4
+replace new_pline=plinePPP*.7943094 if ind_profile_old==5
+replace new_pline=plinePPP*.7173309 if ind_profile_old==6
+replace new_pline=plinePPP*.7315971 if ind_profile_old==7
+replace new_pline=plinePPP*.5755567 if ind_profile_old==8
+replace new_pline=plinePPP*.7733893 if ind_profile_old==9
+replace new_pline=plinePPP*.7586972 if ind_profile_old==11
+replace new_pline=plinePPP*.6948547 if ind_profile_old==12
+replace new_pline=plinePPP*.6859144 if ind_profile_old==13
+gen poorPPP_core=(tc_core<new_pline) if !missing(tc_core)
+label values poorPPP_core lpoorPPP
+svy: mean poorPPP
+svy: mean poorPPP_core
+merge 1:1 strata ea block hh using "${gsdTemp}/hh_dependency_ratio.dta", nogen assert(match) keepusing(age_dependency_ratio hhm_edu_current)
+svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
+gen hhh_edu_some=(hhh_edu>0) if !missing(hhh_edu)
+
+
+*Checks for poverty and key groups
+svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
+svy: logit poorPPP hhh_gender 
+outreg2 using "${gsdOutput}/Regression_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel replace
+svy: logit poorPPP hhh_gender i.astrata
+outreg2 using "${gsdOutput}/Regression_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+
+svy: logit poorPPP remit12m 
+outreg2 using "${gsdOutput}/Regression_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit poorPPP remit12m i.astrata
+outreg2 using "${gsdOutput}/Regression_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+
+svy: logit poorPPP migr_idp 
+outreg2 using "${gsdOutput}/Regression_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit poorPPP migr_idp i.astrata
+outreg2 using "${gsdOutput}/Regression_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+
+svy: logit poorPPP drought_affected 
+outreg2 using "${gsdOutput}/Regression_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit poorPPP drought_affected i.astrata
+outreg2 using "${gsdOutput}/Regression_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+
+svy: logit poorPPP remit12m hhh_gender migr_idp drought_affected  
+outreg2 using "${gsdOutput}/Regression_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit poorPPP remit12m hhh_gender migr_idp drought_affected  i.astrata
+outreg2 using "${gsdOutput}/Regression_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+
+*Checks for poverty and education of HH head (Same results for hhh_edu)
+svy: logit poorPPP_core hhh_edu_some 
+outreg2 using "${gsdOutput}/Regression_Poverty_Edu_HHH.xls", bdec(3) tdec(3) rdec(3) nolabel replace
+svy: logit poorPPP_core hhh_edu_some hhh_gender
+outreg2 using "${gsdOutput}/Regression_Poverty_Edu_HHH.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit poorPPP_core hhh_edu_some hhh_gender hhh_age
+outreg2 using "${gsdOutput}/Regression_Poverty_Edu_HHH.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit poorPPP_core hhh_edu_some hhh_gender hhh_age i.astrata
+outreg2 using "${gsdOutput}/Regression_Poverty_Edu_HHH.xls", bdec(3) tdec(3) rdec(3) nolabel append
+
+
+*Regression of HH characteristics 
+gen lhood_cat=1 if lhood==1
+replace lhood_cat=2 if lhood==7
+replace lhood_cat=3 if lhood==8
+replace lhood_cat=4 if lhood==2 | lhood==5
+replace lhood_cat=5 if lhood_cat==.
+label define llhood_cat 1 "Salaried Labor" 2 "Small family business"  3 "Agriculture, fishing, hunting etc." 4 "Remittances" 5 "Other"
+label values lhood_cat llhood_cat
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhm-hh.dta", keepusing(hhh_literacy) nogen assert(match)
+
+svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
+svy: logit poorPPP_core hhsize age_dependency_ratio no_children pgender hhh_gender hhh_age hhh_literacy pliteracy improved_water improved_sanitation electricity i.lhood_cat i.astrata
+outreg2 using "${gsdOutput}/Regression_HH_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel replace
+
+svy: logit poorPPP_core hhsize age_dependency_ratio no_children pgender hhh_gender hhh_age hhh_literacy pliteracy improved_water improved_sanitation electricity i.lhood_cat i.astrata if ind_profile==1
+outreg2 using "${gsdOutput}/Regression_HH_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit poorPPP_core hhsize age_dependency_ratio no_children pgender hhh_gender hhh_age hhh_literacy pliteracy improved_water improved_sanitation electricity i.lhood_cat i.astrata if ind_profile==2
+outreg2 using "${gsdOutput}/Regression_HH_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit poorPPP_core hhsize age_dependency_ratio no_children pgender hhh_gender hhh_age hhh_literacy pliteracy improved_water improved_sanitation electricity i.lhood_cat i.astrata if ind_profile==3
+outreg2 using "${gsdOutput}/Regression_HH_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit poorPPP_core hhsize age_dependency_ratio no_children pgender hhh_gender hhh_age hhh_literacy pliteracy improved_water improved_sanitation electricity i.lhood_cat i.astrata if ind_profile==4
+outreg2 using "${gsdOutput}/Regression_HH_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit poorPPP_core hhsize age_dependency_ratio no_children pgender hhh_gender hhh_age hhh_literacy pliteracy improved_water improved_sanitation electricity i.lhood_cat i.astrata if ind_profile==5
+outreg2 using "${gsdOutput}/Regression_HH_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+
+
+*Deprivations 
+svyset ea [pweight=weight], strata(strata) singleunit(centered)
+svy: logit living_standards hhsize age_dependency_ratio hhh_gender hhh_age hhh_literacy i.astrata
+outreg2 using "${gsdOutput}/Regression_Multiple_Deprivations.xls", bdec(3) tdec(3) rdec(3) nolabel replace
+svy: logit education hhsize age_dependency_ratio hhh_gender hhh_age hhh_literacy i.astrata
+outreg2 using "${gsdOutput}/Regression_Multiple_Deprivations.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit wash hhsize age_dependency_ratio hhh_gender hhh_age hhh_literacy i.astrata
+outreg2 using "${gsdOutput}/Regression_Multiple_Deprivations.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: ologit deprivations3 hhsize age_dependency_ratio hhh_gender hhh_age hhh_literacy i.astrata
+outreg2 using "${gsdOutput}/Regression_Multiple_Deprivations.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: ologit deprivations hhsize age_dependency_ratio hhh_gender hhh_age hhh_literacy i.astrata
+outreg2 using "${gsdOutput}/Regression_Multiple_Deprivations.xls", bdec(3) tdec(3) rdec(3) nolabel append
+
+
+
+*Education
+merge 1:m strata ea block hh using  "${gsdTemp}/hhm_PA_Poverty_Profile.dta", nogen
+gen edu_no=(edu_level_broad==0) if !missing(edu_level_broad) 
+gen school_more30=(tedu>=4) if !missing(tedu)
+preserve 
+use "${gsdData}/1-CleanOutput/hhm.dta", clear
+collapse (sum) enrolled25, by(strata ea block hh)
+save "${gsdTemp}/hh_enrolled.dta", replace
+use "${gsdData}/1-CleanOutput/nonfood.dta", clear
+keep if itemid==1082 | itemid==1083
+collapse (sum) purc_usd_imp, by(strata ea block hh weight hhsize)
+replace purc_usd_imp=purc_usd_imp*52
+merge 1:1 strata ea hh block using "${gsdTemp}/hh_enrolled.dta", nogen keep(match)
+gen edu_exp_pc=purc_usd_imp/ enrolled25
+save "${gsdTemp}/edu_exp.dta", replace
+restore
+merge m:1 strata ea hh block using "${gsdTemp}/edu_exp.dta", nogen keep(match master)
+replace edu_exp_pc=0 if edu_exp_pc==.
+replace hhm_edu_current=. if age>29
+
+gen age_cat=1 if age>=6 & age<=13 
+replace age_cat=2 if age>=14 & age<=17 
+replace age_cat=3 if age>=18 & age<=25 
+replace age_cat=4 if age>=26 & age<.
+label define lage_cat 1 "6-13" 2 "14-17"  3 "18-25" 4 "26+"
+label values age_cat lage_cat
+
+*Scholl attendance 
+svyset ea [pweight=weight], strata(strata) singleunit(centered)
+svy: logit enrolled25 poorPPP_core age gender hhh_gender hhh_literacy remit12m school_more30 edu_exp_pc i.astrata
+outreg2 using "${gsdOutput}/Regression_School_Attendance.xls", bdec(3) tdec(3) rdec(3) nolabel replace
+svy: logit enrolled25 poorPPP_core gender hhh_gender hhh_literacy remit12m school_more30 edu_exp_pc i.age_cat i.astrata
+outreg2 using "${gsdOutput}/Regression_School_Attendance.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit enrolled25 poorPPP_core age gender hhh_gender hhh_literacy remit12m school_more30 edu_exp_pc i.astrata if pschool_age==1
+outreg2 using "${gsdOutput}/Regression_School_Attendance.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit enrolled25 poorPPP_core age gender hhh_gender hhh_literacy remit12m school_more30 edu_exp_pc i.astrata if sschool_age==1
+outreg2 using "${gsdOutput}/Regression_School_Attendance.xls", bdec(3) tdec(3) rdec(3) nolabel append
+
+*No education
+svy: logit edu_no poorPPP_core age gender i.astrata
+outreg2 using "${gsdOutput}/Regression_School_Attendance.xls", bdec(3) tdec(3) rdec(3) nolabel append
+
+
+
+*Checks for child/youth poverty 
+svyset ea [pweight=weight], strata(strata) singleunit(centered)
+svy: logit poorPPP_core hhh_gender if child==1
+outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel replace
+svy: logit poorPPP_core hhh_gender i.astrata if child==1
+outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+
+svy: logit poorPPP_core remit12m if child==1
+outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit poorPPP_core remit12m i.astrata if child==1
+outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+
+svy: logit poorPPP_core migr_idp if child==1
+outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit poorPPP_core migr_idp i.astrata if child==1
+outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+
+svy: logit poorPPP_core drought_affected if child==1
+outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit poorPPP_core drought_affected i.astrata if child==1
+outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+
+svy: logit poorPPP_core hhh_gender remit12m migr_idp drought_affected i.astrata if child==1
+
+
+svy: logit poorPPP_core hhh_gender if youth==1
+outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit poorPPP_core hhh_gender i.astrata if youth==1
+outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+
+svy: logit poorPPP_core remit12m if youth==1
+outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit poorPPP_core remit12m i.astrata if youth==1
+outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+
+svy: logit poorPPP_core migr_idp if youth==1
+outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit poorPPP_core migr_idp i.astrata if youth==1
+outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+
+svy: logit poorPPP_core drought_affected if youth==1
+outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit poorPPP_core drought_affected i.astrata if youth==1
+outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
+
+svy: logit poorPPP_core hhh_gender remit12m migr_idp drought_affected i.astrata if youth==1
+
+
+*Inequality decomposition (GE 1 - Theil Index)
+use "${gsdTemp}/hh_PA_Poverty_Profile.dta", clear
+svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
+ineqdeco tc_imp [aweight=hhweight], bygroup(ind_profile)
+ineqdeco tc_imp [aweight=hhweight], bygroup(type)
+recode ind_profile_old (1=1) (2=2) (3=3) (4=2) (5=3) (6=4) (7=5) (8=5) (9=6) (11=7) (12=7) (13=8), gen (region)
+ineqdeco tc_imp [aweight=hhweight], bygroup(region)
+
+
+*Poverty gap in monetary value 
+use "${gsdTemp}/hh_PA_Poverty_Profile.dta", clear
+svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
+*Obtain gap in USD 
+gen monetary_gap_hh=pgi*plinePPP
+*Convert to population & annual value
+gen monetary_gap_pop=monetary_gap_hh*hhsize*365
+*Scale weights to total population in Somalia (Total from PESS 12,316,895)
+egen tot_wave2=sum(weight)
+gen scale_factor=2076677/1939610
+replace weight=scale_factor*weight
+*Obtain representative value for areas covered 
+gen monetary_gap_rep=monetary_gap_pop*weight
+egen monetary_gap_som=sum(monetary_gap_rep)
+replace monetary_gap_som=monetary_gap_som/1000000
+label var monetary_gap_som "Monetary gap in million US per year"
+
+
+
+
 
 **************************************************
 *   INTEGRATE ALL SHEETS INTO THE FINAL FILE
@@ -1286,13 +1682,35 @@ foreach i of numlist 15/21 {
 	export excel using "${gsdOutput}/PA_Poverty_Profile_B_v3.xlsx", sheetreplace sheet("Raw_Data_`i'") 
 	erase "${gsdOutput}/PA_Poverty_Profile_`i'.xls"
 }
-import delimited "${gsdOutput}/Regression_HH_Characteristics.txt", clear 
-export excel using "${gsdOutput}/PA_Poverty_Profile_B_v3.xlsx", sheetreplace sheet("Raw_Data_Regression")
-erase "${gsdOutput}/Regression_HH_Characteristics.txt"
-erase "${gsdOutput}/Regression_HH_Characteristics.xls"
 *Multidimensional poverty 
-foreach i of numlist 22/30 {
+foreach i of numlist 22/31 {
 	insheet using "${gsdOutput}/PA_Poverty_Profile_`i'.xls", clear nonames tab
 	export excel using "${gsdOutput}/PA_Poverty_Profile_C_v3.xlsx", sheetreplace sheet("Raw_Data_`i'") 
 	erase "${gsdOutput}/PA_Poverty_Profile_`i'.xls"
 }
+*Regression tables
+import delimited "${gsdOutput}/Regression_Poverty_Characteristics.txt", clear 
+export excel using "${gsdOutput}/PA_Poverty_Profile_D_v3.xlsx", sheetreplace sheet("Raw_1")
+erase "${gsdOutput}/Regression_Poverty_Characteristics.txt"
+erase "${gsdOutput}/Regression_Poverty_Characteristics.xls"
+import delimited "${gsdOutput}/Regression_Poverty_Edu_HHH.txt", clear 
+export excel using "${gsdOutput}/PA_Poverty_Profile_D_v3.xlsx", sheetreplace sheet("Raw_2")
+erase "${gsdOutput}/Regression_Poverty_Edu_HHH.txt"
+erase "${gsdOutput}/Regression_Poverty_Edu_HHH.xls"
+import delimited "${gsdOutput}/Regression_HH_Characteristics.txt", clear 
+export excel using "${gsdOutput}/PA_Poverty_Profile_D_v3.xlsx", sheetreplace sheet("Raw_3")
+erase "${gsdOutput}/Regression_HH_Characteristics.txt"
+erase "${gsdOutput}/Regression_HH_Characteristics.xls"
+import delimited "${gsdOutput}/Regression_Multiple_Deprivations.txt", clear 
+export excel using "${gsdOutput}/PA_Poverty_Profile_D_v3.xlsx", sheetreplace sheet("Raw_4")
+erase "${gsdOutput}/Regression_Multiple_Deprivations.txt"
+erase "${gsdOutput}/Regression_Multiple_Deprivations.xls"
+import delimited "${gsdOutput}/Regression_School_Attendance.txt", clear 
+export excel using "${gsdOutput}/PA_Poverty_Profile_D_v3.xlsx", sheetreplace sheet("Raw_5")
+erase "${gsdOutput}/Regression_School_Attendance.txt"
+erase "${gsdOutput}/Regression_School_Attendance.xls"
+import delimited "${gsdOutput}/Regression_Child_Poverty_Characteristics.txt", clear 
+export excel using "${gsdOutput}/PA_Poverty_Profile_D_v3.xlsx", sheetreplace sheet("Raw_6")
+erase "${gsdOutput}/Regression_Child_Poverty_Characteristics.txt"
+erase "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls"
+
