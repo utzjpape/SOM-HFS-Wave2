@@ -1031,10 +1031,10 @@ qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
 	tabout `var' using "${gsdOutput}/PA_Poverty_Profile_26.xls" if poorPPP==1, svy sum c(mean enrolled se) sebnone f(3) npos(col) h2(Enrolled (poor) by `var') append
 	tabout `var' using "${gsdOutput}/PA_Poverty_Profile_26.xls" if poorPPP==0, svy sum c(mean enrolled se) sebnone f(3) npos(col) h2(Enrolled (non-poor) by `var') append
 }
-qui tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy sum c(mean literacy se) sebnone f(3) npos(col) h2(Literacy by ind_profile) append
+qui tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_26.xls" if age>=15, svy sum c(mean literacy se) sebnone f(3) npos(col) h2(Literacy by ind_profile) append
 qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
-	tabout `var' using "${gsdOutput}/PA_Poverty_Profile_26.xls" if poorPPP==1, svy sum c(mean literacy se) sebnone f(3) npos(col) h2(Literacy (poor) by `var') append
-	tabout `var' using "${gsdOutput}/PA_Poverty_Profile_26.xls" if poorPPP==0, svy sum c(mean literacy se) sebnone f(3) npos(col) h2(Literacy (non-poor) by `var') append
+	tabout `var' using "${gsdOutput}/PA_Poverty_Profile_26.xls" if poorPPP==1 & age>=15, svy sum c(mean literacy se) sebnone f(3) npos(col) h2(Literacy (poor) by `var') append
+	tabout `var' using "${gsdOutput}/PA_Poverty_Profile_26.xls" if poorPPP==0 & age>=15, svy sum c(mean literacy se) sebnone f(3) npos(col) h2(Literacy (non-poor) by `var') append
 }
 qui tabout edu_level_broad ind_profile using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy c(col) perc sebnone f(3) npos(col) h1(Educational level by ind_profile) append
 qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
@@ -1045,7 +1045,7 @@ qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
 	tabout `var' using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy sum c(mean enrolled se) sebnone f(3) npos(col) h2(Enrolled (all) by `var') append
 }
 qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
-	tabout `var' using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy sum c(mean literacy se) sebnone f(3) npos(col) h2(Literacy (all) by `var') append
+	tabout `var' using "${gsdOutput}/PA_Poverty_Profile_26.xls" if age>=15, svy sum c(mean literacy se) sebnone f(3) npos(col) h2(Literacy (all) by `var') append
 }
 qui foreach var of varlist type hhh_gender remit12m migr_idp drought_affected {
 	tabout edu_level_broad `var' using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy c(col) perc sebnone f(3) npos(col) h1(Educational level (all) by `var') append
@@ -1112,7 +1112,7 @@ qui foreach var of varlist ind_profile hhh_gender poorPPP {
 restore
 qui tabout reason_not_edu ind_profile if pschool_age==1 using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy percent c(col) sebnone f(3) h1(Resons for not attending primary school (all) by ind_profile) append
 qui tabout reason_not_edu ind_profile if sschool_age==1 using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy percent c(col) sebnone f(3) h1(Resons for not attending secondary school (all) by ind_profile) append
-qui tabout ind_profile gender using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy sum c(mean literacy se) sebnone f(3) npos(col) h1(Literacy by gender & region) append
+qui tabout ind_profile gender using "${gsdOutput}/PA_Poverty_Profile_26.xls" if age>=15, svy sum c(mean literacy se) sebnone f(3) npos(col) h1(Literacy by gender & region) append
 qui tabout reason_not_edu poorPPP if pschool_age==1 using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy percent c(col) sebnone f(3) h1(Resons for not attending primary school for poor status) append
 qui tabout reason_not_edu poorPPP if sschool_age==1 using "${gsdOutput}/PA_Poverty_Profile_26.xls", svy percent c(col) sebnone f(3) h1(Resons for not attending secondary school for poor status) append
 qui tabout age gender using "${gsdOutput}/PA_Poverty_Profile_26.xls" if age<26 & age>5, svy sum c(mean enrolled25 se) sebnone f(3) npos(col) h1(Enrolment by age and gender) append
@@ -1425,6 +1425,35 @@ svy: mean close_market if inlist(ind_profile,1,2), over(ind_profile)
 test [close_market]Mogadishu = [close_market]_subpop_2
 
 
+*Labor market 
+use "${gsdTemp}/hhm_PA_Poverty_Profile.dta", clear
+svyset ea [pweight=weight], strata(strata) singleunit(centered)
+lab def lempstatus 1 "Employed" 2 "Unemployed" 3 "Enrolled" 4 "Not enrolled"
+gen empstatus = 1 if emp_7d ==1
+replace empstatus =2 if emp_7d ==0
+replace empstatus = 3 if lfp_7d == 0 & edu_status == 1
+replace empstatus =4 if lfp_7d == 0 & edu_status != 1
+replace empstatus = . if working_age != 1
+la val empstatus lempstatus
+ta hhm_job_search_no
+la list hhm_job_search_no
+recode hhm_job_search_no (1 2 =5 "Ill / Disabled") (3=2 "In school") (4 5 = 3 "Too young / old") (6 = 1 "Family and household care") (7 8 9 10 11 12 14 = 4 "Waiting for busy season / on leave") (nonmiss =.), gen(reason_inactive)
+ta reason_inactive
+replace reason_inactive = . if empstatus != 4
+ta reason_inactive
+recode emp_7d_prim (1=1 "Salaried labor") (2=2 "Own business") (3=3 "Help in business") (4=4 "Own account agriculture") (5=5 "Apprenticeship"), gen(empactivity)
+*Labor force participation (population 15-64)
+qui tabout empstatus ind_profile using "${gsdOutput}/PA_Poverty_Profile_32.xls", svy c(col) perc sebnone f(3) npos(col) h1(empstatus by ind_profile) replace
+qui tabout empstatus gender using "${gsdOutput}/PA_Poverty_Profile_32.xls", svy c(col) perc sebnone f(3) npos(col) h1(empstatus by gender) append
+qui tabout empstatus poorPPP using "${gsdOutput}/PA_Poverty_Profile_32.xls", svy c(col) perc sebnone f(3) npos(col) h1(empstatus by poor) append
+*Reasons for inactivity 
+qui tabout reason_inactive ind_profile using "${gsdOutput}/PA_Poverty_Profile_32.xls", svy c(col) perc sebnone f(3) npos(col) h1(reason_inactive by ind_profile) append
+qui tabout reason_inactive gender using "${gsdOutput}/PA_Poverty_Profile_32.xls", svy c(col) perc sebnone f(3) npos(col) h1(reason_inactive by gender) append
+qui tabout reason_inactive poorPPP using "${gsdOutput}/PA_Poverty_Profile_32.xls", svy c(col) perc sebnone f(3) npos(col) h1(reason_inactive by poor) append
+*Main employment activity 
+qui tabout emp_7d_prim ind_profile using "${gsdOutput}/PA_Poverty_Profile_32.xls", svy c(col) perc sebnone f(3) npos(col) h1(emp_7d_prim by ind_profile) append
+qui tabout emp_7d_prim gender using "${gsdOutput}/PA_Poverty_Profile_32.xls", svy c(col) perc sebnone f(3) npos(col) h1(emp_7d_prim by gender) append
+qui tabout emp_7d_prim poorPPP using "${gsdOutput}/PA_Poverty_Profile_32.xls", svy c(col) perc sebnone f(3) npos(col) h1(emp_7d_prim by poor) append
 
 
 
@@ -1498,6 +1527,37 @@ svy: logit poorPPP_core hhh_edu_some hhh_gender hhh_age
 outreg2 using "${gsdOutput}/Regression_Poverty_Edu_HHH.xls", bdec(3) tdec(3) rdec(3) nolabel append
 svy: logit poorPPP_core hhh_edu_some hhh_gender hhh_age i.astrata
 outreg2 using "${gsdOutput}/Regression_Poverty_Edu_HHH.xls", bdec(3) tdec(3) rdec(3) nolabel append
+
+
+*Poverty gap
+svy: reg pgi hhh_gender i.astrata
+svy: reg pgi remit12m i.astrata
+svy: reg pgi migr_idp i.astrata
+svy: reg pgi drought_affected i.astrata
+svy: reg pgi hhh_gender remit12m migr_idp drought_affected  i.astrata
+
+*Hunger 
+gen exp_hung=(hunger>1) if !missing(hunger)
+svy: logit exp_hung hhh_gender i.astrata poorPPP
+svy: logit exp_hung remit12m i.astrata poorPPP
+svy: logit exp_hung migr_idp i.astrata poorPPP
+svy: logit exp_hung drought_affected i.astrata poorPPP
+svy: logit exp_hung hhh_gender remit12m migr_idp drought_affected  i.astrata poorPPP
+
+*HH head 
+svy: logit hhh_gender poorPPP i.astrata poorPPP
+svy: logit hhh_gender remit12m i.astrata poorPPP
+svy: logit hhh_gender migr_idp i.astrata poorPPP
+svy: logit hhh_gender drought_affected i.astrata poorPPP
+svy: logit hhh_gender poorPPP remit12m migr_idp drought_affected  i.astrata poorPPP
+
+*Education of HHH
+svyset ea [pweight=weight], strata(strata) singleunit(centered)
+svy: logit hhh_edu_dum hhh_gender hhh_age i.astrata poorPPP
+svy: logit hhh_edu_dum hhh_gender hhh_age remit12m i.astrata poorPPP
+svy: logit hhh_edu_dum hhh_gender hhh_age migr_idp i.astrata poorPPP
+svy: logit hhh_edu_dum hhh_gender hhh_age drought_affected i.astrata poorPPP
+svy: logit hhh_edu_dum hhh_gender hhh_age remit12m migr_idp drought_affected  i.astrata poorPPP
 
 
 *Regression of HH characteristics 
@@ -1579,6 +1639,7 @@ outreg2 using "${gsdOutput}/Regression_School_Attendance.xls", bdec(3) tdec(3) r
 svy: logit enrolled25 poorPPP_core age gender hhh_gender hhh_literacy remit12m school_more30 edu_exp_pc i.astrata if sschool_age==1
 outreg2 using "${gsdOutput}/Regression_School_Attendance.xls", bdec(3) tdec(3) rdec(3) nolabel append
 
+
 *No education
 svy: logit edu_no poorPPP_core age gender i.astrata
 outreg2 using "${gsdOutput}/Regression_School_Attendance.xls", bdec(3) tdec(3) rdec(3) nolabel append
@@ -1633,6 +1694,25 @@ outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(
 svy: logit poorPPP_core hhh_gender remit12m migr_idp drought_affected i.astrata if youth==1
 
 
+*Literacy rate
+svyset ea [pweight=weight], strata(strata) singleunit(centered)
+svy: logit adult_literacy_rate hhh_gender hhh_age i.astrata poorPPP
+svy: logit adult_literacy_rate hhh_gender hhh_age remit12m i.astrata poorPPP
+svy: logit adult_literacy_rate hhh_gender hhh_age migr_idp i.astrata poorPPP
+svy: logit adult_literacy_rate hhh_gender hhh_age drought_affected i.astrata poorPPP
+svy: logit adult_literacy_rate hhh_gender hhh_age remit12m migr_idp drought_affected  i.astrata poorPPP
+
+*No education
+gen dum_no_edu=(edu_level_broad>0) if !missing(edu_level_broad)
+svyset ea [pweight=weight], strata(strata) singleunit(centered)
+svy: logit dum_no_edu age gender i.astrata poorPPP
+svy: logit dum_no_edu age gender remit12m i.astrata poorPPP
+svy: logit dum_no_edu age gender migr_idp i.astrata poorPPP
+svy: logit dum_no_edu age gender drought_affected i.astrata poorPPP
+svy: logit dum_no_edu age gender remit12m migr_idp drought_affected  i.astrata poorPPP
+
+
+
 *Inequality decomposition (GE 1 - Theil Index)
 use "${gsdTemp}/hh_PA_Poverty_Profile.dta", clear
 svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
@@ -1683,7 +1763,7 @@ foreach i of numlist 15/21 {
 	erase "${gsdOutput}/PA_Poverty_Profile_`i'.xls"
 }
 *Multidimensional poverty 
-foreach i of numlist 22/31 {
+foreach i of numlist 22/32 {
 	insheet using "${gsdOutput}/PA_Poverty_Profile_`i'.xls", clear nonames tab
 	export excel using "${gsdOutput}/PA_Poverty_Profile_C_v3.xlsx", sheetreplace sheet("Raw_Data_`i'") 
 	erase "${gsdOutput}/PA_Poverty_Profile_`i'.xls"
