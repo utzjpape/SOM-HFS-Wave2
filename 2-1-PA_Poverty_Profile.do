@@ -257,7 +257,35 @@ ndfcolor(gs9) title("Poverty Incidence") subtitle("% of population below US$ 1.9
 spmap poorPPP_prob using "${gsdData}/1-CleanInput/SOM_coord.dta", id(id_map) fcolor(Reds) ///
 clmethod(custom) clnumber(5) clbreaks(0 20 40 60 80 100) ndlabel(Not covered by the SHFS 2017) legstyle(2) legend(position(4)) ndfcolor(gs9)  subtitle("% of population")   
 graph save Graph "${gsdOutput}/Map_Poverty.gph", replace
+
+*=================================================
+*=================================================
+import excel "${gsdDataRaw}/Flowminder_Deliverable_v1.xlsx", sheet("Flowminder") firstrow case(lower) clear
+rename poverty poorPPP_prob
+replace poorPPP_prob=poorPPP_prob*100
+merge 1:1 id_map using "${gsdData}/1-CleanInput/SOM_db_2.dta", nogen keepusing(ISO)
+
+spmap poorPPP_prob using "${gsdData}/1-CleanInput/SOM_coord_2.dta", id(id_map) fcolor(YlOrRd) ///
+clmethod(custom) clnumber(5) clbreaks(0 20 40 60 80 100) ndlabel(Not covered by the SHFS 2017) legstyle(2) legend(position(4)) ndfcolor(gs9)  subtitle("% of population")   
+graph save Graph "${gsdOutput}/Map_Poverty_2.gph", replace
+
+*=================================================
+*=================================================
+/*
+import excel "C:\Users\WB484006\OneDrive - WBG\Code\SOM\Wave 2\Output\Flowminder_Deliverable_v1.xlsx", sheet("Collapsed") firstrow clear
+rename poverty poorPPP_prob
+replace poorPPP_prob=poorPPP_prob*100
+merge 1:1 id_map using "${gsdData}/1-CleanInput/SOM_db.dta", nogen keepusing(ISO)
+
+spmap poorPPP_prob using "${gsdData}/1-CleanInput/SOM_coord.dta", id(id_map) fcolor(YlOrRd) ///
+clmethod(custom) clnumber(5) clbreaks(0 20 40 60 80 100) ndlabel(Not covered by the SHFS 2017) legstyle(2) legend(position(4)) ndfcolor(gs9)  subtitle("% of population")   
+*/
 restore
+
+
+*=================================================
+*=================================================
+
 
 *Food poverty 
 qui tabout ind_profile using "${gsdOutput}/PA_Poverty_Profile_4.xls", svy sum c(mean poorPPPFood_prob se ub lb) sebnone f(3) npos(col) h2(Food poverty incidence by ind_profile) replace
@@ -1740,7 +1768,17 @@ replace monetary_gap_som=monetary_gap_som/1000000
 label var monetary_gap_som "Monetary gap in million US per year"
 
 
+*Differences between poor children and non-poor ones
+use "${gsdTemp}/hhm_PA_Poverty_Profile.dta", clear
+merge m:1 strata ea block hh using "${gsdTemp}/hh_PA_Poverty_Profile.dta", keepusing(hhh_edu_dum hunger electricity improved_sanitation improved_water living_standards education wash hhsize roof_material floor_material thealth tedu dep_p_living dep_p_edu dep_p_wash)
+svyset ea [pweight=weight], strata(strata) singleunit(centered)
+foreach var of varlist hhh_edu_dum hunger electricity improved_sanitation improved_water living_standards education wash {
+	svy: mean `var' if child==1, over(poorPPP)
+	test [`var']Poor = [`var']_subpop_1
+}
 
+svy: mean hhsize if child==1, over(poorPPP)
+test [hhsize]Poor = [hhsize]_subpop_1
 
 
 **************************************************
