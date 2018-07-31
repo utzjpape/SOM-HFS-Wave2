@@ -39,6 +39,7 @@ save "${gsdData}/0-RawTemp/hh_for_anon.dta", replace
 ********************************************************************
 *Shape and dbf files are coming from http://www.diva-gis.org/gdata
 shp2dta using "${gsdDataRaw}/SOM_adm1", database("${gsdData}/1-CleanInput/SOM_db") coordinates("${gsdData}/1-CleanInput/SOM_coord") replace genid(id_map)
+shp2dta using "${gsdDataRaw}/SOM_adm2", database("${gsdData}/1-CleanInput/SOM_db_2") coordinates("${gsdData}/1-CleanInput/SOM_coord_2") replace genid(id_map)
 
 use "${gsdDataRaw}/Country_comparison.dta", clear
 save "${gsdData}/1-CleanInput/Country_comparison.dta", replace
