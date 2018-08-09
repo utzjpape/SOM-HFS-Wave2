@@ -5,7 +5,7 @@ set seed 23081580
 set sortseed 11041555
 
 *Nonfood
-use "${gsdDataRaw}/nonfood_units_bands.dta", clear
+use "${gsdData}/1-CleanInput/nonfood_units_bands.dta", clear
 ren LB_ex_6 v_min 
 ren UB_ex_7 v_max
 ren itemid2 nfoodid

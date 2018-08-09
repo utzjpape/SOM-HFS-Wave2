@@ -260,7 +260,7 @@ graph save Graph "${gsdOutput}/Map_Poverty.gph", replace
 
 *=================================================
 *=================================================
-import excel "${gsdDataRaw}/Flowminder_Deliverable_v1.xlsx", sheet("Flowminder") firstrow case(lower) clear
+use "${gsdData}/1-CleanInput/Satellite_Estimates.dta", clear
 rename poverty poorPPP_prob
 replace poorPPP_prob=poorPPP_prob*100
 merge 1:1 id_map using "${gsdData}/1-CleanInput/SOM_db_2.dta", nogen keepusing(ISO)
