@@ -130,12 +130,12 @@ gen gshare = cons_tshare/xshare
 label var gshare "Share for general deflator"
 keep itemid fshare gshare
 *Bring in the COICOP code and prices 
-merge 1:m itemid using "${gsdData}/1-CleanTemp/coicop_item.dta", keep(match) nogen keepusing(coicop)
+merge 1:m itemid using "${gsdData}/1-CleanInput/coicop_item.dta", keep(match) nogen keepusing(coicop)
 *Collapse given that we have sometimes multiple HFS / COICOP items with the same code
 collapse (sum) ?share, by(coicop)
 destring coicop, replace
 *Add prices
-merge 1:m coicop using "${gsdData}/1-CleanTemp/mps_prices.dta", nogen keep(match) 
+merge 1:m coicop using "${gsdData}/1-CleanInput/mps_prices.dta", nogen keep(match) 
 
 
 ********************************************************************

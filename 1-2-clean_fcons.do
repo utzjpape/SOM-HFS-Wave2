@@ -6,7 +6,7 @@ set sortseed 11041965
 **********************************************************
 * Prepare constraints data for food consumption
 ************************************************************
-use "${gsdDataRaw}/food_units_bands.dta", clear
+use "${gsdData}/1-CleanInput/food_units_bands.dta", clear
 collapse (mean) v_min=LB_ex_6 v_max=UB_ex_7, by(itemid2 itemlabel2)
 ren itemid2 foodid
 save "${gsdTemp}/food_bands.dta", replace

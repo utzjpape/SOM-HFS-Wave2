@@ -1,5 +1,6 @@
 * Prepare COICOP and MPS price data
 
+
 ********************************************************************
 * Assign COICOP codes to products
 ********************************************************************
@@ -11,7 +12,7 @@ ren code itemid
 sort coicop itemid
 *export excel "${gsdOutput}/coicop_item.xlsx", sheet("HFS") sheetreplace
 keep itemid coicop
-save "${gsdData}/1-CleanTemp/coicop_item.dta", replace
+save "${gsdData}/1-CleanInput/coicop_item.dta", replace
 import excel using "${gsdDataRaw}/COICOP.xlsx", sheet("MPS") firstrow clear
 keep mps_id coicop 
 save "${gsdTemp}/coicop_mps.dta", replace
@@ -33,8 +34,16 @@ collapse (mean) dec17=p, by(mps_id market)
 merge 1:1 market mps_id using "${gsdTemp}/mps_feb16.dta", keep(match) nogen
 merge m:1 mps_id using "${gsdTemp}/coicop_mps.dta", keep(match) nogen keepusing(coicop)
 collapse (mean) dec17 feb16, by(coicop)
-save "${gsdData}/1-CleanTemp/mps_prices.dta", replace
+save "${gsdData}/1-CleanInput/mps_prices.dta", replace
 
+
+*Migrate files from RawInput to 1-CleanInput
+use "${gsdDataRaw}/food_units_bands.dta", clear
+save "${gsdData}/1-CleanInput/food_units_bands.dta", replace
+use "${gsdDataRaw}/nonfood_units_bands.dta", clear
+save "${gsdData}/1-CleanInput/nonfood_units_bands.dta", replace
+import excel "${gsdDataRaw}/Flowminder_Deliverable_v1.xlsx", sheet("Flowminder") firstrow case(lower) clear
+save "${gsdData}/1-CleanInput/Satellite_Estimates.dta", replace
 
 
 ********************************************************************
