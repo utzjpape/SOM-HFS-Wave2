@@ -49,7 +49,7 @@ replace own_livestock_pre = 0 if missing(own_livestock_pre)
 drop livestockowned livestockownedpre
 
 *Bring data to HH level
-collapse own_livestock own_livestock_pre own_n_LU_sum own_pre_n_LU_sum, by(weight_adj strata ea block hh weight hhsize lhood lhood_prev urbanruraltype durationidp comparisoncamp comparisonhost comparisonw1 poor sigrural sighost siggen sigcamp sigdur sigreason sigtb sigtime sigidp sighh sigdt comparisonidp urbanrural genidp quintileidp migr_idp reasonidp timesidp topbottomidp national )
+collapse own_livestock own_livestock_pre own_n_LU_sum own_pre_n_LU_sum, by(weight_adj strata ea block hh hhsize lhood lhood_prev urbanruraltype durationidp comparisoncamp comparisonhost comparisonw1 poor sigrural sighost siggen sigcamp sigdur sigreason sigtb sigtime sigidp sighh sigdt comparisonidp urbanrural genidp quintileidp migr_idp reasonidp timesidp topbottomidp national )
 *Aroob's used hhm level weights but i think hhq is more fitting for this code.
 svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
 *Label key vars
