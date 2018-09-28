@@ -36,8 +36,8 @@ gen sighostidp = 1 if national ==0
 replace sighostidp = 2 if comparisonhost ==1
 lab def sighostidp 1 "idp overall" 2 "host urban"
 lab val sighostidp sighostidp
-
-*Enrolment
+/*
+*Enrolment difference among genders
 gen enrolment_pr = enrolled
 replace enrolment_pr = . if age > 13
 *Enrolment, among genders, within certain groups.
@@ -90,7 +90,7 @@ lincom [_prop_2]_subpop_1 - [_prop_2]_subpop_2
 *Camp and Non-camp
 svy: prop enrolled, over(comparisoncamp)
 **0.1
-lincom [_prop_2]_subpop_1 - [_prop_2]_subpop_2
+lincom [_prop_2]Settlement - [_prop_2]_subpop_2
 *Conflict and climates
 svy: prop enrolled, over(reasonidp)
 **no sig.
@@ -141,7 +141,7 @@ lincom [_prop_2]Female - [_prop_2]Male
 *IDP Bottom 40
 svy: prop enrolled if topbottomidp ==1, over(gender) 
 lincom [_prop_2]Female - [_prop_2]Male
-----
+
 *****************
 *Adult literacy
 *****************
@@ -159,7 +159,7 @@ lincom [Literate]_subpop_1 - [Literate]_subpop_2
 *Camp and Non-camp
 svy: prop adult_literacy_rate, over(comparisoncamp)
 **marginal, p=0.103
-lincom [Literate]_subpop_1 - [Literate]_subpop_2
+lincom [Literate]Settlement - [Literate]_subpop_2
 *Conflict and climates
 svy: prop adult_literacy_rate, over(reasonidp)
 **no sig.
@@ -179,6 +179,7 @@ lincom [Literate]_subpop_1 - [Literate]_subpop_2
 *Poor
 svy: prop adult_literacy_rate, over(poor)
 lincom [Literate]Poor - [Literate]_subpop_2
+*/
 
 *Adult literacy rates, among genders, within certain groups.
 *Overall IDPs
@@ -202,8 +203,6 @@ lincom [Literate]Female - [Literate]Male
 svy: prop adult_literacy_rate if genidp ==0, over(gender) 
 *p<0.01
 lincom [Literate]Female - [Literate]Male
-
-
 
 ************************
 *TABOUTS

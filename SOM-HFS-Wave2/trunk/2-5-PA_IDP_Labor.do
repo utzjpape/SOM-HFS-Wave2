@@ -1,5 +1,5 @@
 *Wave 2 IDP analysis -- Labor
-/*
+
 ************************
 *HHQ indicators
 ************************
@@ -30,6 +30,10 @@ lab var lhoodchange "Livelihood was different before displacement"
 lab def lhoodchange 0 "No" 1 "Yes"
 lab val lhoodchange lhoodchange
 ta lhoodchange if national ==0
+
+ta land_access_yn if national ==0
+ta land_access_yn_disp if national ==0
+
 ************************
 *SIGNIFICANCE TESTS
 ************************
@@ -244,7 +248,12 @@ qui tabout livelihood_prev durationidp using "${gsdOutput}/Raw_Fig24.xls", svy p
 qui tabout livelihood_prev timesidp using "${gsdOutput}/Raw_Fig24.xls", svy percent c(col lb ub) npos(col) append h1("PrevLivelihood") f(4) 
 qui tabout livelihood_prev topbottomidp using "${gsdOutput}/Raw_Fig24.xls", svy percent c(col lb ub) npos(col) append h1("PrevLivelihood") f(4) 
 qui tabout livelihood_prev poor using "${gsdOutput}/Raw_Fig24.xls", svy percent c(col lb ub) npos(col) append h1("PrevLivelihood") f(4)
-*/
+
+*Land access before displacement
+qui tabout land_access_yn_disp 
+
+*Have you lost land?
+
 ************************
 *HHM indicators
 ************************
@@ -315,10 +324,21 @@ lab val siglabor siglabor
 ta siglabor 
 ta urbanrural, miss
 ta national, miss
+
+gen siglabor2 = national
+replace siglabor2 = type
+lab def siglabor2 0 "idp" 1 "urbanall" 2 "ruralall"
+lab val siglabor2 siglabor2
+ta siglabor2
+ta type, miss
+ta siglabor2 comparisoncamp, miss
+
 ***********************
 *Reasons for not participating in labor force
 ***********************
 svy: prop reason_inactive, over(siglabor)
+svy: prop reason_inactive, over(siglabor2)
+
 *Diffs between IDP and urban
 *p<0.05
 lincom [_prop_1]idp - [_prop_1]urban
@@ -384,6 +404,8 @@ lincom [_prop_5]Female - [_prop_5]Male
 *Overall labor status
 ***********************
 svy: prop empstatus, over(siglabor)
+svy: prop empstatus, over(siglabor2)
+
 *Diffs between IDP and urban
 lincom [Employed]idp - [Employed]urban
 lincom [Unemployed]idp - [Unemployed]urban
@@ -621,14 +643,41 @@ qui tabout emp_prev_d topbottomidp using "${gsdOutput}/Raw_Fig22.xls", svy perce
 qui tabout emp_prev_d poor using "${gsdOutput}/Raw_Fig22.xls", svy percent c(col lb ub) npos(col) append h1("EmpAct") f(4)
 
 *Reasons for being inactive, overall
-reason_inactive
+qui tabout reason_inactive national using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) replace h1("Reason") f(4) 
+qui tabout reason_inactive comparisonhost using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("Reason") f(4) 
+qui tabout reason_inactive urbanrural using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("Reason") f(4) 
+qui tabout reason_inactive comparisoncamp using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("Reason") f(4) 
+qui tabout reason_inactive reasonidp using "${gsdOutput}/Raw_Fig55.xls", svy  percent c(col lb ub) npos(col) append h1("Reason") f(4) 
+qui tabout reason_inactive genidp using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("Reason") f(4) 
+qui tabout reason_inactive durationidp using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("Reason") f(4) 
+qui tabout reason_inactive timesidp using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("Reason") f(4) 
+qui tabout reason_inactive topbottomidp using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("Reason") f(4) 
+qui tabout reason_inactive poor using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("Reason") f(4)
 *Reasons for being inactive, men
-
+qui tabout reason_inactive national  if gender ==1 using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("MenReason") f(4) 
+qui tabout reason_inactive comparisonhost if gender ==1  using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("MenReason") f(4) 
+qui tabout reason_inactive urbanrural  if gender ==1 using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("MenReason") f(4) 
+qui tabout reason_inactive comparisoncamp  if gender ==1 using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("MenReason") f(4) 
+qui tabout reason_inactive reasonidp  if gender ==1 using "${gsdOutput}/Raw_Fig55.xls", svy  percent c(col lb ub) npos(col) append h1("MenReason") f(4) 
+qui tabout reason_inactive genidp  if gender ==1 using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("MenReason") f(4) 
+qui tabout reason_inactive durationidp  if gender ==1 using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("MenReason") f(4) 
+qui tabout reason_inactive timesidp  if gender ==1 using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("MenReason") f(4) 
+qui tabout reason_inactive topbottomidp  if gender ==1 using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("MenReason") f(4) 
+qui tabout reason_inactive poor  if gender ==1 using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("MenReason") f(4)
 *Reasons for being inactive, women
-
+qui tabout reason_inactive national  if gender ==0 using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("WomenReason") f(4) 
+qui tabout reason_inactive comparisonhost if gender ==0  using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("WomenReason") f(4) 
+qui tabout reason_inactive urbanrural  if gender ==0 using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("WomenReason") f(4) 
+qui tabout reason_inactive comparisoncamp  if gender ==0 using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("WomenReason") f(4) 
+qui tabout reason_inactive reasonidp  if gender ==0 using "${gsdOutput}/Raw_Fig55.xls", svy  percent c(col lb ub) npos(col) append h1("WomenReason") f(4) 
+qui tabout reason_inactive genidp  if gender ==0 using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("WomenReason") f(4) 
+qui tabout reason_inactive durationidp  if gender ==0 using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("WomenReason") f(4) 
+qui tabout reason_inactive timesidp  if gender ==0 using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("WomenReason") f(4) 
+qui tabout reason_inactive topbottomidp  if gender ==0 using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("WomenReason") f(4) 
+qui tabout reason_inactive poor  if gender ==0 using "${gsdOutput}/Raw_Fig55.xls", svy percent c(col lb ub) npos(col) append h1("WomenReason") f(4)
 
 *Place raw data into the excel figures file
-foreach i of num 20 21 22 23 24 25 {
+foreach i of num 20 21 22 23 24 25 55 {
 	insheet using "${gsdOutput}/Raw_Fig`i'.xls", clear nonames
 	export excel using "${gsdOutput}/Figures_SOM.xlsx", sheetreplace sheet("Raw_Fig`i'") 	
 	rm "${gsdOutput}/Raw_Fig`i'.xls"

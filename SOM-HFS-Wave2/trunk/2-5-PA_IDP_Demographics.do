@@ -141,7 +141,6 @@ qui tabout gender using "${gsdOutput}/Raw_Fig1.xls" if inlist(comparisonidp , 1,
 ************************
 use "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", clear 
 svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-
 *Significance tests
 
 gen poptest = comparisoncamp

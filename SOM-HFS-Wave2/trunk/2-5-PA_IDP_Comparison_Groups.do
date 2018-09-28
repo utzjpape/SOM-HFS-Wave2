@@ -33,7 +33,7 @@ la var comparisonidp "IDPs and Host Community types"
 *1a. Break these up into groups of 2, for ease. Add Camp 2016 at the end, perhaps, for the relevant indicators.
 gen comparisoncamp = 1 if comparisonidp ==3
 replace comparisoncamp = 2 if comparisonidp ==1
-lab def lcomparisoncamp 1 "Settlement IDP" 2 "Non-settlement IDP"
+lab def lcomparisoncamp 1 "Settlement" 2 "Non-settlement"
 lab val comparisoncamp lcomparisoncamp
 
 gen comparisonhost = 1 if comparisonidp == 4
@@ -42,7 +42,7 @@ lab def lcomparisonhost 1 "Urban host" 2 "Urban non-host"
 lab val comparisonhost lcomparisonhost
 
 gen comparisonw1 = 1 if comparisonidp ==2
-lab def lcomparisonw1 1 "Settlement IDP 2016"
+lab def lcomparisonw1 1 "Settlement 2016"
 lab val comparisonw1 lcomparisonw1
 
 *2. Urban, Rural, National (to get national, tabout over t.), excluding noncamp IDPs
@@ -124,7 +124,6 @@ replace timesidp =. if inlist(ind_profile, 13)
 lab def ltimesidp 1 "Displaced once" 2 "Displaced multiple"
 lab val timesidp ltimesidp
 *confirm both camp IDPs and noncamp IDPs are in 
-*
 *
 
 *6. IDPs displaced for less than 5 years or more.
@@ -261,9 +260,8 @@ save "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", replace
 ********************************************************
 use "${gsdData}/1-CleanOutput/hhm_w1_w2.dta", clear 
 svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
-*Removing assert(match), since 3 single-EA strata were dropped.
-merge m:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", nogen keepusing(urbanruraltype durationidp comparisoncamp comparisonhost comparisonw1 poor sigrural sighost siggen sigcamp sigdur sigreason sigtb sigtime sigidp sighh sigdt comparisonidp urbanrural genidp quintileidp migr_idp reasonidp timesidp topbottomidp national)
-
+drop hhsize 
+merge m:1 strata ea block hh using "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", nogen keepusing(hhsize hhh_gender hhh_edu  hhh_lit urbanruraltype durationidp comparisoncamp comparisonhost comparisonw1 poor sigrural sighost siggen sigcamp sigdur sigreason sigtb sigtime sigidp sighh sigdt comparisonidp urbanrural genidp quintileidp migr_idp reasonidp timesidp topbottomidp national)
 *Prepare variables
 recode age (0/14 = 1 "Under 15 years") ( 15/24 = 2 "15-24 years") (25/64 = 3 "25-64 years") (65/120 =4 "Above 64 years"), gen(age_g_idp) label(lage_g_idp)
 *working age 
