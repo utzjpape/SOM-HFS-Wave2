@@ -4,9 +4,21 @@ set more off
 set seed 23081980 
 set sortseed 11041955
 
+*Prepare educ data from hhm
+use "${gsdData}/1-CleanTemp/hhm_all_idpanalysis.dta", clear
+svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
+keep if t ==1
+*Keep only HHHeads
+keep if hhmid ==1
+save "${gsdTemp}/typology_hhm_edu.dta", replace
+
 *Load data
 use "${gsdData}/1-CleanTemp/hh_all_idpanalysis.dta", clear 
 svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
+*Merge in educ hhm data
+merge 1:1 strata ea block hh using "${gsdTemp}/typology_hhm_edu.dta", nogen keepusing(literacy)
+rename literacy hhh_literacy
+lab var hhh_literacy "Household Head Literate"
 *Keep only IDPs
 keep if national ==0
 
@@ -222,9 +234,8 @@ gen livestockown = livestockunits >0 & !missing(livestockunits)
 lab def livestockown 0 "No livestock" 1 "Livestock"
 lab val livestockown livestockown
 lab var livestockown "Own livestock"
-*Education level of hh head
-confirm existence hhh_edu
-lab var hhh_edu "HH head education level" 
+*LIteracy  of hh head
+confirm existence hhh_literacy
 *Less than 30 mins from various services
 recode water_time thealth tedu tmarket t_water_disp thealth_disp t_edu_disp t_market_disp (1 2 3 =1 "Up to 30 minutes") (4 5 6 7 8 9 =0 "30 minutes or more"), pre(dt_) lab(dumtimelab)
 lab def lnearfar 0 "Far" 1 "Near"
@@ -279,6 +290,7 @@ lab var origin_now "Relative location: origin and now"
 
 *Nonphysical harm during conflict
 foreach v in conf_nonphys_harm__1 conf_nonphys_harm__2 conf_nonphys_harm__3 conf_nonphys_harm__4 conf_nonphys_harm__5 {
+	count if missing(`v')
 	recode `v' (0=0 "Not harmed") (1=1 "Harmed"), gen(`v'_f)
 	fre `v'_f
 }
@@ -290,12 +302,12 @@ lab var conf_nonphys_harm__5_f "Discriminated"
 
 alpha conf_nonphys_harm__1_f conf_nonphys_harm__2_f conf_nonphys_harm__3_f conf_nonphys_harm__4_f conf_nonphys_harm__5_f, gen(harm)
 fre harm
-recode harm (0=0 "No harm") (0.25=1 "Low harm") (0.5=2 "Some harm") (0.75 = 3 "Substantial harm") (1=4 "Most harm"), gen(harm_f)
+recode harm (0=0 "No harm") (0.2/0.34 =1 "Low harm") (0.35/0.67 =2 "Some harm") (0.68/1 = 3 "Substantial harm"), gen(harm_f)
 
 gen harm_dum = . 
 lab def harm_dum 0 "No/low harm" 1 "High harm"
 replace harm_dum = 0 if harm_f == 0 | harm_f ==1
-replace harm_dum = 1 if harm_f == 2 | harm_f ==3 | harm_f ==4
+replace harm_dum = 1 if harm_f == 2 | harm_f ==3 
 lab val harm_dum harm_dum
 fre harm_dum
 
@@ -306,8 +318,10 @@ fre  disp_reason_concise
 fre disp_arrive_reason
 label define disp_arrive_reason 2 "Water access for livestock" 3 "Home / land access" 4 "Education / health access" 5 "Employment opportunities" 6 "Join family or known people" 7 "Knew people settled here" 8 "Humanitarian access (food and water)" 1000 "Other" , modify
 fre disp_arrive_reason
-recode disp_arrive_reason (6 7 = 6) (1000=.)
+recode disp_arrive_reason (3 5 =3) (4 8 =4) (6 7 = 6) (1000=.)
+label define disp_arrive_reason 3 "Home, land, livelhood" 4 "Health, education, aid" , modify
 fre disp_arrive_reason
+
 
 *Livestock before displacement 
 gen livestockown_pre = livestockunits_pre >0 & !missing(livestockunits_pre)
@@ -413,34 +427,75 @@ recode pullpush_final (1 4 = 1 "Security") (2 3 5 6 =2 "Non-security") , gen(pul
 lab var pullpush_security "Pull and push factors: security or others"
 fre pullpush_security
 
-*Information needed to settle.
+*Information needed to settle (recoding as follows to avoid missings)
 gen information_want = .
 label define information_want 0 "Have all info" 1 "Political and security" 2 "Basic services" 3 "Work, land, property, docs" 4 "Transport" 5 "Return to camp" 6 "Aid" 7 "Climate"
 replace information_want = 0 if inf_comp ==1
 replace information_want = 1 if (inf_want__1 ==1 | inf_want__2 ==1 | inf_want__3 ==1)
+replace information_want = 2 if inf_comp ==0 & !(inf_want__1 ==1 | inf_want__2 ==1 | inf_want__3 ==1)
+fre information_want
+recode information_want (0=0 "Have all info") (1=1 "Security and political info") (2 =2 "Other info"), gen(information_final)
+lab var information_final "Information needed to decide where to settle" 
+fre information_final
+
+/*
 replace information_want = 2 if (inf_want__4 ==1 | inf_want__5 ==1) 
 replace information_want = 3 if (inf_want__6 == 1 | inf_want__7 ==1 | inf_want__11 ==1) 
 replace information_want = 4 if inf_want__8 ==1
 replace information_want = 5 if inf_want__9 ==1
 replace information_want = 6 if inf_want__10 == 1
 replace information_want = 7 if inf_want__12==1
+
 label values information_want information_want
 fre information_want
-recode information_want (0=0 "Have all info") (1=1 "Security and political info") (2 3 4 5 6 =2 "Other info"), gen(information_final)
-lab var information_final "Information needed to decide where to settle" 
 
-*Help needed in moving
+recode information_want (0=0 "Have all info") (1=1 "Security and political info") (2 3 4 5 6 =2 "Other info"), gen(information_final)
+*/
+	
+*Help needed in moving (the commented-out coding did not work as the multiselect wasn't ranked. Instead, using a simplification in 'movehelp_new'.)
+/*
 gen movehelp = . 
 foreach i of num 1/17 {
-	replace movehelp = `i' if move_help__`i' == 1
+	egen nonmiss_`i' = count(move_help__`i')
+	cap egen base = rowmax(nonmiss_*)
+	egen move22_`i' = total(move_help__`i')
+	gen prop_`i' = move22_`i'/base
 }
+
+br base move22_* prop_*
+
 fre movehelp
 recode movehelp (1 2=1 "Security") (3 4 = 2 "Housing") (5 6 7 8 9 10 = 3 "Livelihood") (11 12 13 14 17 = 4 "Services") (15 16 = 5 "Transport and regrouping"), gen(movehelp_final)
 lab var movehelp_final "Help needed to settle" 
 fre movehelp_final
+foreach i of num 1/17  {
+	egen nm_`i' = count(move_help__`i')
+	gen m_`i' = _N - nm_`i'
 
-*WHY ARE 221 missing?
+}
+br m_1-m_17
+fre move_help__1
+fre move_help__2
+fre move_help__3
+*WHY ARE 221 missing? Now 64 missing. Still more than ideal.
+*/
 
+gen movehelp_new = move_help__1
+lab def movehelp_new 0 "Non security" 1 "Security"
+lab var movehelp_new movehelp_new
+fre movehelp_new
+/*
+local cause own_any_prod_prev  distance_pre origin_now harm_dum disp_reason_concise disp_arrive_reason livestockown_pre livelihood_prev land_access_yn_disp housingimproveddisp
+local needs hhsize5 housingimproved waterimproved sanimproved_shared hunger_dum livelihood assist_source_any land_access_yn own_any_prod livestockown hhh_literacy distance dependency_dum hhh_gender move_free
+local solution movetime pullpush_security information_final movehelp_new
+foreach v in `cause' `needs' `solution' {
+	egen nonmiss_`v' = count(`v')
+	gen miss_`v' = _N - nonmiss_`v'
+	drop nonmiss_`v'
+}
+egen maxmiss = rowmax(miss_*)
+egen minmiss =rowmin(miss_*)
+*/
 *********************************
 *Save dataset
 *********************************
