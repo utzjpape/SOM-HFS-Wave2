@@ -22,7 +22,7 @@ else if (inlist("${suser}","wb484006","WB484006")) {
 	*Local directory of your checked out copy of the code
 	local swdLocal = "C:\Users\WB484006\OneDrive - WBG\Code\SOM\Wave 2"
 	*Box directory where the Data folder can be located
-	local swdBox = "C:\Users\WB484006\WBG\Utz Johann Pape - Shared\Wave2\DataBox"
+	local swdBox = "C:\Users\WB484006\WBG\Utz Johann Pape - Sh-SOM-HFS\Wave2\DataBox"
 	* cURL directory
 	local curl = "C:\Users\WB484006\Documents"             
 }
