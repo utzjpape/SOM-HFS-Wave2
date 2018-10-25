@@ -204,6 +204,7 @@ merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhq-poverty.dta", nog
 
 *Obtain poorPPP from core consumption and a rescaled poverty line 
 gen share=tc_core/tc_imp
+svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
 svy: mean share, over(ind_profile_old)
 gen new_pline=plinePPP*.76949 if ind_profile_old==1
 replace new_pline=plinePPP*.8102825 if ind_profile_old==2
@@ -235,20 +236,26 @@ gen receive_assistance=(pre_receive_assistance>0)
 gen hunger_dum=(hunger>1)
 alpha health_satisfaction school_satisfaction empl_satisfaction, gen(sat_now)
 recode sat_now (2.34/5 = 0 "Not Satisfied") (1/2.34 = 1 "Satisfied"), gen(satisf_now)
-
+gen disp_drought=(disp_reason==5)
+split disp_date, parse(-)
+destring disp_date1, replace
+rename disp_date1 year
+keep if type_idp_host<.
 
 
 *Regression analysis for poor vs. non-poor 
 svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
 svy: logit poorPPP_core type_idp_host 
 outreg2 using "${gsdOutput}/Regression_Poor.xls", bdec(3) tdec(3) rdec(3) nolabel replace
-svy: logit poorPPP_core type_idp_host receive_assistance remit12m 
+svy: logit poorPPP_core type_idp_host i.reg_pess
 outreg2 using "${gsdOutput}/Regression_Poor.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP_core type_idp_host receive_assistance remit12m hhsize age_dependency_ratio pgender pchild pliteracy 
+svy: logit poorPPP_core type_idp_host receive_assistance remit12m i.reg_pess
 outreg2 using "${gsdOutput}/Regression_Poor.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP_core type_idp_host receive_assistance remit12m hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit 
+svy: logit poorPPP_core type_idp_host receive_assistance remit12m hhsize age_dependency_ratio pgender pchild pliteracy i.reg_pess
 outreg2 using "${gsdOutput}/Regression_Poor.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP_core type_idp_host receive_assistance remit12m hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit improved_water improved_sanitation electricity  
+svy: logit poorPPP_core type_idp_host receive_assistance remit12m hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit i.reg_pess
+outreg2 using "${gsdOutput}/Regression_Poor.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit poorPPP_core type_idp_host receive_assistance remit12m hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit improved_water improved_sanitation electricity  i.reg_pess
 outreg2 using "${gsdOutput}/Regression_Poor.xls", bdec(3) tdec(3) rdec(3) nolabel append
 erase "${gsdOutput}/Regression_Poor.txt"
 
@@ -264,7 +271,7 @@ svy: logit type_idp_host hhsize age_dependency_ratio pgender pchild pliteracy hh
 outreg2 using "${gsdOutput}/Regression_IDP.xls", bdec(3) tdec(3) rdec(3) nolabel append
 svy: logit type_idp_host hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit improved_water improved_sanitation electricity remit12m hunger_dum 
 outreg2 using "${gsdOutput}/Regression_IDP.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit type_idp_host hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit improved_water improved_sanitation electricity remit12m hunger_dum satisf_now
+svy: logit type_idp_host hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit improved_water improved_sanitation electricity remit12m hunger_dum satisf_now 
 outreg2 using "${gsdOutput}/Regression_IDP.xls", bdec(3) tdec(3) rdec(3) nolabel append
 erase "${gsdOutput}/Regression_IDP.txt"
 
@@ -273,15 +280,15 @@ erase "${gsdOutput}/Regression_IDP.txt"
 *Regression analysis for return intention 
 svyset ea [pweight=weight], strata(strata) singleunit(centered)
 keep if type_idp_host==1
-svy: logit move_want_yn satisf_now 
+svy: logit move_want_yn satisf_now disp_drought year 
 outreg2 using "${gsdOutput}/Regression_Return.xls", bdec(3) tdec(3) rdec(3) nolabel replace
-svy: logit move_want_yn satisf_now poorPPP_core remit12m receive_assistance 
+svy: logit move_want_yn satisf_now disp_drought year poorPPP_core remit12m receive_assistance 
 outreg2 using "${gsdOutput}/Regression_Return.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit move_want_yn satisf_now poorPPP_core remit12m receive_assistance hhsize age_dependency_ratio pgender pchild pliteracy 
+svy: logit move_want_yn satisf_now disp_drought year poorPPP_core remit12m receive_assistance hhsize age_dependency_ratio pgender pchild pliteracy 
 outreg2 using "${gsdOutput}/Regression_Return.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit move_want_yn satisf_now poorPPP_core remit12m receive_assistance hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit 
+svy: logit move_want_yn satisf_now disp_drought year poorPPP_core remit12m receive_assistance hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit 
 outreg2 using "${gsdOutput}/Regression_Return.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit move_want_yn satisf_now poorPPP_core remit12m receive_assistance hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit improved_water improved_sanitation electricity 
+svy: logit move_want_yn satisf_now disp_drought year poorPPP_core remit12m receive_assistance hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit improved_water improved_sanitation electricity 
 outreg2 using "${gsdOutput}/Regression_Return.xls", bdec(3) tdec(3) rdec(3) nolabel append
 erase "${gsdOutput}/Regression_Return.txt"
 
