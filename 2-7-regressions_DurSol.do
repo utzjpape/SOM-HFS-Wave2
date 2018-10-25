@@ -230,357 +230,58 @@ keep if type_idp_host<.
 recode type_idp_host (2=0)
 recode lhood (8=1 "Agriculture") (1=2 "Wage, Salary & own business") (2=3 "Aid, Remittances & Other") (3/6=3) (7=2) (9/10=2) (11/.=3), gen (lhood_dum)
 replace lhood_dum=3 if lhood_dum>=.
+egen pre_receive_assistance=rowtotal(assist__1 assist__2 assist__3)
+gen receive_assistance=(pre_receive_assistance>0)
+gen hunger_dum=(hunger>1)
+alpha health_satisfaction school_satisfaction empl_satisfaction, gen(sat_now)
+recode sat_now (2.34/5 = 0 "Not Satisfied") (1/2.34 = 1 "Satisfied"), gen(satisf_now)
+
+
 
 *Regression analysis for poor vs. non-poor 
 svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
-svy: logit poorPPP_core type_idp_host i.astrata 
+svy: logit poorPPP_core type_idp_host 
 outreg2 using "${gsdOutput}/Regression_Poor.xls", bdec(3) tdec(3) rdec(3) nolabel replace
-svy: logit poorPPP_core type_idp_host hhsize age_dependency_ratio pgender pchild pliteracy i.astrata 
+svy: logit poorPPP_core type_idp_host receive_assistance remit12m 
 outreg2 using "${gsdOutput}/Regression_Poor.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP_core type_idp_host hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit i.astrata 
+svy: logit poorPPP_core type_idp_host receive_assistance remit12m hhsize age_dependency_ratio pgender pchild pliteracy 
 outreg2 using "${gsdOutput}/Regression_Poor.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP_core type_idp_host hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit improved_water improved_sanitation electricity i.astrata 
+svy: logit poorPPP_core type_idp_host receive_assistance remit12m hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit 
 outreg2 using "${gsdOutput}/Regression_Poor.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP_core type_idp_host hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit improved_water improved_sanitation electricity i.lhood_dum i.astrata 
+svy: logit poorPPP_core type_idp_host receive_assistance remit12m hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit improved_water improved_sanitation electricity  
 outreg2 using "${gsdOutput}/Regression_Poor.xls", bdec(3) tdec(3) rdec(3) nolabel append
 erase "${gsdOutput}/Regression_Poor.txt"
 
 
-XXXX
+
 *Regression analysis for Refugees vs. Host 
 svyset ea [pweight=weight], strata(strata) singleunit(centered)
-svy: logit Refugee hhsize depend_share pfemale pchild pliterate hhh_gender hhh_age hhh_literacy watersource sanitation electricity i.lhood 
-outreg2 using "${gsdOutput}/Regression_Refugee.xls", bdec(3) tdec(3) rdec(3) nolabel append
-erase "${gsdOutput}/Regression_Refugee.txt"
+svy: logit type_idp_host hhsize age_dependency_ratio pgender pchild pliteracy 
+outreg2 using "${gsdOutput}/Regression_IDP.xls", bdec(3) tdec(3) rdec(3) nolabel replace
+svy: logit type_idp_host hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit 
+outreg2 using "${gsdOutput}/Regression_IDP.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit type_idp_host hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit improved_water improved_sanitation electricity 
+outreg2 using "${gsdOutput}/Regression_IDP.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit type_idp_host hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit improved_water improved_sanitation electricity remit12m hunger_dum 
+outreg2 using "${gsdOutput}/Regression_IDP.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit type_idp_host hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit improved_water improved_sanitation electricity remit12m hunger_dum satisf_now
+outreg2 using "${gsdOutput}/Regression_IDP.xls", bdec(3) tdec(3) rdec(3) nolabel append
+erase "${gsdOutput}/Regression_IDP.txt"
+
 
 
 *Regression analysis for return intention 
 svyset ea [pweight=weight], strata(strata) singleunit(centered)
-svy: logit I_21_move_want_yn i.host_refugee_country hhsize depend_share pfemale pchild pliterate hhh_gender hhh_age hhh_literacy watersource sanitation electricity i.lhood poorPPP_core
+keep if type_idp_host==1
+svy: logit move_want_yn satisf_now 
+outreg2 using "${gsdOutput}/Regression_Return.xls", bdec(3) tdec(3) rdec(3) nolabel replace
+svy: logit move_want_yn satisf_now poorPPP_core remit12m receive_assistance 
+outreg2 using "${gsdOutput}/Regression_Return.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit move_want_yn satisf_now poorPPP_core remit12m receive_assistance hhsize age_dependency_ratio pgender pchild pliteracy 
+outreg2 using "${gsdOutput}/Regression_Return.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit move_want_yn satisf_now poorPPP_core remit12m receive_assistance hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit 
+outreg2 using "${gsdOutput}/Regression_Return.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit move_want_yn satisf_now poorPPP_core remit12m receive_assistance hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit improved_water improved_sanitation electricity 
 outreg2 using "${gsdOutput}/Regression_Return.xls", bdec(3) tdec(3) rdec(3) nolabel append
 erase "${gsdOutput}/Regression_Return.txt"
-
-
-
-
-
-
-
-
-*==========================================================
-*==========================================================
-*==========================================================
-
-
-svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
-svy: logit poorPPP hhh_gender 
-outreg2 using "${gsdOutput}/Regression_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel replace
-svy: logit poorPPP hhh_gender i.astrata
-outreg2 using "${gsdOutput}/Regression_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-
-svy: logit poorPPP remit12m 
-outreg2 using "${gsdOutput}/Regression_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP remit12m i.astrata
-outreg2 using "${gsdOutput}/Regression_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-
-svy: logit poorPPP migr_idp 
-outreg2 using "${gsdOutput}/Regression_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP migr_idp i.astrata
-outreg2 using "${gsdOutput}/Regression_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-
-svy: logit poorPPP drought_affected 
-outreg2 using "${gsdOutput}/Regression_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP drought_affected i.astrata
-outreg2 using "${gsdOutput}/Regression_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-
-svy: logit poorPPP remit12m hhh_gender migr_idp drought_affected  
-outreg2 using "${gsdOutput}/Regression_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP remit12m hhh_gender migr_idp drought_affected  i.astrata
-outreg2 using "${gsdOutput}/Regression_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-
-*Checks for poverty and education of HH head (Same results for hhh_edu)
-svy: logit poorPPP_core hhh_edu_some 
-outreg2 using "${gsdOutput}/Regression_Poverty_Edu_HHH.xls", bdec(3) tdec(3) rdec(3) nolabel replace
-svy: logit poorPPP_core hhh_edu_some hhh_gender
-outreg2 using "${gsdOutput}/Regression_Poverty_Edu_HHH.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP_core hhh_edu_some hhh_gender hhh_age
-outreg2 using "${gsdOutput}/Regression_Poverty_Edu_HHH.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP_core hhh_edu_some hhh_gender hhh_age i.astrata
-outreg2 using "${gsdOutput}/Regression_Poverty_Edu_HHH.xls", bdec(3) tdec(3) rdec(3) nolabel append
-
-
-*Poverty gap
-svy: reg pgi hhh_gender i.astrata
-svy: reg pgi remit12m i.astrata
-svy: reg pgi migr_idp i.astrata
-svy: reg pgi drought_affected i.astrata
-svy: reg pgi hhh_gender remit12m migr_idp drought_affected  i.astrata
-
-*Hunger 
-gen exp_hung=(hunger>1) if !missing(hunger)
-svy: logit exp_hung hhh_gender i.astrata poorPPP
-svy: logit exp_hung remit12m i.astrata poorPPP
-svy: logit exp_hung migr_idp i.astrata poorPPP
-svy: logit exp_hung drought_affected i.astrata poorPPP
-svy: logit exp_hung hhh_gender remit12m migr_idp drought_affected  i.astrata poorPPP
-
-*HH head 
-svy: logit hhh_gender poorPPP i.astrata poorPPP
-svy: logit hhh_gender remit12m i.astrata poorPPP
-svy: logit hhh_gender migr_idp i.astrata poorPPP
-svy: logit hhh_gender drought_affected i.astrata poorPPP
-svy: logit hhh_gender poorPPP remit12m migr_idp drought_affected  i.astrata poorPPP
-
-*Education of HHH
-svyset ea [pweight=weight], strata(strata) singleunit(centered)
-svy: logit hhh_edu_dum hhh_gender hhh_age i.astrata poorPPP
-svy: logit hhh_edu_dum hhh_gender hhh_age remit12m i.astrata poorPPP
-svy: logit hhh_edu_dum hhh_gender hhh_age migr_idp i.astrata poorPPP
-svy: logit hhh_edu_dum hhh_gender hhh_age drought_affected i.astrata poorPPP
-svy: logit hhh_edu_dum hhh_gender hhh_age remit12m migr_idp drought_affected  i.astrata poorPPP
-
-
-*Regression of HH characteristics 
-gen lhood_cat=1 if lhood==1
-replace lhood_cat=2 if lhood==7
-replace lhood_cat=3 if lhood==8
-replace lhood_cat=4 if lhood==2 | lhood==5
-replace lhood_cat=5 if lhood_cat==.
-label define llhood_cat 1 "Salaried Labor" 2 "Small family business"  3 "Agriculture, fishing, hunting etc." 4 "Remittances" 5 "Other"
-label values lhood_cat llhood_cat
-merge 1:1 strata ea block hh using "${gsdData}/1-CleanTemp/hhm-hh.dta", keepusing(hhh_literacy) nogen assert(match)
-
-svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
-svy: logit poorPPP_core hhsize age_dependency_ratio no_children pgender hhh_gender hhh_age hhh_literacy pliteracy improved_water improved_sanitation electricity i.lhood_cat i.astrata
-outreg2 using "${gsdOutput}/Regression_HH_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel replace
-
-svy: logit poorPPP_core hhsize age_dependency_ratio no_children pgender hhh_gender hhh_age hhh_literacy pliteracy improved_water improved_sanitation electricity i.lhood_cat i.astrata if ind_profile==1
-outreg2 using "${gsdOutput}/Regression_HH_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP_core hhsize age_dependency_ratio no_children pgender hhh_gender hhh_age hhh_literacy pliteracy improved_water improved_sanitation electricity i.lhood_cat i.astrata if ind_profile==2
-outreg2 using "${gsdOutput}/Regression_HH_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP_core hhsize age_dependency_ratio no_children pgender hhh_gender hhh_age hhh_literacy pliteracy improved_water improved_sanitation electricity i.lhood_cat i.astrata if ind_profile==3
-outreg2 using "${gsdOutput}/Regression_HH_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP_core hhsize age_dependency_ratio no_children pgender hhh_gender hhh_age hhh_literacy pliteracy improved_water improved_sanitation electricity i.lhood_cat i.astrata if ind_profile==4
-outreg2 using "${gsdOutput}/Regression_HH_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP_core hhsize age_dependency_ratio no_children pgender hhh_gender hhh_age hhh_literacy pliteracy improved_water improved_sanitation electricity i.lhood_cat i.astrata if ind_profile==5
-outreg2 using "${gsdOutput}/Regression_HH_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-
-
-*Deprivations 
-svyset ea [pweight=weight], strata(strata) singleunit(centered)
-svy: logit living_standards hhsize age_dependency_ratio hhh_gender hhh_age hhh_literacy i.astrata
-outreg2 using "${gsdOutput}/Regression_Multiple_Deprivations.xls", bdec(3) tdec(3) rdec(3) nolabel replace
-svy: logit education hhsize age_dependency_ratio hhh_gender hhh_age hhh_literacy i.astrata
-outreg2 using "${gsdOutput}/Regression_Multiple_Deprivations.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit wash hhsize age_dependency_ratio hhh_gender hhh_age hhh_literacy i.astrata
-outreg2 using "${gsdOutput}/Regression_Multiple_Deprivations.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: ologit deprivations3 hhsize age_dependency_ratio hhh_gender hhh_age hhh_literacy i.astrata
-outreg2 using "${gsdOutput}/Regression_Multiple_Deprivations.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: ologit deprivations hhsize age_dependency_ratio hhh_gender hhh_age hhh_literacy i.astrata
-outreg2 using "${gsdOutput}/Regression_Multiple_Deprivations.xls", bdec(3) tdec(3) rdec(3) nolabel append
-
-
-
-*Education
-merge 1:m strata ea block hh using  "${gsdTemp}/hhm_PA_Poverty_Profile.dta", nogen
-gen edu_no=(edu_level_broad==0) if !missing(edu_level_broad) 
-gen school_more30=(tedu>=4) if !missing(tedu)
-preserve 
-use "${gsdData}/1-CleanOutput/hhm.dta", clear
-collapse (sum) enrolled25, by(strata ea block hh)
-save "${gsdTemp}/hh_enrolled.dta", replace
-use "${gsdData}/1-CleanOutput/nonfood.dta", clear
-keep if itemid==1082 | itemid==1083
-collapse (sum) purc_usd_imp, by(strata ea block hh weight hhsize)
-replace purc_usd_imp=purc_usd_imp*52
-merge 1:1 strata ea hh block using "${gsdTemp}/hh_enrolled.dta", nogen keep(match)
-gen edu_exp_pc=purc_usd_imp/ enrolled25
-save "${gsdTemp}/edu_exp.dta", replace
-restore
-merge m:1 strata ea hh block using "${gsdTemp}/edu_exp.dta", nogen keep(match master)
-replace edu_exp_pc=0 if edu_exp_pc==.
-replace hhm_edu_current=. if age>29
-
-gen age_cat=1 if age>=6 & age<=13 
-replace age_cat=2 if age>=14 & age<=17 
-replace age_cat=3 if age>=18 & age<=25 
-replace age_cat=4 if age>=26 & age<.
-label define lage_cat 1 "6-13" 2 "14-17"  3 "18-25" 4 "26+"
-label values age_cat lage_cat
-
-*Scholl attendance 
-svyset ea [pweight=weight], strata(strata) singleunit(centered)
-svy: logit enrolled25 poorPPP_core age gender hhh_gender hhh_literacy remit12m school_more30 edu_exp_pc i.astrata
-outreg2 using "${gsdOutput}/Regression_School_Attendance.xls", bdec(3) tdec(3) rdec(3) nolabel replace
-svy: logit enrolled25 poorPPP_core gender hhh_gender hhh_literacy remit12m school_more30 edu_exp_pc i.age_cat i.astrata
-outreg2 using "${gsdOutput}/Regression_School_Attendance.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit enrolled25 poorPPP_core age gender hhh_gender hhh_literacy remit12m school_more30 edu_exp_pc i.astrata if pschool_age==1
-outreg2 using "${gsdOutput}/Regression_School_Attendance.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit enrolled25 poorPPP_core age gender hhh_gender hhh_literacy remit12m school_more30 edu_exp_pc i.astrata if sschool_age==1
-outreg2 using "${gsdOutput}/Regression_School_Attendance.xls", bdec(3) tdec(3) rdec(3) nolabel append
-
-
-*No education
-svy: logit edu_no poorPPP_core age gender i.astrata
-outreg2 using "${gsdOutput}/Regression_School_Attendance.xls", bdec(3) tdec(3) rdec(3) nolabel append
-
-
-
-*Checks for child/youth poverty 
-svyset ea [pweight=weight], strata(strata) singleunit(centered)
-svy: logit poorPPP_core hhh_gender if child==1
-outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel replace
-svy: logit poorPPP_core hhh_gender i.astrata if child==1
-outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-
-svy: logit poorPPP_core remit12m if child==1
-outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP_core remit12m i.astrata if child==1
-outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-
-svy: logit poorPPP_core migr_idp if child==1
-outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP_core migr_idp i.astrata if child==1
-outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-
-svy: logit poorPPP_core drought_affected if child==1
-outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP_core drought_affected i.astrata if child==1
-outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-
-svy: logit poorPPP_core hhh_gender remit12m migr_idp drought_affected i.astrata if child==1
-
-
-svy: logit poorPPP_core hhh_gender if youth==1
-outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP_core hhh_gender i.astrata if youth==1
-outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-
-svy: logit poorPPP_core remit12m if youth==1
-outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP_core remit12m i.astrata if youth==1
-outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-
-svy: logit poorPPP_core migr_idp if youth==1
-outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP_core migr_idp i.astrata if youth==1
-outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-
-svy: logit poorPPP_core drought_affected if youth==1
-outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit poorPPP_core drought_affected i.astrata if youth==1
-outreg2 using "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls", bdec(3) tdec(3) rdec(3) nolabel append
-
-svy: logit poorPPP_core hhh_gender remit12m migr_idp drought_affected i.astrata if youth==1
-
-
-*Literacy rate
-svyset ea [pweight=weight], strata(strata) singleunit(centered)
-svy: logit adult_literacy_rate hhh_gender hhh_age i.astrata poorPPP
-svy: logit adult_literacy_rate hhh_gender hhh_age remit12m i.astrata poorPPP
-svy: logit adult_literacy_rate hhh_gender hhh_age migr_idp i.astrata poorPPP
-svy: logit adult_literacy_rate hhh_gender hhh_age drought_affected i.astrata poorPPP
-svy: logit adult_literacy_rate hhh_gender hhh_age remit12m migr_idp drought_affected  i.astrata poorPPP
-
-*No education
-gen dum_no_edu=(edu_level_broad>0) if !missing(edu_level_broad)
-svyset ea [pweight=weight], strata(strata) singleunit(centered)
-svy: logit dum_no_edu age gender i.astrata poorPPP
-svy: logit dum_no_edu age gender remit12m i.astrata poorPPP
-svy: logit dum_no_edu age gender migr_idp i.astrata poorPPP
-svy: logit dum_no_edu age gender drought_affected i.astrata poorPPP
-svy: logit dum_no_edu age gender remit12m migr_idp drought_affected  i.astrata poorPPP
-
-
-
-*Inequality decomposition (GE 1 - Theil Index)
-use "${gsdTemp}/hh_PA_Poverty_Profile.dta", clear
-svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
-ineqdeco tc_imp [aweight=hhweight], bygroup(ind_profile)
-ineqdeco tc_imp [aweight=hhweight], bygroup(type)
-recode ind_profile_old (1=1) (2=2) (3=3) (4=2) (5=3) (6=4) (7=5) (8=5) (9=6) (11=7) (12=7) (13=8), gen (region)
-ineqdeco tc_imp [aweight=hhweight], bygroup(region)
-
-
-*Poverty gap in monetary value 
-use "${gsdTemp}/hh_PA_Poverty_Profile.dta", clear
-svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
-*Obtain gap in USD 
-gen monetary_gap_hh=pgi*plinePPP
-*Convert to population & annual value
-gen monetary_gap_pop=monetary_gap_hh*hhsize*365
-*Scale weights to total population in Somalia (Total from PESS 12,316,895)
-egen tot_wave2=sum(weight)
-gen scale_factor=2076677/1939610
-replace weight=scale_factor*weight
-*Obtain representative value for areas covered 
-gen monetary_gap_rep=monetary_gap_pop*weight
-egen monetary_gap_som=sum(monetary_gap_rep)
-replace monetary_gap_som=monetary_gap_som/1000000
-label var monetary_gap_som "Monetary gap in million US per year"
-
-
-*Differences between poor children and non-poor ones
-use "${gsdTemp}/hhm_PA_Poverty_Profile.dta", clear
-merge m:1 strata ea block hh using "${gsdTemp}/hh_PA_Poverty_Profile.dta", keepusing(hhh_edu_dum hunger electricity improved_sanitation improved_water living_standards education wash hhsize roof_material floor_material thealth tedu dep_p_living dep_p_edu dep_p_wash)
-svyset ea [pweight=weight], strata(strata) singleunit(centered)
-foreach var of varlist hhh_edu_dum hunger electricity improved_sanitation improved_water living_standards education wash {
-	svy: mean `var' if child==1, over(poorPPP)
-	test [`var']Poor = [`var']_subpop_1
-}
-
-svy: mean hhsize if child==1, over(poorPPP)
-test [hhsize]Poor = [hhsize]_subpop_1
-
-
-**************************************************
-*   INTEGRATE ALL SHEETS INTO THE FINAL FILE
-**************************************************
-
-*Monetary poverty
-import excel "${gsdOutput}/PA_Poverty_Profile_1.xls", sheet("Sheet1") firstrow case(lower) clear
-export excel using "${gsdOutput}/PA_Poverty_Profile_A_v3.xlsx", sheetreplace sheet("Raw_Data_1") firstrow(variables)
-erase "${gsdOutput}/PA_Poverty_Profile_1.xls"
-foreach i of numlist 2/14 {
-	insheet using "${gsdOutput}/PA_Poverty_Profile_`i'.xls", clear nonames tab
-	export excel using "${gsdOutput}/PA_Poverty_Profile_A_v3.xlsx", sheetreplace sheet("Raw_Data_`i'") 
-	erase "${gsdOutput}/PA_Poverty_Profile_`i'.xls"
-}
-*Poverty and indicators
-foreach i of numlist 15/21 {
-	insheet using "${gsdOutput}/PA_Poverty_Profile_`i'.xls", clear nonames tab
-	export excel using "${gsdOutput}/PA_Poverty_Profile_B_v3.xlsx", sheetreplace sheet("Raw_Data_`i'") 
-	erase "${gsdOutput}/PA_Poverty_Profile_`i'.xls"
-}
-*Multidimensional poverty 
-foreach i of numlist 22/32 {
-	insheet using "${gsdOutput}/PA_Poverty_Profile_`i'.xls", clear nonames tab
-	export excel using "${gsdOutput}/PA_Poverty_Profile_C_v3.xlsx", sheetreplace sheet("Raw_Data_`i'") 
-	erase "${gsdOutput}/PA_Poverty_Profile_`i'.xls"
-}
-*Regression tables
-import delimited "${gsdOutput}/Regression_Poverty_Characteristics.txt", clear 
-export excel using "${gsdOutput}/PA_Poverty_Profile_D_v3.xlsx", sheetreplace sheet("Raw_1")
-erase "${gsdOutput}/Regression_Poverty_Characteristics.txt"
-erase "${gsdOutput}/Regression_Poverty_Characteristics.xls"
-import delimited "${gsdOutput}/Regression_Poverty_Edu_HHH.txt", clear 
-export excel using "${gsdOutput}/PA_Poverty_Profile_D_v3.xlsx", sheetreplace sheet("Raw_2")
-erase "${gsdOutput}/Regression_Poverty_Edu_HHH.txt"
-erase "${gsdOutput}/Regression_Poverty_Edu_HHH.xls"
-import delimited "${gsdOutput}/Regression_HH_Characteristics.txt", clear 
-export excel using "${gsdOutput}/PA_Poverty_Profile_D_v3.xlsx", sheetreplace sheet("Raw_3")
-erase "${gsdOutput}/Regression_HH_Characteristics.txt"
-erase "${gsdOutput}/Regression_HH_Characteristics.xls"
-import delimited "${gsdOutput}/Regression_Multiple_Deprivations.txt", clear 
-export excel using "${gsdOutput}/PA_Poverty_Profile_D_v3.xlsx", sheetreplace sheet("Raw_4")
-erase "${gsdOutput}/Regression_Multiple_Deprivations.txt"
-erase "${gsdOutput}/Regression_Multiple_Deprivations.xls"
-import delimited "${gsdOutput}/Regression_School_Attendance.txt", clear 
-export excel using "${gsdOutput}/PA_Poverty_Profile_D_v3.xlsx", sheetreplace sheet("Raw_5")
-erase "${gsdOutput}/Regression_School_Attendance.txt"
-erase "${gsdOutput}/Regression_School_Attendance.xls"
-import delimited "${gsdOutput}/Regression_Child_Poverty_Characteristics.txt", clear 
-export excel using "${gsdOutput}/PA_Poverty_Profile_D_v3.xlsx", sheetreplace sheet("Raw_6")
-erase "${gsdOutput}/Regression_Child_Poverty_Characteristics.txt"
-erase "${gsdOutput}/Regression_Child_Poverty_Characteristics.xls"
 
