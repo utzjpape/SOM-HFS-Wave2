@@ -282,13 +282,15 @@ svyset ea [pweight=weight], strata(strata) singleunit(centered)
 keep if type_idp_host==1
 svy: logit move_want_yn satisf_now disp_drought year 
 outreg2 using "${gsdOutput}/Regression_Return.xls", bdec(3) tdec(3) rdec(3) nolabel replace
-svy: logit move_want_yn satisf_now disp_drought year poorPPP_core remit12m receive_assistance 
+svy: logit move_want_yn satisf_now disp_drought year i.reg_pess
 outreg2 using "${gsdOutput}/Regression_Return.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit move_want_yn satisf_now disp_drought year poorPPP_core remit12m receive_assistance hhsize age_dependency_ratio pgender pchild pliteracy 
+svy: logit move_want_yn satisf_now disp_drought year poorPPP_core remit12m receive_assistance i.reg_pess
 outreg2 using "${gsdOutput}/Regression_Return.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit move_want_yn satisf_now disp_drought year poorPPP_core remit12m receive_assistance hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit 
+svy: logit move_want_yn satisf_now disp_drought year poorPPP_core remit12m receive_assistance hhsize age_dependency_ratio pgender pchild pliteracy i.reg_pess
 outreg2 using "${gsdOutput}/Regression_Return.xls", bdec(3) tdec(3) rdec(3) nolabel append
-svy: logit move_want_yn satisf_now disp_drought year poorPPP_core remit12m receive_assistance hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit improved_water improved_sanitation electricity 
+svy: logit move_want_yn satisf_now disp_drought year poorPPP_core remit12m receive_assistance hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit i.reg_pess
+outreg2 using "${gsdOutput}/Regression_Return.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: logit move_want_yn satisf_now disp_drought year poorPPP_core remit12m receive_assistance hhsize age_dependency_ratio pgender pchild pliteracy hhh_gender hhh_age hhh_lit improved_water improved_sanitation electricity i.reg_pess
 outreg2 using "${gsdOutput}/Regression_Return.xls", bdec(3) tdec(3) rdec(3) nolabel append
 erase "${gsdOutput}/Regression_Return.txt"
 
