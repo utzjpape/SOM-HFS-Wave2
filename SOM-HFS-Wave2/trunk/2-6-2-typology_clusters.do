@@ -29,8 +29,10 @@ graph export "${gsdOutput}/cns_hhs.png", replace
 set seed 54352 
 set sortseed 76343
 cluster wardslinkage a1 a2 a3, gen(clust_var)
-cluster tree, cutnumber(100)
+cluster tree, cutnumber(100) graphregion(color(white)) bgcolor(white)
+graph save "${gsdOutput}/cns_dendogram.gph", replace
 graph export "${gsdOutput}/cns_dendogram.png", replace
+
 *Dendogram shows 2 clusters, one big one small.
 cluster stop
 cluster stop, rule(duda)
@@ -45,27 +47,17 @@ save "${gsdTemp}/working_file.dta", replace
 *MCA cloud of HHs divided by group identified (2D and 3D)
 *Two clusters
 *2d
-graph3d a1 a2 a3 cluster_group_war, colorscheme(bcgyr) xangle(0) yangle(120) zangle(240) cuboid mark 
+graph3d a1 a2 a3 cluster_group_war, colorscheme(cr) xangle(0) yangle(120) zangle(240) cuboid mark 
+graph save "${gsdOutput}/2clusters_3d.gph"
 graph export "${gsdOutput}/2clusters_3d.png", replace
 *3d
 twoway (scatter a2 a1 if (inlist(cluster_group_war,1)),  msize(small) mcolor(black)) ///
 (scatter a2 a1 if (inlist(cluster_group_war,2)),  msize(small) mcolor(blue)), xline(0) ///
 yline(0) scale(.8) legend(on order(1 "Group 1" 2 "Group 2" )) ///
-ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-3 3)) xscale(range(-2 3)) ylabel(#1) xlabel(#1)
+ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-3 3)) xscale(range(-2 3)) ylabel(#1) xlabel(#1)  graphregion(color(white)) bgcolor(white)
+graph save "${gsdOutput}/2clusters_2d.gph", replace
 graph export "${gsdOutput}/2clusters_2d.png", replace
-/*
-*Three clusters
-*3d
-graph3d a1 a2 a3 cluster_group_war3, colorscheme(bcgyr) xangle(0) yangle(120) zangle(240) cuboid mark 
-graph export "${gsdOutput}/3clusters_3d.png", replace
-*2d
-twoway (scatter a2 a1 if (inlist(cluster_group_war3,1)),  msize(small) mcolor(black)) ///
-(scatter a2 a1 if (inlist(cluster_group_war3,2)),  msize(small) mcolor(blue)) ///
-(scatter a2 a1 if (inlist(cluster_group_war3,3)),  msize(small) mcolor(green)), xline(0) ///
-yline(0) scale(.8) legend(on order(1 "Group 1" 2 "Group 2" 3 "Group 3" )) ///
-ytitle(PCA dimension 1) xtitle(PCA dimension 2) yscale(range(-3 3)) xscale(range(-2 3)) ylabel(#1) xlabel(#1)
-graph export "${gsdOutput}/3clusters_2d.png", replace
-*/
+
 *********************************
 *Summary stats of the MCA inputs
 *********************************

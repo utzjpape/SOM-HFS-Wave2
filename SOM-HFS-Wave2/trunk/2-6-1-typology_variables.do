@@ -322,7 +322,6 @@ recode disp_arrive_reason (3 5 =3) (4 8 =4) (6 7 = 6) (1000=.)
 label define disp_arrive_reason 3 "Home, land, livelhood" 4 "Health, education, aid" , modify
 fre disp_arrive_reason
 
-
 *Livestock before displacement 
 gen livestockown_pre = livestockunits_pre >0 & !missing(livestockunits_pre)
 lab def livestockown_pre 0 "No livestock before" 1 "Livestock before"
