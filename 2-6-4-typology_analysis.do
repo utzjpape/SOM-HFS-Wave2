@@ -1,5 +1,4 @@
 *This do file runs the analysis for the typology of IDPs 
-
 use "${gsdTemp}/working_file.dta", clear
 svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
 
@@ -90,7 +89,6 @@ qui tabout livelihood_prev cluster_group_war using "${gsdOutput}/Raw_Cause.xls",
 ************************************************
 *Needs profile (needs1: numeric; needs2: categorical)
 ************************************************
-
 *NO sig
 svy: prop hhh_gender, over(cluster_group_war)
 lincom [Female]_subpop_1 - [Female]_subpop_2
@@ -216,13 +214,52 @@ qui tabout movehelp_new cluster_group_war using "${gsdOutput}/Raw_Solution.xls",
 ************************************************
 *Profile over the Comparison Groups
 ************************************************
-qui tabout cluster_group_war comparisonidp using "${gsdOutput}/Raw_CompGroup.xls", svy percent c(col lb ub) npos(col) replace h1("CompGroup") f(4) 
-qui tabout cluster_group_war national using "${gsdOutput}/Raw_CompGroup.xls", svy percent c(col lb ub) npos(col) append h1("CompGroup") f(4) 
-qui tabout cluster_group_war reasonidp using "${gsdOutput}/Raw_CompGroup.xls", svy  percent c(col lb ub) npos(col) append h1("CompGroup") f(4) 
-qui tabout cluster_group_war durationidp using "${gsdOutput}/Raw_CompGroup.xls", svy percent c(col lb ub) npos(col) append h1("CompGroup") f(4) 
-qui tabout cluster_group_war timesidp using "${gsdOutput}/Raw_CompGroup.xls", svy percent c(col lb ub) npos(col) append h1("CompGroup") f(4) 
-qui tabout cluster_group_war genidp using "${gsdOutput}/Raw_CompGroup.xls", svy percent c(col lb ub) npos(col) append h1("CompGroup") f(4) 
-qui tabout cluster_group_war topbottomidp using "${gsdOutput}/Raw_CompGroup.xls", svy percent c(col lb ub) npos(col) append h1("CompGroup") f(4) 
+qui tabout comparisonidp cluster_group_war using "${gsdOutput}/Raw_CompGroup.xls", svy percent c(col lb ub) npos(col) replace h1("CompGroup") f(4) 
+qui tabout reasonidp cluster_group_war using "${gsdOutput}/Raw_CompGroup.xls", svy  percent c(col lb ub) npos(col) append h1("CompGroup") f(4) 
+qui tabout durationidp cluster_group_war using "${gsdOutput}/Raw_CompGroup.xls", svy percent c(col lb ub) npos(col) append h1("CompGroup") f(4) 
+qui tabout timesidp  cluster_group_war using "${gsdOutput}/Raw_CompGroup.xls", svy percent c(col lb ub) npos(col) append h1("CompGroup") f(4) 
+qui tabout genidp cluster_group_war using "${gsdOutput}/Raw_CompGroup.xls", svy percent c(col lb ub) npos(col) append h1("CompGroup") f(4) 
+qui tabout topbottomidp cluster_group_war using "${gsdOutput}/Raw_CompGroup.xls", svy percent c(col lb ub) npos(col) append h1("CompGroup") f(4) 
+
+******************************************************
+*Regression analysis for differences between groups
+******************************************************
+recode cluster_group_war (2=0)
+ta livelihood, gen(livelihood_)
+ta livelihood_prev, gen(livelihood_prev_)
+
+*General model
+*svy: probit cluster_group_war hhsize crowding depend_share pchild hhh_gender hhh_literacy waterimproved_disp waterimproved sanitationimproved_disp sanitationimproved housingimproveddisp housingimproved lhood_prev_1 lhood_prev_4 lhood_prev_5 lhood_prev_9 lhood_1 lhood_4 lhood_5 lhood_9 i.state
+
+*Poor
+svyset, clear
+svyset ea [pweight=hhweight], strata(strata) singleunit(centered)
+svy: probit cluster_group_war poor
+outreg2 using "${gsdOutput}/Probit_1.xls", bdec(3) tdec(3) rdec(3) nolabel replace
+svy: probit cluster_group_war poor hhh_gender
+outreg2 using "${gsdOutput}/Probit_1.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: probit cluster_group_war poor hhh_gender hhh_literacy
+outreg2 using "${gsdOutput}/Probit_1.xls", bdec(3) tdec(3) rdec(3) nolabel append
+
+*HH characteristics
+svyset, clear
+svyset ea [pweight=weight_adj], strata(strata) singleunit(centered)
+svy: probit cluster_group_war hhsize hhh_gender age_dependency_ratio
+outreg2 using "${gsdOutput}/Probit_2.xls", bdec(3) tdec(3) rdec(3) nolabel replace
+svy: probit cluster_group_war hhsize hhh_gender age_dependency_ratio hhh_literacy
+outreg2 using "${gsdOutput}/Probit_2.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: probit cluster_group_war hhsize hhh_gender age_dependency_ratio hhh_literacy distance_pre distance distance_pre
+outreg2 using "${gsdOutput}/Probit_2.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: probit cluster_group_war hhsize hhh_gender age_dependency_ratio hhh_literacy distance_pre distance distance_pre housingimproved housingimproveddisp
+outreg2 using "${gsdOutput}/Probit_2.xls", bdec(3) tdec(3) rdec(3) nolabel append
+
+*Source income 
+svy: probit cluster_group_war livelihood_prev_1 livelihood_prev_2 livelihood_prev_3 livelihood_prev_4 livelihood_prev_5 livelihood_prev_6 livelihood_prev_7
+outreg2 using "${gsdOutput}/Probit_3.xls", bdec(3) tdec(3) rdec(3) nolabel replace
+svy: probit cluster_group_war livelihood_prev_1 livelihood_prev_2 livelihood_prev_3 livelihood_prev_4 livelihood_prev_5 livelihood_prev_6 livelihood_prev_7 livelihood_1 livelihood_2 livelihood_3 livelihood_4 livelihood_5 livelihood_6 livelihood_7
+outreg2 using "${gsdOutput}/Probit_3.xls", bdec(3) tdec(3) rdec(3) nolabel append
+svy: probit cluster_group_war livelihood_prev_1 livelihood_prev_2 livelihood_prev_3 livelihood_prev_4 livelihood_prev_5 livelihood_prev_6 livelihood_prev_7 livelihood_1 livelihood_2 livelihood_3 livelihood_4 livelihood_5 livelihood_6 livelihood_7 hhsize hhh_gender age_dependency_ratio hhh_literacy
+outreg2 using "${gsdOutput}/Probit_3.xls", bdec(3) tdec(3) rdec(3) nolabel append
 
 ************************************************
 *Place in Figures file
@@ -250,3 +287,10 @@ insheet using "${gsdOutput}/Raw_Solution.xls", clear nonames
 insheet using "${gsdOutput}/Raw_CompGroup.xls", clear nonames
 	export excel using "${gsdOutput}/Figures_typology.xlsx", sheetreplace sheet("Raw_CompGroup") 
 	rm "${gsdOutput}/Raw_CompGroup.xls"
+
+forval i=1/3 {
+	import delimited "${gsdOutput}/Probit_`i'.txt", clear 
+		export excel using "${gsdOutput}/Figures_typology.xlsx", sheetreplace sheet("Raw_Probit_`i'") 
+		erase "${gsdOutput}/Probit_`i'.xls"
+		erase "${gsdOutput}/Probit_`i'.txt"
+}
