@@ -111,6 +111,7 @@ mi impute mvn mi_cons_f1 mi_cons_f2 mi_cons_f3 mi_cons_f4 mi_cons_nf1 mi_cons_nf
 save "${gsdTemp}/mi.dta", replace
 
 
+
 ********************************************************************
 *Scale to per day and per capita and create sub-aggregates
 ********************************************************************
@@ -165,10 +166,14 @@ drop team
 *In current (2017) USD: 34,340.96 / global_er
 gen plinePPP = 10731 * gg * 1.9 / global_er
 gen plinePPP125 = 10731 * gg * 1.25 / global_er
+gen plinePPP320 = 10731 * gg * 3.20 / global_er
+gen plinePPP550 = 10731 * gg * 5.50 / global_er
 gen plinePPP_vulnerable_10 =plinePPP*1.1 
 gen plinePPP_vulnerable_20 =plinePPP*1.2
 label var plinePPP "2011 PPP 1.90 USD Poverty Line in 2017 USD Somalia"
 label var plinePPP125 "2011 PPP 1.25 USD Poverty Line in 2017 USD Somalia"
+label var plinePPP320 "2011 PPP 3.2 USD Poverty Line in 2017 USD Somalia"
+label var plinePPP550 "2011 PPP 5.50 USD Poverty Line in 2017 USD Somalia"
 label var plinePPP_vulnerable_10 "Poverty Line corresponding to shock to consumption equal to (1-1/1.1)"
 label var plinePPP_vulnerable_20 "Poverty Line corresponding to shock to consumption equal to (1-1/1.2)"
 *Derive proxy of food poverty line with the share of food consumption: share of food consumption .7268462
@@ -194,6 +199,8 @@ drop quantile_core
 *Calculate poverty
 mi passive: gen poorPPP = tc_imp < plinePPP if !missing(tc_imp)
 mi passive: gen poorPPP125 = tc_imp < plinePPP125 if !missing(tc_imp)
+mi passive: gen poorPPP320 = tc_imp < plinePPP320 if !missing(tc_imp)
+mi passive: gen poorPPP550 = tc_imp < plinePPP550 if !missing(tc_imp)
 mi passive: gen poorPPP_vulnerable_10 = tc_imp < plinePPP_vulnerable_10 if !missing(tc_imp)
 mi passive: gen poorPPP_vulnerable_20 = tc_imp < plinePPP_vulnerable_20 if !missing(tc_imp)
 mi passive: gen poorPPPFood = tc_imp < plinePPPFood if !missing(tc_imp)
@@ -247,7 +254,7 @@ save "${gsdTemp}/mi-extract.dta", replace
 *Analysis on extract dataset
 use "${gsdTemp}/mi-extract.dta", clear
 fastgini tc_imp [pweight=hhweight]
-collapse (mean) tc_* mi_cons_f? mi_cons_nf? mi_cons_d (mean) poorPPP_prob = poorPPP poorPPP125_prob = poorPPP125 poorPPP_vulnerable_10_prob = poorPPP_vulnerable_10 poorPPP_vulnerable_20_prob = poorPPP_vulnerable_20 poorPPPFood_prob = poorPPPFood poorPPPshock_prob = poorPPP_shock poorPPPcore_prob=poorPPP_core, by(strata ea block hh hhsize weight hhweight opt_mod plinePPP plinePPP125 plinePPPFood deflator plinePPPcore)
+collapse (mean) tc_* mi_cons_f? mi_cons_nf? mi_cons_d (mean) poorPPP_prob = poorPPP poorPPP125_prob = poorPPP125 poorPPP320_prob = poorPPP320 poorPPP550_prob = poorPPP550 poorPPP_vulnerable_10_prob = poorPPP_vulnerable_10 poorPPP_vulnerable_20_prob = poorPPP_vulnerable_20 poorPPPFood_prob = poorPPPFood poorPPPshock_prob = poorPPP_shock poorPPPcore_prob=poorPPP_core, by(strata ea block hh hhsize weight hhweight opt_mod plinePPP plinePPP125 plinePPP320 plinePPP550 plinePPPFood deflator plinePPPcore)
 *Replace aggregates for imputed regions
 gen pre_tc_core = (mi_cons_f0 + mi_cons_nf0)/deflator + mi_cons_d
 replace tc_core=pre_tc_core if tc_core>=.
@@ -272,6 +279,37 @@ replace poorPPP =1 if  poorPPP_prob > .38 & ind_profile==11
 replace poorPPP =1 if  poorPPP_prob > .55 & ind_profile==12
 replace poorPPP =1 if  poorPPP_prob > .57 & ind_profile==13
 replace poorPPP =0 if poorPPP>=.
+
+*Poverty status of households (3.2 poverty line)
+gen poorPPP320 = poorPPP320_prob > .53 if ind_profile==1
+replace poorPPP320 =1 if  poorPPP320_prob > .48 & ind_profile==2
+replace poorPPP320 =1 if  poorPPP_prob > .56 & ind_profile==3
+replace poorPPP320 =1 if  poorPPP320_prob > .67 & ind_profile==4
+replace poorPPP320 =1 if  poorPPP320_prob > .35 & ind_profile==5
+replace poorPPP320 =1 if  poorPPP320_prob > .47 & ind_profile==6
+replace poorPPP320 =1 if  poorPPP320_prob > .55 & ind_profile==7
+replace poorPPP320 =1 if  poorPPP320_prob > .56 & ind_profile==8
+replace poorPPP320 =1 if  poorPPP320_prob > .57 & ind_profile==9
+replace poorPPP320 =1 if  poorPPP320_prob > .39 & ind_profile==11
+replace poorPPP320 =1 if  poorPPP320_prob > .61 & ind_profile==12
+replace poorPPP320 =1 if  poorPPP320_prob > .57 & ind_profile==13
+replace poorPPP320 =0 if poorPPP320>=.
+
+*Poverty status of households (5.2 poverty line)
+gen poorPPP550 = poorPPP550_prob > .42 if ind_profile==1
+replace poorPPP550 =1 if  poorPPP550_prob > .69 & ind_profile==2
+replace poorPPP550 =1 if  poorPPP550_prob > .47 & ind_profile==3
+replace poorPPP550 =1 if  poorPPP550_prob > .76 & ind_profile==4
+replace poorPPP550 =1 if  poorPPP550_prob > .30 & ind_profile==5
+replace poorPPP550 =1 if  poorPPP550_prob > .41 & ind_profile==6
+replace poorPPP550 =1 if  poorPPP550_prob > .32 & ind_profile==7
+replace poorPPP550 =1 if  poorPPP550_prob > .53 & ind_profile==8
+replace poorPPP550 =1 if  poorPPP550_prob > .75 & ind_profile==9
+replace poorPPP550 =1 if  poorPPP550_prob > .47 & ind_profile==11
+replace poorPPP550 =1 if  poorPPP550_prob > .50 & ind_profile==12
+replace poorPPP550 =1 if  poorPPP550_prob > .67 & ind_profile==13
+replace poorPPP550 =0 if poorPPP550>=.
+
 *Poverty status of households (Food poverty line)
 gen poorPPPFood = poorPPPFood_prob > .52 if ind_profile==1
 replace poorPPPFood =1 if  poorPPPFood_prob > .56 & ind_profile==2

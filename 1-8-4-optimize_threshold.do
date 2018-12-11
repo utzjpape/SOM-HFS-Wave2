@@ -10,7 +10,7 @@ set sortseed 11041985
 ********************************************************************
 use "${gsdData}/1-CleanTemp/hh.dta", clear
 *Add imputed total consumption aggregates as well as poverty line
-merge m:1 strata ea hh using "${gsdData}/1-CleanTemp/hhq-poverty.dta", assert(match) keepusing(pline*PPP tc_imp poor*PPP_prob ) nogene
+merge m:1 strata ea hh using "${gsdData}/1-CleanTemp/hhq-poverty.dta", assert(match) keepusing(pline*PPP tc_imp poor*PPP_prob poorPPP320_prob poorPPP550_prob plinePPP550 plinePPP320) nogene
 *Rename 1.9 line for the loop
 rename (poorPPP_prob plinePPP) (poor19PPP_prob pline19PPP)
 keep type ind_profile weight hhsize tc_imp pline19PPP poor19PPP_prob
