@@ -129,7 +129,7 @@ foreach x in "nfood" "shocks" "food" "livestock" "livestock_pre" "motor" "assets
 **********************************************************************
 use "${gsdTemp}/hh_final.dta", clear
 export delim interview__id region strata ea block hh lat_y long_x using "${gsdData}/0-RawTemp/Wave2_hh_coordinates.csv", replace
-keep interview__id region strata ea block hh lat_y long_x
+keep interview__id region strata ea block hh lat_y long_x type
 drop if strata==32 | strata==34
 save "${gsdData}/0-RawTemp/Wave2_hh_coordinates.dta", replace
 

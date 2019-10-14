@@ -35,11 +35,13 @@ destring block, replace
 save "${gsdData}/1-CleanTemp/Wave1_SPI.dta", replace
 
 * Wave 2 HHs
-shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\SPI\spi_combined_HHs_Wave2.shp", data("${gsdTemp}/spi_combined_HHs_Wave2.dta") coor("${gsdTemp}/spi_combined_HHs_Wave2_coordinates.dta") replace
+*shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\SPI\spi_combined_HHs", data("${gsdTemp}/spi_combined_HHs_Wave2") coor("${gsdTemp}/spi_combined_HHs_Wave2_coordinates") replace
+import delimited "${gsdShared}\0-Auxiliary\Climate Data\SPI\spi_combined_HHs_Wave2.txt", clear
+save "${gsdTemp}/spi_combined_HHs_Wave2.dta", replace
 use "${gsdTemp}/spi_combined_HHs_Wave2.dta", clear
-replace GRID_CODE = GRID_CODE/3
-drop if GRID_CODE==0
-collapse (mean) SPI=GRID_CODE, by(strata ea_reg ea interview_ type)
+replace grid_code = grid_code/3
+drop if grid_code==0
+collapse (mean) SPI=grid_code, by(strata ea_reg ea interview_ type)
 ren interview interview__id
 su SPI, d
 gen SPI_cat = -3 if inrange(SPI, `r(min)', -2)
@@ -101,6 +103,7 @@ save "${gsdData}/1-CleanTemp/SPI_SOM0.dta", replace
 * save in slightly different form for mapping
 use "${gsdTemp}/spi_combined_SOM0.dta", clear
 gen SPI = GRID_CODE/3
+su SPI, d
 gen SPI_cat = -3 if inrange(SPI, `r(min)', -2)
 replace SPI_cat = -2 if SPI>-2 & SPI<=-1.5
 replace SPI_cat = -1 if SPI>-1.5 & SPI<=-1
@@ -110,11 +113,11 @@ replace SPI_cat = 2 if SPI>=1.5 & SPI<2
 replace SPI_cat = 3 if SPI>=2
 export delim POINTID SPI SPI_cat using "${gsdData}/1-CleanTemp/SPI_drought_map.csv", replace
 
-
+/*
 * NDVI data around Wave 1 HHs
-shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\NDVI\Wave1_NDVI_HHs_Team1.shp", data("${gsdTemp}/Wave1_NDVI_Team1.dta") coor("${gsdTemp}/Wave1_NDVI_Team1_coordinates.dta") replace
-shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\NDVI\Wave1_NDVI_HHs_Team2.shp", data("${gsdTemp}/Wave1_NDVI_Team2.dta") coor("${gsdTemp}/Wave1_NDVI_Team2_coordinates.dta") replace
-shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\NDVI\Wave1_NDVI_HHs_Team3.shp", data("${gsdTemp}/Wave1_NDVI_Team3.dta") coor("${gsdTemp}/Wave1_NDVI_Team3_coordinates.dta") replace
+shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\NDVI\Wave1_NDVI_HHs_Team1", data("${gsdTemp}/Wave1_NDVI_Team1") coor("${gsdTemp}/Wave1_NDVI_Team1_coordinates") replace
+shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\NDVI\Wave1_NDVI_HHs_Team2", data("${gsdTemp}/Wave1_NDVI_Team2") coor("${gsdTemp}/Wave1_NDVI_Team2_coordinates") replace
+shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\NDVI\Wave1_NDVI_HHs_Team3", data("${gsdTemp}/Wave1_NDVI_Team3") coor("${gsdTemp}/Wave1_NDVI_Team3_coordinates") replace
 use "${gsdTemp}/Wave1_NDVI_Team1.dta", clear
 append using "${gsdTemp}/Wave1_NDVI_Team2.dta"
 append using "${gsdTemp}/Wave1_NDVI_Team3.dta"
@@ -137,6 +140,7 @@ la def ldrought_NDVI 0 "Not affected" 1 "Drought affected", replace
 la val drought_NDVI ldrought_NDVI
 destring block, replace
 save "${gsdData}/1-CleanTemp/Wave1_NDVI.dta", replace
+*/
 
 * NDVI full data
 shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\NDVI\ndvi2017_points_SOM0_1000m.shp", data("${gsdTemp}/ndvi2017_points_SOM0_1000m.dta") coor("${gsdTemp}/ndvi2017_points_SOM0_1000m_coordinates.dta") replace

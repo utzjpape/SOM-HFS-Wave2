@@ -120,6 +120,7 @@ svyset ea [pweight=weight], strata(strata)
 gen x = 1
 tabout SPI_cat x using "${gsdOutput}/DroughtImpact_raw00.xls",  svy percent c(col se) npos(col) sebnone h1("SPI Category - Wave 2") append
 
+/*
 * NDVI Deviation
 * All SOM
 use "${gsdData}/1-CleanTemp/NDVI_SOM0.dta", clear
@@ -174,6 +175,7 @@ tabout drought_SPI using "${gsdOutput}/DroughtImpact_raw0.xls", svy percent c(co
 gen nodrought_SPI=drought_SPI==0
 gen nodrought_NDVI=drought_NDVI==0
 tabout reg_pess using "${gsdOutput}/DroughtImpact_raw0.xls", sum c(sum  drought_SPI sum  nodrought_SPI) sebnone h2(drought_SPI Affected by pre-war region) append
+*/
 * Wave 2
 use "${gsdData}/1-CleanTemp/Wave2_SPI.dta", clear
 merge 1:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", assert(master match) keep(match) keepusing(weight hhsize)
@@ -187,7 +189,7 @@ tabout drought_SPI using "${gsdOutput}/DroughtImpact_raw0.xls", svy percent c(co
 
 * Main correlate stats
 use "${gsdData}/1-CleanOutput/hh_w1_w2.dta", clear
-merge 1:1 t strata ea block hh using "${gsdData}/1-CleanTemp/SPI_w1w2.dta", assert(match using) keep(match) keepusing(SPI_cat drought_SPI)
+merge 1:1 t strata ea block hh using "${gsdData}/1-CleanTemp/SPI_w1w2.dta", keep(match) keepusing(SPI_cat drought_SPI)
 gen pweight=weight_cons*hhsize
 svyset ea [pweight=pweight], strata(strata)
 egen drought = group(t drought_SPI), label
@@ -214,6 +216,7 @@ foreach i of local drought {
 }
 tabout drought gini using "${gsdOutput}/DroughtImpact_raw2.xls" , svy c(freq) sebnone f(3) npos(col) h1(GINI coefficient) replace
 
+/*
 * Growth incidence and decomposition
 * total
 use "${gsdData}/1-CleanOutput/hh_w1_w2.dta", clear
@@ -291,6 +294,7 @@ merge 1:1 pctl using "${gsdTemp}/gic_nodroughtr.dta", assert(match) nogen keepus
 ren (pr_growth pg_ci_u pg_ci_l) (ndrought_gic ndrought_ci_h ndrought_ci_l)
 export excel using "${gsdOutput}/DroughtImpact_raw3_rural.xls", replace first(variables)
 export excel using "${gsdOutput}/DroughtImpact_Figures_v5.xlsx", sheetreplace sheet("Raw_Data_3_rural") first(variables)
+*/
 
 *===============================================================================
 * Main Diff-in-Diff estimates 
@@ -579,6 +583,7 @@ tabout SPI_cat  using "${gsdOutput}/DroughtImpact_raw5-2.xls" if t==1, svy sum c
 insheet using "${gsdOutput}/DroughtImpact_raw5-2.xls", clear
 export excel using "${gsdOutput}/DroughtImpact_Figures_v5.xlsx", sheetmodify sheet("Raw_Data_5-2")
 
+/*
 ******************************************************************************** 
 * 2. Education *  
 use "${gsdData}/1-CleanOutput/hhm_w1_w2.dta", clear
