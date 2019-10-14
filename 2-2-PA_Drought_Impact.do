@@ -41,10 +41,10 @@ save "${gsdData}/1-CleanInput/SHFS2016/hhq-poverty_all.dta", replace
 ****************** Maps ****************
 ****************************************
 * Prepare maps data files
-shp2dta using "${gsdShared}\0-Auxiliary\Adminstrative Maps\Som_Admbnda_Adm1_UNDP.shp", data("${gsdTemp}/Som_Admbnda_Adm1_UNDP.dta") coor("${gsdTemp}/Som_Admbnda_Adm1_UNDP_coordinates.dta") replace
-shp2dta using "${gsdShared}\0-Auxiliary\Adminstrative Maps\Som_Admbnda_Adm2_UNDP.shp", data("${gsdTemp}/Som_Admbnda_Adm2_UNDP.dta") coor("${gsdTemp}/Som_Admbnda_Adm2_UNDP_coordinates.dta") replace
-shp2dta using "${gsdShared}\0-Auxiliary\Adminstrative Maps\Wave1_Admin2.shp", data("${gsdTemp}/Wave1_Admin2.dta") coor("${gsdTemp}/Wave1_Admin2_coordinates.dta") replace
-shp2dta using "${gsdShared}\0-Auxiliary\Adminstrative Maps\Wave2_Admin2.shp", data("${gsdTemp}/Wave2_Admin2.dta") coor("${gsdTemp}/Wave2_Admin2_coordinates.dta") replace
+shp2dta using "${gsdShared}\0-Auxiliary\Administrative Maps\Som_Admbnda_Adm1_UNDP", database("${gsdTemp}\Som_Admbnda_Adm1_UNDP") coor("${gsdTemp}\Som_Admbnda_Adm1_UNDP_coordinates") replace
+shp2dta using "${gsdShared}\0-Auxiliary\Administrative Maps\Som_Admbnda_Adm2_UNDP", database("${gsdTemp}\Som_Admbnda_Adm2_UNDP") coor("${gsdTemp}\Som_Admbnda_Adm2_UNDP_coordinates") replace
+shp2dta using "${gsdShared}\0-Auxiliary\Administrative Maps\Wave1_Admin2", database("${gsdTemp}\Wave1_Admin2") coor("${gsdTemp}\Wave1_Admin2_coordinates") replace
+shp2dta using "${gsdShared}\0-Auxiliary\Administrative Maps\Wave2_Admin2", database("${gsdTemp}\Wave2_Admin2") coor("${gsdTemp}\Wave2_Admin2_coordinates") replace
 use "${gsdTemp}/Wave1_Admin2.dta", clear
 destring block, replace
 replace admin2Name = "Banadir" if team==2
@@ -397,9 +397,9 @@ export excel using "${gsdOutput}/DroughtImpact_Figures_v4.xlsx", sheetreplace sh
 ********************* Diff-in-Diff estimation **********************************
 ********************************************************************************
 use "${gsdData}/1-CleanInput/hh_all.dta", clear
-merge 1:1 t strata ea block hh using "${gsdData}/1-CleanTemp/SPI_w1w2.dta", nogen assert(match using) keep(match) keepusing(SPI_cat drought_SPI)
-merge 1:1 t strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hhq-poverty_all.dta", nogen assert(match master) keepusing(tc_core)
-merge 1:1 t strata ea block hh using "${gsdData}/1-CleanTemp/ACLED_w1w2.dta", assert(match) nogen
+merge 1:1 t strata ea block hh using "${gsdData}/1-CleanTemp/SPI_w1w2.dta", nogen keep(match) keepusing(SPI_cat drought_SPI)
+merge 1:1 t strata ea block hh using "${gsdData}/1-CleanInput/SHFS2016/hhq-poverty_all.dta", nogen keep(match master) keepusing(tc_core)
+merge 1:1 t strata ea block hh using "${gsdData}/1-CleanTemp/ACLED_w1w2.dta", keep(match) nogen
 gen pweight=weight_cons*hhsize
 svyset ea [pweight=pweight], strata(strata) singleunit(centered)
 

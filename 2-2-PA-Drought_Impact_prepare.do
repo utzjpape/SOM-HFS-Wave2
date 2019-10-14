@@ -35,11 +35,13 @@ destring block, replace
 save "${gsdData}/1-CleanTemp/Wave1_SPI.dta", replace
 
 * Wave 2 HHs
-shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\SPI\spi_combined_HHs_Wave2.shp", data("${gsdTemp}/spi_combined_HHs_Wave2.dta") coor("${gsdTemp}/spi_combined_HHs_Wave2_coordinates.dta") replace
+*shp2dta using "${gsdShared}\0-Auxiliary\Climate Data\SPI\spi_combined_HHs", data("${gsdTemp}/spi_combined_HHs_Wave2") coor("${gsdTemp}/spi_combined_HHs_Wave2_coordinates") replace
+import delimited "${gsdShared}\0-Auxiliary\Climate Data\SPI\spi_combined_HHs_Wave2.txt", clear
+save "${gsdTemp}/spi_combined_HHs_Wave2.dta", replace
 use "${gsdTemp}/spi_combined_HHs_Wave2.dta", clear
-replace GRID_CODE = GRID_CODE/3
-drop if GRID_CODE==0
-collapse (mean) SPI=GRID_CODE, by(strata ea_reg ea interview_ type)
+replace grid_code = grid_code/3
+drop if grid_code==0
+collapse (mean) SPI=grid_code, by(strata ea_reg ea interview_ type)
 ren interview interview__id
 su SPI, d
 gen SPI_cat = -3 if inrange(SPI, `r(min)', -2)
