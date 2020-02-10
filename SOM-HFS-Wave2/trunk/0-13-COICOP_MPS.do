@@ -36,6 +36,26 @@ merge m:1 mps_id using "${gsdTemp}/coicop_mps.dta", keep(match) nogen keepusing(
 collapse (mean) dec17 feb16, by(coicop)
 save "${gsdData}/1-CleanInput/mps_prices.dta", replace
 
+// Include new version w/weighted average prices from all the months of the survey
+use "${gsdDataRaw}/mps-imputed.dta", clear
+drop if inlist(mps_id, 67, 68, 69, 70, 83) 
+keep if inrange(wBegin, td("04dec2017"), td(05feb2018))
+*Include weight according to the no. of interviews in each month
+gen pre_weight=.
+replace pre_weight=.1825 if inrange(wBegin, td("04dec2017"), td(25dec2017))
+replace pre_weight=.8127 if inrange(wBegin, td("01jan2018"), td(29jan2018))
+replace pre_weight=.0048 if inlist(wBegin, td("05feb2018"))
+*Rescale weights to sum up to 100
+bys market mps_id: egen sum_weight=sum(pre_weight)
+gen weight=pre_weight/sum_weight
+gen weight_p=p*weight
+*Obtain weighted prices for the relevant months
+collapse (sum) dec17=weight_p, by(mps_id market)
+merge 1:1 market mps_id using "${gsdTemp}/mps_feb16.dta", keep(match) nogen
+merge m:1 mps_id using "${gsdTemp}/coicop_mps.dta", keep(match) nogen keepusing(coicop)
+collapse (mean) dec17 feb16, by(coicop)
+save "${gsdData}/1-CleanInput/mps_prices_rev.dta", replace
+
 
 *Migrate files from RawInput to 1-CleanInput
 use "${gsdDataRaw}/food_units_bands.dta", clear
