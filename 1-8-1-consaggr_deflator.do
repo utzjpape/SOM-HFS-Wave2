@@ -134,8 +134,10 @@ merge 1:m itemid using "${gsdData}/1-CleanInput/coicop_item.dta", keep(match) no
 *Collapse given that we have sometimes multiple HFS / COICOP items with the same code
 collapse (sum) ?share, by(coicop)
 destring coicop, replace
-*Add prices
+*Add prices (Dec 2017 - used in the SPVA)
 merge 1:m coicop using "${gsdData}/1-CleanInput/mps_prices.dta", nogen keep(match) 
+*Add prices (Weigthed avg. Dec 2017 to Feb 2018 - used for pvolcanet)
+*merge 1:m coicop using "${gsdData}/1-CleanInput/mps_prices_rev.dta", nogen keep(match) 
 
 
 ********************************************************************
