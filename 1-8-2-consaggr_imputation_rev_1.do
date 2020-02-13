@@ -303,13 +303,13 @@ clear
 forvalues i = 1/`nmi' {
 	append using "${gsdTemp}/mi_`i'_rev_1.dta"
 }
-keep if !inflist(ind_profile,4,9)
+keep if !inlist(ind_profile,4,9)
 save "${gsdTemp}/mi-extract_rev_1.dta", replace
 
 
 use "${gsdTemp}/mi-extract_rev_1.dta", clear
 collapse (mean) tc_* mi_cons_* (mean) poorPPP_prob = poorPPP poorPPP_rev_prob = poorPPP_rev pgi pgi_rev, by(strata ea block hh hhsize weight hhweight plinePPP plinePPP_rev deflator)
-merge 1:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", assert(match) keepusing(ind_profile) nogen
+merge 1:1 strata ea block hh using "${gsdData}/1-CleanInput/hh.dta", keep(match) keepusing(ind_profile) nogen
 gen severity=pgi*pgi
 gen severity_rev=pgi_rev*pgi_rev
 svyset ea [pweight=hhweight], strata(strata) singleunit(centered)

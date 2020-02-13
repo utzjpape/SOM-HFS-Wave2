@@ -7,7 +7,7 @@ set sortseed 11041985
 ********************************************************************
 *Define the number of imputations
 ********************************************************************
-local n = 2
+local n = 100
 
 ********************************************************************
 *Prepare household dataset
@@ -102,18 +102,19 @@ gen rural = hh_ptype==2
 ********************************************************************
 *Build the model and run the imputation
 ********************************************************************
-* Change aggregation 
-local model = "hhsize pchild psenior i.hhsex i.hhempl hhedu i.hh_type i.hh_drinkwater i.hh_floor i.hh_ownership i.ind_profile_impute rural i.hh_hunger i.remit12m"
-local model = "i.pmi_cons_f0 i.pmi_cons_nf0 i.pmi_cons_d `model'"
-
 *Log and regularize for zero consumption
 foreach var of varlist mi_cons_f1 mi_cons_f2 mi_cons_f3 mi_cons_f4 mi_cons_nf1 mi_cons_nf2 mi_cons_nf3 mi_cons_nf4 mi_cons_f0 mi_cons_nf0 mi_cons_d {
+
 	*Remember 0 consumption
-	gen `var'_0 = `var'==0 if !missing(`var')
+	gen `var'_0 = `var'==0 if !missing(`var') & !inlist(ind_profile,4,9)
 
 	replace `var' = .01 if `var'<=0
 	replace `var' = log(`var')
 }
+
+* Change aggregation 
+local model = "hhsize pchild psenior i.hhsex i.hhempl hhedu i.hh_type i.hh_drinkwater i.hh_floor i.hh_ownership i.ind_profile_impute rural i.hh_hunger i.remit12m"
+local model = "i.pmi_cons_f0 i.pmi_cons_nf0 i.pmi_cons_d `model'"
 save "${gsdData}/1-CleanTemp/mi-pre_rev_2.dta", replace
 
 *Run imputation
@@ -137,7 +138,7 @@ use "${gsdTemp}/mi_rev_2.dta", clear
 *Transform into household-level dataset and out of log-space
 foreach var of varlist mi_cons_f1 mi_cons_f2 mi_cons_f3 mi_cons_f4 mi_cons_nf1 mi_cons_nf2 mi_cons_nf3 mi_cons_nf4 mi_cons_f0 mi_cons_nf0 mi_cons_d {
 	mi xeq: replace `var' = exp(`var')	
-	mi xeq: replace `var' = 0 if `var'_0==1 & !inlist(ind_profile,4,9)
+	mi xeq: replace `var' = 0 if `var'_0==1 
 	drop `var'_0
 }
 
