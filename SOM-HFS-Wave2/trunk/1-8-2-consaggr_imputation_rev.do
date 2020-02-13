@@ -164,7 +164,7 @@ save "${gsdTemp}/`fh'.dta", replace
 * Prepare dataset for estimation with two-step log estimation   *
 *****************************************************************
 use "${gsdTemp}/`fh'.dta", clear
-ren (xfcons0 xnfcons0) (fcore nfcore)
+ren (xfcons0 xnfcons0) (y10 y00)
 ren (xfcons? xnfcons?) (y1? y0?)
 qui reshape long y0 y1, i(strata ea block hh) j(imod)
 qui reshape long y, i(strata ea block hh imod) j(food)
@@ -174,6 +174,7 @@ gen y_0 = y==0 if !missing(y)
 
 *Log and regularize for zero consumption
 replace y = .01 if y<=0
+replace y = .01 if inlist(ind_profile,4,9)
 replace y = log(y)
 
 *Conditional step in estimation skipped if almost all hh have module consumption >0
@@ -189,21 +190,21 @@ mi set wide
 mi register imputed y y_0 xdcons
 mi register regular imod food
 mi register regular hh* strata ea block rural ind_profile_impute mcon* _I* pxfcons0 pxnfcons0 pxdcons
-mi impute chained (logit, augment) y_0 (reg, cond(if y_0==0)) y = `model', add(`nmi') by(imod food) 
+
+*Including model from previous RCM
+mi impute monotone (logit, augment) y_0 (reg, cond(if y_0==0)) y = hhsize mcon_pchild mcon_psenior i.mcat_hhsex i.mcat_hhempl i.mcat_hhedu i.mcat_hh_type i.mcat_hh_drinkwater i.mcat_hh_floor i.mcat_hh_ownership i.ind_profile_impute rural i.mcat_hh_hunger i.mcat_remit12m i.pxfcons0 i.pxnfcons0 i.pxdcons , add(`nmi') by(imod food) force
 
 *Transform into household-level dataset and out of log-space
-keep astrata strata ea block hh rural ind_profile ind_profile_impute hhsize weight y y_0 _* imod food fcore nfcore xdcons
+keep astrata strata ea block hh rural ind_profile ind_profile_impute hhsize weight y y_0 _* imod food xdcons
 mi xeq: replace y = exp(y)
 
 *Reshape back to the hh-level
-mi xeq: replace y = 0 if y_0==1
+mi xeq: replace y = 0 if y_0==1 & !inlist(ind_profile,4,9)
 drop y_0
 mi reshape wide y, i(strata ea block hh imod) j(food)
 mi rename y0 xnfcons
 mi rename y1 xfcons
 mi reshape wide xfcons xnfcons xdcons, i(strata ea block hh) j(imod)
-mi ren fcore xfcons0
-mi ren nfcore xnfcons0 
 save "${gsdTemp}/mi_est.dta", replace
 
 
